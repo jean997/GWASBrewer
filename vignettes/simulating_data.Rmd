@@ -202,8 +202,11 @@ The weights in the graph give the effect size. Note that this is the square root
 The `sim_mv` function returns a list with the following elements
 
 + `beta_hat`, `se_beta_hat`: Simulated GWAS effect estimates and standard errors
-+ `direct_SNP_effects`: direct effects of SNPs on traits
-+ `B`: True SNP associations. Without LD, this is the same as the total effect of SNPs on traits.
++ `direct_SNP_effects_marg`: direct effects of SNPs on traits (marginal)
++ `direct_SNP_effects_joint`: direct effects of SNPs on traits (joint). Joint and marginal effects 
+are the same if there is no LD. With LD, the joint effects are the direct causal effect of the SNP on the trait
+while the marginal effect includes LD.
++ `B`: True SNP associations. This isncludes both direct and indirecte effects. B is the expected value of `beta_hat`. 
 + `direct_trait_effects`: Matrix of direct effects between traits
 + `total_trait_effects`: Matrix of total effects between traits
 
@@ -259,7 +262,7 @@ head(snpinfo)
 #6 0.343 rs12459906 T,C       19  75034615 0.00709   276245         1 75034615 TRUE             79.3        7.52 FALSE             FALSE             
 ```
 
-This SNP information table has many columns but the only required columns are `SNP` giving a SNP name (can be arbitrary) and `AF` giving the allele frequency. Since we have only provided 19k SNPs but may wish to generate many more, the function will simply repeat this LD pattern as many times as necessary to give the desired number of variants. To generagte data with LD, these two objects are given to the `R_LD` and `snp_info` parameters. Most likely, you will want to generate more variants when using LD than when not using LD. This takes longer than generating independent data. 
+This SNP information table has many columns but the only required columns are `SNP` giving a SNP name (can be arbitrary) and `AF` giving the allele frequency. Since we have only provided 19k SNPs but may wish to generate many more, the function will simply repeat this LD pattern as many times as necessary to give the desired number of variants. To generate data with LD, these two objects are given to the `R_LD` and `snp_info` parameters. Most likely, you will want to generate more variants when using LD than when not using LD. This takes longer than generating independent data. 
 
 ```{r, eval = FALSE}
 sim_dat1_LD <- sim_mv(G = G,
@@ -316,15 +319,15 @@ to a point at the origin (recall we are plotting the true effects and not the ef
 ```{r}
 te <- data.frame(x_effect = sim_dat1$B[,1], 
                  w_effect = sim_dat1$B[,4], 
-                 type = case_when(rowSums(sim_dat1$direct_SNP_effects !=0) == 0 ~ "Null SNPs",
-                                  (sim_dat1$total_trait_effects[,1] == 0 & 
-                                    rowSums(sim_dat1$direct_SNP_effects[,-1] !=0) == 0) ~ "X Effect SNPs", 
-                                  (sim_dat1$total_trait_effects[,3] == 0 & 
-                                    rowSums(sim_dat1$direct_SNP_effects[,-3] !=0) == 0) ~ "Z Effect SNPs",
-                                  (sim_dat1$total_trait_effects[,2] == 0 & 
-                                    rowSums(sim_dat1$direct_SNP_effects[,-2] !=0) == 0) ~ " Y Effect SNPs", 
-                                  (sim_dat1$total_trait_effects[,4] == 0 & 
-                                    rowSums(sim_dat1$direct_SNP_effects[,-4] !=0) == 0) ~ " W Effect SNPs", 
+                 type = case_when(rowSums(sim_dat1$direct_SNP_effects_marg !=0) == 0 ~ "Null SNPs",
+                                  (sim_dat1$direct_SNP_effects_marg[,1] != 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects_marg[,-1] !=0) == 0) ~ "X Effect SNPs", 
+                                  (sim_dat1$direct_SNP_effects_marg[,3] != 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects_marg[,-3] !=0) == 0) ~ "Z Effect SNPs",
+                                  (sim_dat1$direct_SNP_effects_marg[,2] != 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects_marg[,-2] !=0) == 0) ~ " Y Effect SNPs", 
+                                  (sim_dat1$direct_SNP_effects_marg[,4] != 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects_marg[,-4] !=0) == 0) ~ " W Effect SNPs", 
                                   TRUE ~ "Multiple"))
 table(te$type)
 ```
