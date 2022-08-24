@@ -1,0 +1,533 @@
+---
+title: "Simulating Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simulating Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(simGWAS)
+library(DiagrammeR)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(TwoSampleMR)
+library(GRAPPLE)
+set.seed(1)
+```
+
+## Introduction
+
+This vignette demonstrates how to use the `sim_mv` function to simulate data and demonstrate
+some properties of single variable and multi-variable MR. This vignette uses the `DiagrammeR` 
+package for visualization. 
+
+## Introduction to `sim_mv`
+
+The `sim_mv` function generates GWAS summary statistics for multiple traits with specified
+linear causal relationships between traits. 
+
+It can be used in two modes, 'general' and 'xyz'.
+In 'general' mode, `sim_mv` will generate data from any user specified DAG. 
+In 'xyz' mode, `sim_mv` generates data from specific types of DAGs. Both of these modes will
+be explained below. 
+
+
+There are four arguments that are common to both modes:
+
++ `N`: The GWAS sample size for each trait. This can be a scalar or a vector with length equal to the number of traits generated.
++ `J`: The number of SNPs to simulate.
++ `h2`: The hertiability of each trait. This can be a scalar or a vector with length equal to the number of traits generated.
++ `pi`: The proportion of all SNPs that have a direct effect on each trait. This can be a scalar or a vector with length equal to the number of traits generated.
+
+## Limitations
+
+This code is still in development. It has several limitations, some of which will
+be addressed in future versions (marked by (*) below) and some which will probably persist. 
+
+Data generation: 
+
++ Direct effect SNPs for each trait are chosen randomly and independently. In the future, I would like to provide an option to specify the proportion of shared direct effect SNPs between pairs of traits or give an option for no sharing. (**)
+
+Graphs:
+
++ All DAGs are linear and additive
++ There is currently no way to specify effect modification (**)
+
+
+Other:
+
++ The function will not verify that supplied graph is acyclic (*).
+
+## General Mode
+
+To use `sim_mv` in 'general' mode, the user specifies, a DAG as a matrix, $G$. The 
+$G_{i,j}$ entry specifies the direct effect of variable $i$ on variable $j$. The
+diagonal entries of $G$ should be 0. All variables are assumed to have variance 
+equal to 1, so $G_{i,j}^2$ is the proportion of variable $j$ variance explained by 
+the direct effect of variable $i$. 
+
+For example, the graph below: 
+
+```{r, echo=FALSE, fig.align='center', fig.width = 5}
+G <- matrix(c(0, sqrt(0.25), 0, sqrt(0.15), 
+              0, 0, 0, sqrt(0.1), 
+              sqrt(0.2), 0, 0, -sqrt(0.3), 
+              0, 0, 0, 0), nrow = 4, byrow = TRUE)
+#colnames(G) <- row.names(G) <- c("X", "Y", "Z", "W")
+
+d <- melt(G) %>%
+     filter(value !=0) %>%
+     rename(from = Var1, to = Var2)
+
+
+n <- create_node_df(n = 4, label = c("X", "Y", "Z", "W"), 
+                    fontname = "Helvetica", 
+                    fontsize = 10, 
+                    width = 0.3, 
+                    fillcolor = "white", 
+                    fontcolor = "black",
+                    color = "black", 
+                    x = c(0, 1, 1, 2), 
+                    y = c(0, -0.5, 1, 0))
+e <- create_edge_df(from = d$from, to = d$to, minlen = 1,  color = "black", 
+                    label = round(d$value, digits = 3))
+g <- create_graph(nodes_df = n, edges_df = e)
+
+render_graph(g)
+```
+
+is represented by the matrix
+
+```{r}
+G <- matrix(c(0, sqrt(0.25), 0, sqrt(0.15), 
+              0, 0, 0, sqrt(0.1), 
+              sqrt(0.2), 0, 0, -sqrt(0.3), 
+              0, 0, 0, 0), nrow = 4, byrow = TRUE)
+colnames(G) <- row.names(G) <- c("X", "Y", "Z", "W")
+G
+```
+
+To simulate data from this graph, we can use
+
+```{r}
+sim_dat1 <- sim_mv(G = G,
+                  N = 80000, J = 50000, 
+                  h2 = c(0.3, 0.3, 0.5, 0.4), 
+                  pi = 800/50000)
+```
+
+In the function call above, we specified a GWAS sample size of 60k for every GWAS. 
+We gave different heritabilities of each of the four traits (the `h2` argument). 
+Every trait has 1000 direct effect SNPs (the `pi` argument). `J` specifies the total number
+of variants to generate. 
+
+### xyz Mode
+
+
+In 'xyz' mode, `sim_mv` will produce data from particular kinds of DAGs. In 'xyz' mode, 
+there is an exposure ($X$), an outcome ($Y$), and $K$ other variables, $Z_1, \dots, Z_K$. 
+
+There is a (possibly 0) effect of $X$ on $Y$ specified by the `gamma` argument. 
+Variables $Z_1, \dots, Z_K$ can have effects either on or from $X$, $Y$ or both. So
+$Z_k$ could be a confounder of $X$ and $Y$ (effects on both variables), a child (collider) of
+$X$ and $Y$ (effects from both variables), or a mediator between $X$ and $Y$ (effect from $X$ and to $Y$). 
+The program will give an error if the user tries to specify a mediator between $Y$ and $X$ as this would 
+create a cycle.
+As special cases, any of these effects could be zero. So $Z_k$ could also be a parent only or child only of $X$ or $Y$. 
+
+Effects between each $Z_k$ and $X$ and $Y$ respectively are given in the `tau_xz` and `tau_yz` arguments. 
+The direction of these effects is given in the `dir_xz` and `dir_yz` arguments. 
+Effect size arguments `gamma`, `tau_xz`, and `tau_yz` are all given as signed proportion of variance explained. 
+So if `gamma = -0.3`, The direct effect of $X$ explains 30\% of the variance of $Y$ and the 
+effect of $X$ on $Y$ is negative. The direction parameters `dri_xz` and `dir_yz` should
+have equal length to `tau_xz` and `tau_yz`. Elements should be 1 if there is an effect on $X$ or $Y$ and -1 if there is an effect from $X$ or $Y$. 
+
+For example, the code
+
+```{r}
+sim_dat2 <- sim_mv(tau_xz = c(0.1, -0.15, 0.2, 0.3), 
+                   tau_yz = c(0, 0.2, -0.25, 0.15), 
+                   dir_xz = c(1, 1, -1, -1), 
+                   dir_yz = c(1, 1, -1, 1),
+                   gamma = 0.3,
+                   N = 40000, J = 50000, 
+                   h2 = c(0.3, 0.3, 0.5, 0.4, 0.35, 0.1), 
+                   pi = 1000/50000)
+```
+
+generates data from the graph
+
+
+```{r, echo=FALSE, fig.align='center', fig.width = 5}
+G2 <- sim_dat2$direct_trait_effects
+#colnames(G) <- row.names(G) <- c("X", "Y", "Z", "W")
+
+d <- melt(G2) %>%
+     filter(value !=0) %>%
+     rename(from = Var1, to = Var2)
+
+n <- create_node_df(n = 6, label = c("X", "Y", "Z1", "Z2", "Z3", "Z4"), 
+                    fontname = "Helvetica", 
+                    fontsize = 10, 
+                    width = 0.3, 
+                    fillcolor = "white", 
+                    fontcolor = "black",
+                    color = "black", 
+                    x = c(0, 2, -0.5, 1, 1, 1), 
+                    y = c(0, 0, 1, 1, -0.5, -1))
+e <- create_edge_df(from = d$from, to = d$to, minlen = 1,  color = "black", 
+                    label = round(d$value, digits = 3))
+g <- create_graph(nodes_df = n, edges_df = e)
+
+render_graph(g)
+```
+
+
+The weights in the graph give the effect size. Note that this is the square root of the value provided in `tau_xz` and `tau_yz` which specifies the percent variance explained. For example, the effect of $Z_1$ on $X$ is  $0.316 = \sqrt{0.1}$ and the effect of $Z_2$ on $X$ is $-0.387 = - \sqrt{0.15}$. 
+
+
+
+### Simulation Object
+
+The `sim_mv` function returns a list with the following elements
+
++ `beta_hat`, `se_beta_hat`: Simulated GWAS effect estimates and standard errors
++ `direct_SNP_effects`: direct effects of SNPs on traits
++ `B`: True SNP associations. Without LD, this is the same as the total effect of SNPs on traits.
++ `direct_trait_effects`: Matrix of direct effects between traits
++ `total_trait_effects`: Matrix of total effects between traits
+
+When used in general mode, the order of the columns in `beta_hat`, `se_beta_hat`, and `B` corresponds
+to the order of variables in `G`. When used in xyz mode, the first column is $X$, the second 
+column is $Y$ and subsequent columns are the $Z_k$'s in the order they were provided.
+
+### Simulating Data with LD
+
+The function can be used to generate data with LD by inputting a list of LD matrices and a corresponding table of SNP information. The function will work fastest if the LD matrix is broken into small blocks. For this example we will use the LD pattern estimated from Chromosome 19 in HapMap3 which can be downloaded [here](https://zenodo.org/record/6761943#.Yrno2njMIUE). The function currently requires you to input a list of eigen decomposition generated by `eigen` applied to each block in the LD matrix. This is the format of the linked file. 
+
+Download the LD data and put them in a directory called `data`. If you save the files with different names, you will need to change the code below. Code in this section is not executed during vignette building due to reliance on external data. 
+
+Let's look at the LD data
+
+```{r, eval = FALSE}
+ld <- readRDS("../data/ld_evd_list.RDS")
+snpinfo <- readRDS("../data/snpdata.RDS")
+
+length(ld)
+#[1] 39
+names(ld[[1]])
+#[1] "values"  "vectors"
+dim(ld[[1]]$vectors)
+#[1] 140 140
+```
+
+We can see that there are 39 LD blocks and the first block as 140 SNPs. 
+
+```{r, eval = FALSE}
+# This prints the number of SNPs in each block
+purrr::map(ld, "values") %>% sapply(length) %>% unlist()
+#[1] 140 519 339 435 523 280 675 325 651 548 274 483 442 744 460 177 469 173 358 564 392 737 596 818 307 863 276 435 204 364 480 381 757 844 753 656 483 856 709
+
+purrr::map(ld, "values") %>% sapply(length) %>% unlist() %>% sum()
+#[1] 19490
+dim(snpinfo)
+#[1] 19490    14
+```
+
+We see that in total there are 19,490 SNPs and this is also the number of rows in the SNP information table. If this is not the case, you will get an error. 
+
+```{r, eval = FALSE}
+head(snpinfo)
+# A tibble: 6 × 14
+#     AF SNP        allele   chr ld_snp_id       map    pos region_id   snp_id in_hapmap ldscore_1kg ldscore_hm3 keep_ld_prune_0.1 keep_ld_prune_0.01
+#  <dbl> <chr>      <chr>  <int>     <int>     <dbl>  <int>     <dbl>    <int> <lgl>           <dbl>       <dbl> <lgl>             <lgl>             
+#1 0.394 rs8100066  G,A       19  75034188 0         260912         1 75034188 TRUE             93.0        7.50 FALSE             FALSE             
+#2 0.455 rs8102615  A,T       19  75034190 0.0000268 260970         1 75034190 TRUE             81.4        7.03 FALSE             TRUE              
+#3 0.394 rs8105536  A,G       19  75034192 0.0000559 261033         1 75034192 TRUE             93.0        7.51 FALSE             FALSE             
+#4 0.939 rs2312724  T,C       19  75034339 0.00237   266034         1 75034339 TRUE             16.2        1.89 FALSE             FALSE             
+#5 0.399 rs1020382  C,T       19  75034365 0.00283   267039         1 75034365 TRUE             86.8        7.37 FALSE             FALSE             
+#6 0.343 rs12459906 T,C       19  75034615 0.00709   276245         1 75034615 TRUE             79.3        7.52 FALSE             FALSE             
+```
+
+This SNP information table has many columns but the only required columns are `SNP` giving a SNP name (can be arbitrary) and `AF` giving the allele frequency. Since we have only provided 19k SNPs but may wish to generate many more, the function will simply repeat this LD pattern as many times as necessary to give the desired number of variants. To generagte data with LD, these two objects are given to the `R_LD` and `snp_info` parameters. Most likely, you will want to generate more variants when using LD than when not using LD. This takes longer than generating independent data. 
+
+```{r, eval = FALSE}
+sim_dat1_LD <- sim_mv(G = G,
+                  N = 80000, J = 100000, 
+                  h2 = c(0.3, 0.3, 0.5, 0.4), 
+                  pi = 800/50000, R_LD = ld, snp_info = snpinfo)
+```
+
+You will notice that in data with LD, there are fewer exact zeros in `direct_SNP_effects`. This is a direct result of LD, as `direct_SNP_effects` reports the true association of each SNP with each trait that is not mediated by other traits. One useful column of `snpinfo` is the `keep_ld_prune_0.1` column which indicates SNPs that are independent with mutual$R^2$ less than 0.1 (similar for `keep_ld_prune_0.01`). The returned data has a copy of the table passed to `snp_info` expanded to match all SNPs. Thus if we want to identify an LD-pruned set of variants, we can use this column rather than LD pruning.
+
+```{r, eval = FALSE}
+dim(sim_dat1_LD$snp_info)
+#[1] 100000     16
+head(sim_dat1_LD$snp_info)
+# A tibble: 6 × 16
+#      AF SNP          allele   chr ld_snp_id       map    pos region_id   snp_id in_hapmap ldscore_1kg ldscore_hm3 keep_ld_prune_0.1 keep_ld_prune_0.01 block   rep
+#   <dbl> <chr>        <chr>  <int>     <int>     <dbl>  <int>     <dbl>    <int> <lgl>           <dbl>       <dbl> <lgl>             <lgl>              <int> <dbl>
+# 1 0.394 rs8100066.1  G,A       19  75034188 0         260912         1 75034188 TRUE             93.0        7.50 FALSE             FALSE                  1     1
+# 2 0.455 rs8102615.1  A,T       19  75034190 0.0000268 260970         1 75034190 TRUE             81.4        7.03 FALSE             TRUE                   1     1
+# 3 0.394 rs8105536.1  A,G       19  75034192 0.0000559 261033         1 75034192 TRUE             93.0        7.51 FALSE             FALSE                  1     1
+# 4 0.939 rs2312724.1  T,C       19  75034339 0.00237   266034         1 75034339 TRUE             16.2        1.89 FALSE             FALSE                  1     1
+# 5 0.399 rs1020382.1  C,T       19  75034365 0.00283   267039         1 75034365 TRUE             86.8        7.37 FALSE             FALSE                  1     1
+# 6 0.343 rs12459906.1 T,C       19  75034615 0.00709   276245         1 75034615 TRUE             79.3        7.52 FALSE             FALSE                  1     1
+indep_vars = which(sim_dat1_LD$snp_info$keep_ld_prune_0.1 == TRUE)
+length(indep_vars)
+#[1] 13611
+```
+
+In this case, out of 100k variants, we have a subset of 13k that are approximately independent. 
+
+
+### Exploring MR with simulations
+
+We will use the data generated in the  "General Mode" section to explore MR. 
+Suppose we are interested in estimating the effect of $X$ on $W$. The total effect of 
+$X$ on $W$ is $0.387 + 0.5\cdot 0.316 = 0.545$. We can confirm this by looking at the (1,4) element of
+`total_trait_effects` matrix:
+
+```{r}
+sim_dat1$total_trait_effects
+```
+
+Valid instruments for measuring this effect are SNPs that have non-zero direct
+effect on $X$ but zero direct effect on all other SNPs. Note that direct effects
+are assigned randomly, so by chance some SNPs will have direct effects on more than one trait. 
+
+
+Before we try to apply MR, let's take a look at the **true** total effects of each SNP on $X$ 
+plotted against the **true** total effect of each SNP on $Y$. We will color SNPs by 
+which of the four variables they directly effect. These categories are tabulated below. We will not plot
+the null SNPs (SNPs with no effects on any variables) since these SNPs all correspond
+to a point at the origin (recall we are plotting the true effects and not the effect estimates). 
+
+```{r}
+te <- data.frame(x_effect = sim_dat1$B[,1], 
+                 w_effect = sim_dat1$B[,4], 
+                 type = case_when(rowSums(sim_dat1$direct_SNP_effects !=0) == 0 ~ "Null SNPs",
+                                  (sim_dat1$total_trait_effects[,1] == 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects[,-1] !=0) == 0) ~ "X Effect SNPs", 
+                                  (sim_dat1$total_trait_effects[,3] == 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects[,-3] !=0) == 0) ~ "Z Effect SNPs",
+                                  (sim_dat1$total_trait_effects[,2] == 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects[,-2] !=0) == 0) ~ " Y Effect SNPs", 
+                                  (sim_dat1$total_trait_effects[,4] == 0 & 
+                                    rowSums(sim_dat1$direct_SNP_effects[,-4] !=0) == 0) ~ " W Effect SNPs", 
+                                  TRUE ~ "Multiple"))
+table(te$type)
+```
+Below is the plot of the true effects on $X$ vs true effects on $W$. The black line has slope 
+equal to the total effect of $X$ on $W$ which we are trying to estimate. 
+
+```{r, fig.width=6}
+te %>% filter(type != "Null SNPs") %>%
+ggplot() + 
+  geom_point(aes(x = x_effect, y = w_effect, color = type), alpha = 0.6) + 
+  geom_abline(slope = sim_dat1$total_trait_effects[1,4]) + 
+  theme_bw()
+
+```
+
+Notice the following features of the graph: 
+
++ The SNPS with direct effects on $X$ *only* fall exactly along the black line. 
++ SNPs with direct effects on $Z$ only (the confounder of $X$ and $W$) fall on a different line. 
++ SNPS with direct effects on $W$ or $Y$ only fall on the x-axis -- they have no effect on $X$. 
++ SNPs with direct effects on multiple traits are scattered around the plot. 
+
+Look at the DAG for this data and verify for yourself why each of these features should be true. 
+
+This plot shows us that, if we want to estimate the effect of $X$ on $W$, we should use SNPs that affect $X$ only. If we also include SNPs with direct effects on $Z$, we will not be able to 
+estimate the slope of the black line. We will see this below.
+
+### Single Variable MR
+
+A typical MR workflow might involve first selecting SNPs that are strongly associated with $X$ and then fitting single-variable MR. With this data, we expect this approach to be biased due to the heritable confounder $Z$. The plot below shows the effect estimates for SNPs selected according to their association p-value with $X$. Note that this data set was generated with large SNP effects and large sample size in order to better visualize the effects.  
+
+```{r, fig.width=6}
+# Dataframe of effect estimates
+est_eff <- data.frame(bhat_x = sim_dat1$beta_hat[,1], 
+                      bhat_w = sim_dat1$beta_hat[,4], 
+                      se_bhat_x = sim_dat1$se_beta_hat[,1], 
+                      se_bhat_w = sim_dat1$se_beta_hat[,4]) %>%
+           mutate(p_val_x = 2*pnorm(-abs(bhat_x/se_bhat_x)))
+est_eff$type <- te$type
+
+# Variants we select for single-variable MR
+sv_mr_inst <- filter(est_eff, p_val_x < 5e-8)
+
+sv_mr_inst %>% 
+ggplot() + 
+  geom_point(aes(x = bhat_x, y = bhat_w, color = type), alpha = 0.6) + 
+  theme_bw()
+```
+
+Next we fit single-variable MR using both all selecte instruments and restricting 
+to only valid instruments (instruments with direct effects only on $X$). 
+
+```{r}
+mr_res1 <- mr_ivw(b_exp = sv_mr_inst$bhat_x, b_out = sv_mr_inst$bhat_w, 
+       se_exp = sv_mr_inst$se_bhat_x, se_out = sv_mr_inst$se_bhat_w)
+
+sv_mr_inst_xonly <- filter(est_eff, p_val_x < 5e-8 & type == "X Effect SNPs")
+mr_res2 <- mr_ivw(b_exp = sv_mr_inst_xonly$bhat_x, b_out = sv_mr_inst_xonly$bhat_w, 
+       se_exp = sv_mr_inst_xonly$se_bhat_x, se_out = sv_mr_inst_xonly$se_bhat_w)
+```
+
+The plot below shows the naive single-variable MR estimate (red), the estimate using only X effect SNPs (blue), and the truth (black). Dotted lines correspond to 95\% confidence intervals. 
+
+```{r,  fig.width=6}
+mr_slope <- data.frame(slope = c(mr_res1$b, 
+                                 mr_res2$b, 
+                                 sim_dat1$total_trait_effects[1,4]), 
+                        col = c("red", "blue", "black"), 
+                       lty = 1)
+
+ci_slope <- data.frame(slope = c(mr_res1$b + c(-1, 1)*mr_res1$se*qnorm(0.975), 
+                                 mr_res2$b + c(-1, 1)*mr_res2$se*qnorm(0.975)), 
+                       col = rep(c("red", "blue"), each = 2), 
+                       lty = 2)
+mr_slope <- bind_rows(mr_slope, ci_slope)
+
+sv_mr_inst %>% 
+ggplot() + 
+  geom_point(aes(x = bhat_x, y = bhat_w), alpha = 0.6) + 
+  geom_abline(slope = mr_slope$slope, color = mr_slope$col, linetype = mr_slope$lty)
+
+```
+
+```{r}
+sv_res <- data.frame(est = c(mr_res1$b, mr_res2$b, sim_dat1$total_trait_effects[1,4]), 
+                     ci_lower = c(mr_res1$b-mr_res1$se*qnorm(0.975), 
+                                  mr_res2$b-mr_res2$se*qnorm(0.975), 
+                                  NA), 
+                     ci_lower = c(mr_res1$b+mr_res1$se*qnorm(0.975), 
+                                  mr_res2$b+mr_res2$se*qnorm(0.975), 
+                                  NA),
+                     type = c("Naive", "Valid Instruments Only", "Truth"))
+sv_res
+```
+
+
+Note that even using only valid instruments, the estimate is still slightly low. 
+
+### Multivariable MR
+
+Excluding the Z-effect SNPs requires knowledge of the underlying truth which is unavailable in 
+real problems. An alternative is to adjust for the heritable confounder in multivariable MR. 
+We do this below with the `mv_multiple` function from `TwoSampleMR` which uses the 
+regression multivariable MR strategy. Using this function requires a bit of data manipulation
+to get the simulated data data into the required format. 
+
+```{r}
+exp <- sim_dat1$beta_hat[, c(1, 3)]
+colnames(exp) <- c("X", "Z")
+hdat <- list(exposure_beta = exp,
+             exposure_pval = 2*pnorm(-abs(sim_dat1$beta_hat[,c(1, 3)]/sim_dat1$se_beta_hat[,c(1, 3)])),
+             exposure_se = sim_dat1$se_beta_hat[,c(1, 3)],
+             outcome_beta = sim_dat1$beta_hat[,4],
+             outcome_pval = 2*pnorm(-abs(sim_dat1$beta_hat[,4]/sim_dat1$se_bet_hat[,4])),
+             outcome_se = sim_dat1$se_beta_hat[,4],
+             expname = data.frame(id.exposure = c("X", "Z"), exposure = c("X", "Z")), 
+             outname = data.frame(id.outcome = "W", outcome = "W"))
+
+mv_mr_T <- mv_multiple(hdat, pval_threshold=5e-8,
+                      instrument_specific = TRUE)
+mv_mr_T
+```
+
+
+The estimates from multivariable MR should estimate the total effect of $X$ on $W$, `r round(sim_dat1$total_trait_effects[1,4], digits = 3)` and the effect of $Z$ on $W$ that is not mediated by $X$ `r round(sim_dat1$direct_trait_effects[3,4], digits = 3)`. We
+notice that with multivariable MR, the estimate of the $X$ on $W$ effect is much closer than we got using 
+single-variable MR. However, the estimate of the $Z$ on $W$ effect is quite far off. 
+
+
+We can explore the possible causes of this problem in two ways. First, we exclude all SNPs except 
+for those with direct effects on either $X$ or $Z$. 
+
+
+```{r}
+ix <- which(te$type %in% c("X Effect SNPs", "Z Effect SNPs"))
+exp <- sim_dat1$beta_hat[ix, c(1, 3)]
+colnames(exp) <- c("X", "Z")
+hdat <- list(exposure_beta = exp,
+             exposure_pval = 2*pnorm(-abs(sim_dat1$beta_hat[ix,c(1, 3)]/sim_dat1$se_beta_hat[ix,c(1, 3)])),
+             exposure_se = sim_dat1$se_beta_hat[ix,c(1, 3)],
+             outcome_beta = sim_dat1$beta_hat[ix,4],
+             outcome_pval = 2*pnorm(-abs(sim_dat1$beta_hat[ix,4]/sim_dat1$se_bet_hat[ix,4])),
+             outcome_se = sim_dat1$se_beta_hat[ix,4],
+             expname = data.frame(id.exposure = c("X", "Z"), exposure = c("X", "Z")), 
+             outname = data.frame(id.outcome = "W", outcome = "W"))
+
+mv_mr_T <- mv_multiple(hdat, pval_threshold=5e-8,
+                      instrument_specific = TRUE)
+mv_mr_T
+```
+
+We find that the problem still persists, so the issue is not pleiotropy. 
+
+Next we fit the multivariable MR regression model substituting the true effects for the
+estimated effects. 
+
+```{r}
+exp <- sim_dat1$B[, c(1, 3)]
+colnames(exp) <- c("X", "Z")
+hdat <- list(exposure_beta = exp,
+             exposure_pval = 2*pnorm(-abs(sim_dat1$B[,c(1, 3)]/sim_dat1$se_beta_hat[,c(1, 3)])),
+             exposure_se = sim_dat1$se_beta_hat[,c(1, 3)],
+             outcome_beta = sim_dat1$B[,4],
+             outcome_pval = 2*pnorm(-abs(sim_dat1$B[,4]/sim_dat1$se_bet_hat[,4])),
+             outcome_se = sim_dat1$se_beta_hat[,4],
+             expname = data.frame(id.exposure = c("X", "Z"), exposure = c("X", "Z")), 
+             outname = data.frame(id.outcome = "W", outcome = "W"))
+
+mv_mr_T <- mv_multiple(hdat, pval_threshold=5e-8,
+                      instrument_specific = TRUE)
+mv_mr_T
+```
+
+We find that the estimate is now close to the true value. The problem has occurred because the 
+linear regression approach to multivariable MR does not account for measurement error in the effect estimates.
+
+
+We can further verify that this is the case by fitting the data using GRAPPLE, which does 
+account for measurement error
+
+```{r}
+grapple_dat <- data.frame(cbind(sim_dat1$beta_hat[, c(1, 2, 3, 4)], 
+                                sim_dat1$se_beta_hat[, c(1, 2, 3, 4)]))
+names(grapple_dat) <- c("gamma_exp1", "gamma_exp2", "gamma_exp3", "gamma_out1", 
+                        "se_exp1", "se_exp2", "se_exp3", "se_out1")
+
+grapple_dat <- mutate(grapple_dat, 
+                      pval_1 = 2*pnorm(-abs(gamma_exp1/se_exp1)),
+                      pval_2 = 2*pnorm(-abs(gamma_exp2/se_exp2)), 
+                      pval_3 = 2*pnorm(-abs(gamma_exp3/se_exp3)))
+grapple_dat$selection_pvals <- with(grapple_dat, pmin(pval_3, pmin(pval_1, pval_2)))
+
+res <- grappleRobustEst(data = grapple_dat, p.thres = 1e-3, plot.it =FALSE)
+
+grapple_res <- data.frame(est = res$beta.hat, 
+                          ci_lower = res$beta.hat - sqrt(diag(res$beta.var))*qnorm(0.975),
+                          ci_upper = res$beta.hat + sqrt(diag(res$beta.var))*qnorm(0.975), 
+                          truth = sim_dat1$direct_trait_effects[1:3,4])
+grapple_res
+
+```
+
+The GRAPPLE estimates are much closer, though both CIs are just slightly closer to zero than 
+the true effects
+
+
