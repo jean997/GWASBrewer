@@ -35,7 +35,7 @@
 #'@export
 sim_sumstats_lf <- function(F_mat, N, J, h_2_trait, omega, h_2_factor,
                             pi_L, pi_theta,
-                            R_E, maf = NA, R_LD = NULL, snp_info = NULL,
+                            R_E, maf = NULL, R_LD = NULL, snp_info = NULL,
                             g_F, nz_factor,
                             overlap_prop =1,
                             sporadic_pleiotropy = TRUE){
@@ -95,7 +95,7 @@ sim_sumstats_lf <- function(F_mat, N, J, h_2_trait, omega, h_2_factor,
 
   #maf
   if(missing(R_LD) | is.null(R_LD)){
-    if(is.na(maf)){
+    if(is.null(maf)){
       sx <- rep(1, J)
     }else if(class(maf) == "numeric"){
       stopifnot(length(maf) %in% c(1, J))
@@ -193,6 +193,7 @@ sim_sumstats_lf <- function(F_mat, N, J, h_2_trait, omega, h_2_factor,
   # Compute Beta, standardized effects
   # Since phenos are scaled to variance 1, sqrt(N_m)*beta_{j,m} = z_{j,m}
   beta_std = L_mat %*% t(F_mat) + theta
+  true_h2 = colSums(beta_std^2)
   Z <- beta_std %*% diag(sqrt(N), nrow = M)
 
   #Compute row covariance
@@ -235,7 +236,8 @@ sim_sumstats_lf <- function(F_mat, N, J, h_2_trait, omega, h_2_factor,
 
     ret <- list(beta_hat =beta_hat, se_beta_hat = se_beta_hat,
                 L_mat = L_mat, F_mat = F_mat, theta = theta,
-                R_E = R_E, tau = tau, R=R, Z = Z)
+                L_mat_direct = L_mat, theta_direct = theta,
+                R_E = R_E, tau = tau, R=R, Z = Z, true_h2 = true_h2)
     return(ret)
   }
 
@@ -304,7 +306,8 @@ sim_sumstats_lf <- function(F_mat, N, J, h_2_trait, omega, h_2_factor,
   ret <- list(beta_hat =beta_hat, se_beta_hat = se_beta_hat, Z = Z,
               L_mat = L_mat, F_mat = F_mat, theta = theta,
               L_mat_direct = L_mat_direct, theta_direct = theta_direct,
-              R_E = R_E, tau = tau, R = R, snp_info = snp_info_full)
+              R_E = R_E, tau = tau, R = R, snp_info = snp_info_full,
+              true_h2 = true_h2)
   return(ret)
 }
 
