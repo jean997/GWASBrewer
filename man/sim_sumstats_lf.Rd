@@ -14,7 +14,7 @@ sim_sumstats_lf(
   pi_L,
   pi_theta,
   R_E,
-  maf = NA,
+  maf = NULL,
   R_LD = NULL,
   snp_info = NULL,
   g_F,

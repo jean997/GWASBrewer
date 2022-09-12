@@ -19,7 +19,9 @@ sim_mv(
   overlap_prop = 0,
   R_LD = NULL,
   snp_info = NULL,
-  sporadic_pleiotropy = TRUE
+  maf = NULL,
+  sporadic_pleiotropy = TRUE,
+  return_dat = FALSE
 )
 }
 \arguments{
@@ -46,6 +48,13 @@ and columns correspond to the 'to' variable, so G[1,2] is the direct effect of v
 \item{R_LD}{List of eigen decompositions of LD correlation matrices, may be missing.}
 
 \item{snp_info}{If R_LD is provided, provide a data frame with columns "SNP" and "AF"}
+
+\item{maf}{Optional vector of allele frequencies.
+This option is only used when data are generated without LD. Otherwise the allele frequency in snp_info is used instead.}
+
+\item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
+
+\item{return_dat}{Useful for debugging.}
 
 \item{taux_xz, tau_yz}{Used in 'xyz' mode (see details below)}
 }

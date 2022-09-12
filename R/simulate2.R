@@ -13,6 +13,10 @@
 #'@param overlap_prop Proportion of GWAS samples overlapping between studies. Scalar.
 #'@param R_LD List of eigen decompositions of LD correlation matrices, may be missing.
 #'@param snp_info If R_LD is provided, provide a data frame with columns "SNP" and "AF"
+#'@param maf Optional vector of allele frequencies.
+#'This option is only used when data are generated without LD. Otherwise the allele frequency in snp_info is used instead.
+#'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
+#'@param return_dat Useful for debugging.
 #'
 #'@return A list with the following elements:
 #'
