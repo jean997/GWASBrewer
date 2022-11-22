@@ -34,7 +34,7 @@ generate_F_simple <- function(nblocks, type=c("nested", "difference",
 #'are all zero and pad  = TRUE, single-trait factors are added.
 #'Finally, the
 #'matrix is re-scaled so that \code{colSums(F_mat^2) = omega*h2_trait}.
-#'@result A matrix
+#'@return A matrix
 #'@export
 generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
                               nz_factor, omega, h2_trait,
