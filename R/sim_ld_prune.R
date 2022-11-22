@@ -75,3 +75,50 @@ sim_ld_proxy <- function(snpinfo, index, R_LD, r2_thresh = 0.64){
   })
   return(proxy_info)
 }
+
+#'@title Extract LD matrix from simulated data
+#'@description Extract LD matrix for specific variants in simulated data set
+#'@param snpinfo snp_info table from data object created by sim_mv
+#'@param index vector of indices for snps to extract LD
+#'@param R_LD List of eigen-decompositions used in original simulation
+#'@return An LD matrix. SNP order matches original index order
+#'@examples
+#' data("ld_evd_list")
+#' data("snpdata")
+#' # Two traits with no causal relationship, non-overlapping GWAS
+#' set.seed(1)
+#' G <- matrix(0, nrow = 2, ncol = 2)
+#' dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
+#'                G = G,  R_LD = ld_evd_list, snp_info = snpdata)
+#'
+#'# extract ld matrix for all variants with p-value for trait 1 less than 1e-5
+#'pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
+#'index <- which(pvals[,1] < 1e-5)
+#'ld_mat <- sim_extract_ld(dat$snp_info, index, ld_evd_list)
+#'dim(ld_mat)
+#'length(index)
+#'@export
+sim_extract_ld <- function(snpinfo, index, R_LD){
+  if(!length(index) == length(unique(index))){
+    stop("index should contain only unique indices (no duplicates)\n")
+  }
+  snpinfo <- snpinfo[index,]
+  block_sum <- snpinfo %>% group_by(block, rep) %>% summarize(n = n())
+  ld_sub_blocks <- map(unique(block_sum$block), function(b){
+    r <- block_sum$rep[block_sum$block == b]
+    ldb <- with(R_LD[[b]], tcrossprod(vectors, tcrossprod(vectors, diag(values))))
+    sub_sub_blocks <- map(r, function(r){
+      i <- filter(snpinfo, block == b& rep == r) %>% with(., ix_in_block)
+      s <- filter(snpinfo, block == b& rep == r) %>% with(., SNP)
+      return(list("mat" = ldb[i, i, drop = FALSE], "snp" = s))
+    })
+    return(sub_sub_blocks)
+  }) %>% unlist(recursive = FALSE)
+  mats <- map(ld_sub_blocks, "mat")
+  snps <- map(ld_sub_blocks, "snp") %>% unlist()
+  mat <- Matrix::bdiag(mats) %>% as.matrix()
+  o <- match(snpinfo$SNP, snps)
+  snps <- snps[o]
+  mat <- mat[o, o]
+  return(mat)
+}
