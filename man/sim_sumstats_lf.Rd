@@ -2,71 +2,92 @@
 % Please edit documentation in R/sim_sumstats_lf.R
 \name{sim_sumstats_lf}
 \alias{sim_sumstats_lf}
-\title{Simulate summary stats}
+\title{Simulate summary statistics}
 \usage{
 sim_sumstats_lf(
   F_mat,
   N,
   J,
-  h_2_trait,
+  h2_trait,
   omega,
-  h_2_factor,
+  h2_factor,
   pi_L,
   pi_theta,
   R_E,
-  maf = NULL,
+  af = NULL,
   R_LD = NULL,
   snp_info = NULL,
-  g_F,
-  nz_factor,
-  overlap_prop = 1,
   sporadic_pleiotropy = TRUE
 )
 }
 \arguments{
-\item{F_mat}{factor matrix M by K}
+\item{F_mat}{factor matrix M by K (M = number of traits, K = number of factors)}
 
-\item{N}{GWAS sample size}
+\item{N}{GWAS sample size. N can be a scalar, vector, or matrix. If N is a scalar, all GWAS have the same sample size
+and there is no overlap between studies. If N is a vector, each element of N specifies the sample size of the corresponding
+GWAS and there is no overlap between studies. If N is a matrix, N_ii specifies the sample size of study i
+and N_ij specifies the number of samples present in both study i and study j. The elements of N must be positive
+but non-integer values will not generate an error.}
 
 \item{J}{Total number of SNPs to generate}
 
-\item{h_2_trait}{Heritability of each trait. Length M vector.}
+\item{h2_trait}{Heritability of each trait. Length M vector.}
 
-\item{omega}{Proportion of SNP heritability mediated by factors. Length M vector.}
+\item{omega}{Proportion of trait heritability mediated by factors. Length M vector.}
 
-\item{h_2_factor}{Heritability of each factor. Length K vector.}
+\item{h2_factor}{Heritability of each factor. Length K vector.}
 
 \item{pi_L}{Proportion of non-zero elements in L_k. Length K factor}
 
 \item{pi_theta}{Proportion of non-zero elements in theta. Scalar or length M vector.}
 
-\item{R_E}{Environmental trait correlation not mediated by factors. M by M pd matrix.}
+\item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.}
 
-\item{maf}{can either be a scalar in which case the same maf is used for all SNPS, NA in which case SNPs
-are assumed scaled to variance 1, a function that takes a number n and returns n values between 0 and 1, or a
-vector of length equal to the number of SNPs. maf is ignored if LD is provided.}
+\item{af}{Allele frequency (optional). A scalar, a vector, or a function that takes a number n and returns n values between 0 and 1.
+This argument is ignored if R_LD and snp_info are provided. If af, R_LD, and snp_info
+are all missing, SNPs are assumed to be scaled to variance 1,}
 
-\item{R_LD}{List of eigen decompositions of LD correlation matrices, may be missing.}
+\item{R_LD}{List of eigen-decompositions of LD correlation matrices, may be missing.}
 
 \item{snp_info}{If R_LD is provided, provide a data frame with columns "SNP" and "AF"}
-
-\item{g_F}{Function from which non-zero elements of F are generated}
-
-\item{nz_factor}{Number of non-zero elements of each factor if F is to be generated.}
 
 \item{sporadic_pleiotropy}{Allow a single SNP to affect multiple factors (default TRUE).}
 }
 \description{
-Simulate summary statistcs for fully overlapping GWAS with no LD
+Simulate summary statistcs from a specified factor structure
 }
 \details{
-If F_mat is not provided, it will be generated using the `generate_F2` function.
-In this case g_F and nz_factor must be provided. All of the elements
-in F are generated iid from a mixture of a point mass at 0 and g_F. The matrix is then
-rescaled according to the constraints.
+This function will generate GWAS summary statistics for M traits with K common factors.
+The matrix F_mat provides the effects of each factor on each trait, \code{F_mat[i,j]}
+gives the effect of factor j on trait i. The rows of \code{F_mat} will be scaled in order
+to provide desired proportion of hertiability of each trait explained by factors but the relative
+size and sign of elements within rows will be retained.
 
+Previously, if F_mat was not provided, a random factor matrix would be generated.
+In the current version, this step must be done manually, see examples.
 
-With this setup it is possible to specify a setting that is impossible. Usually this occurs if the heritability
-of the factors is low but the heritability of the traits is high leading to a contradiction. Right now the function
-will just return an error if that happens.
+With these parameters, it is possible to supply a non-feasible set of parameters.
+Usually this occurs if the heritability of the factors is low but the heritability
+of the traits is high leading to a contradiction. The function will return an error if this happens.
+
+Trait covariance: Each trait is composed of four independent components, the genetic component mediated by factors,
+the environmental component mediated by factors, the genetic component not mediated by factors,
+and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
+the sum of four corresponding covariance matrices. The matrix R_E specifies the correlation of the last component only.
+In the returned object, R gives the overall trait correlation matrix multiplied by the overlap proportion matrix,
+which is equal to the correlation in the error terms of \code{beta_hat} (see examples).
+}
+\examples{
+myF <- generate_random_F(K = 3, M = 10, nz_factor = c(2, 3, 2),
+                        omega = rep(0.8, 10), h2_trait = rep(0.6, 10), pad = TRUE)
+dat <- sim_sumstats_lf(myF, N = 10000, J = 20000, h2_trait = rep(0.6, 10),
+                      omega = rep(0.8, 10), pi_L = 0.1, pi_theta = 0.1)
+
+myF <- diag(2)
+N <- matrix(c(10000, 8000, 8000, 10000), nrow = 2)
+R_E <- matrix(c(1, 0.6, 0.6, 1), nrow = 2)
+dat <- sim_sumstats_lf(F_mat = myF, N = N, J = 20000, h2_trait = rep(0.6, 2), omega = rep(1, 2), h2_factor = rep(1, 2),
+                       pi_L = 0.1, pi_theta = 0.1, R_E = R_E)
+dat$R
+cor(dat$beta_hat[,1]-dat$beta_joint[,1], dat$beta_hat[,2]-dat$beta_joint[,2])
 }

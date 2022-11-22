@@ -7,107 +7,105 @@
 sim_mv(
   N,
   J,
-  tau_xz,
-  tau_yz,
-  dir_xz,
-  dir_yz,
-  gamma,
   h2,
   pi,
   G,
   R_E,
-  overlap_prop = 0,
   R_LD = NULL,
   snp_info = NULL,
-  maf = NULL,
+  af = NULL,
   sporadic_pleiotropy = TRUE,
   return_dat = FALSE
 )
 }
 \arguments{
-\item{N}{Either a single number representing GWAS sample size for all studies or a
-vector of length equal to the number of studies that will be generated.}
+\item{N}{GWAS sample size. N can be a scalar, vector, or matrix. If N is a scalar, all GWAS have the same sample size
+and there is no overlap between studies. If N is a vector, each element of N specifies the sample size of the corresponding
+GWAS and there is no overlap between studies. If N is a matrix, N_ii specifies the sample size of study i
+and N_ij specifies the number of samples present in both study i and study j. The elements of N must be positive
+but non-integer values will not generate an error.}
 
 \item{J}{Number of variants to simulate}
 
-\item{dir_xz, dir_yz}{Used in 'xyz' mode (see details below)}
+\item{h2}{A scalar or vector giving the heritability of each trait.}
 
-\item{gamma}{Used in 'xyz' mode (see details below)}
+\item{pi}{A scalar or vector giving the expected proportion of direct effect SNPs for each trait.}
 
-\item{h2}{A vector or single number giving the heritability of each trait.}
+\item{G}{Matrix of direct effects. Rows correspond to the 'from' trait
+and columns correspond to the 'to' trait, so G[1,2] is the direct effect of trait 1 on trait 2. G should have 0
+on the diagonal.}
 
-\item{pi}{A vector or single number giving the expected proportion of direct effect SNPs for each trait.}
-
-\item{G}{If using 'general' mode (see details), G is a matrix of direct effects. Rows correspond to the 'from' trait
-and columns correspond to the 'to' variable, so G[1,2] is the direct effect of variable 1 on variable 2.}
-
-\item{R_E}{Environmental correlation}
-
-\item{overlap_prop}{Proportion of GWAS samples overlapping between studies. Scalar.}
+\item{R_E}{Environmental correlation between traits. R_E is ignored if there is no sample overlap.}
 
 \item{R_LD}{List of eigen decompositions of LD correlation matrices, may be missing.}
 
 \item{snp_info}{If R_LD is provided, provide a data frame with columns "SNP" and "AF"}
 
-\item{maf}{Optional vector of allele frequencies.
-This option is only used when data are generated without LD. Otherwise the allele frequency in snp_info is used instead.}
-
 \item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
 \item{return_dat}{Useful for debugging.}
 
-\item{taux_xz, tau_yz}{Used in 'xyz' mode (see details below)}
+\item{maf}{Optional vector of allele frequencies.
+This option is only used when data are generated without LD.
+Otherwise the allele frequency in snp_info is used instead.}
 }
 \value{
 A list with the following elements:
 
 Simulated effect estimates and standard errors are contained in matrices
 
-+ `beta_hat` Effect estimates for each trait
++ \code{beta_hat}: Effect estimates for each trait
 
-+ `se_beta_hat` Standard error of effect estimates
++ \code{se_beta_hat} Standard error of effect estimates
 
 Everything else returned has to do with simulation parameters or true effects
 
-+ `direct_effects`, `total_effects` matrices like G giving direct and total effects
++ \code{direct_SNP_effects_marg} and \code{direct_SNP_effects_joint} give direct effects of SNPs on traits. These are the
+same if there is no LD. If there is LD, \code{direct_SNP_effects_marg} is the direct component of the expected marginal association.
 
-+ `B` true total SNP effects on traits
++ \code{beta_marg} and \code{beta_joint} give the total SNP effects (direct and indirect). These are the
+same if there is no LD. If there is LD, \code{beta_marg} is the total expected marginal association. i.e. \code{beta_marg} is the
+expected value of \code{beta_hat}.
 
-+ `L_mat` true direct SNP effects on traits
++ \code{direct_trait_effects} and \code{total_trait_effects} matrices giving direct and total effects of traits on each other.
+\code{direct_trait_effects} should be equal to the supplied \code{G}.
 
-You can ignore everything else returned.
++ \code{R} gives the row correlation of \code{beta_hat - beta_marg}.
+
+Most users can ignore everything else returned.
 }
 \description{
 Simulate multivariate GWAS data
 }
 \details{
-This function generates GWAS summary statistics from a DAG specified by the user. It can be used in two modes
-depending on the arguments specified, 'general' mode or 'xyz' mode. Each are described below.
+This function generates GWAS summary statistics from a linear SEM specified by the matrix G.
+The previous "xyz" mode is now deprecated. If you are used to using this function in xyz mode,
+you can generate the corresponding G using the xyz_to_G function (see examples).
 
-In 'xyz' mode, data are generated for traits X, Y, and K variables Z_1, ..., Z_K. There is a causal effect of X on Y
-given by gamma, which specifies the proportion of the variance of Y explained by X. The K variables Z_1, ..., Z_K can have
-effects to or from X and Y but do not have direct effects on each other. Vectors `dir_xz` and `dir_yz` specify the direction
-of these effects with +1 corresponding to "to" effects and -1 corresponding to "from" effects. For example, `dir_xz = c(1, -1)`
-and `dir_yz = c(1, 1)` would indicate two variables $Z_1$ and $Z_2$ with $Z_1$ being a common cause of both $X$ and $Y$ and $Z_2$
-being a cause of $Y$ and caused by $X$ ($Z_2$ is a mediator between $X$ and $Y$). The function will give an error if there
-is any index with `dir_xz` equal to -1 and `dir_yz` equal 1. This would indicate a variable that is a mediator between $Y$ and
-$X$, however, because there is an effect from $X$ to $Y$ assumed, the resulting graph would be cyclic and not allowed.
+G should be square nxn matrix with 0s on the diagonal. \code{h2} and \code{pi} should be scalars or have length n.
+All variables have variance 1, so \code{G[i,j]^2} is the proportion of variance of trait j explained by the effect of trait i.
 
-In 'xyz' mode, you will also need to specify `tau_xz` and `tau_yz` which determine the effect sizes of each of the $Z_k$ variables on or
-from $X$ and $Y$. These are given in signed percent variance explained. If we again used `dir_xz = c(1, -1)` and `dir_yz = c(1, 1)` with
-`tau_xz = c(0.2, -0.3)` and `tau_yz = c(0.1, 0.25)`, this means that the confounder, $Z_1$ explains 20\% of the variance of $X$ and 10\% of the
-variance of $Y$ and both effects are positive. $X$ explains 30\% of the variance of the mediate $Z_2$ with a negative effect direction and
-$Z_2$ explains 25\% of the variance of $Y$. If you specify a set of variances that imply that one variable has more than 100\% of variance
-explained you will get an error. It is also possible to specify variances that add up to less than 100\% but are incompatible with the heritabilities specified.
-For example, if we say that $Z_1$ has a heritability of 0.8 and explains 50\% of the variance of $X$, then $X$ must have a heritability of at least 0.4.
+You should get an error if you specify a cyclic DAG, a DAG that is impossible, or a combination of \code{G} and \code{h2}
+that is impossible.
+}
+\examples{
+# Two traits with no causal relationship and some environmental correlation
+# specify completely overlapping GWAS
+N <- matrix(1000, nrow = 2, ncol =2)
+G <- matrix(0, nrow = 2, ncol = 2)
+R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
+dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
+               G = G, R_E = R_E)
+dat$R
+cor(dat$beta_hat - dat$beta_marg)
 
-If using 'xyz' mode, `dir_xz`, `dir_yz`, `tau_yz`, `tau_xz` should all have the same length ($K$). `h2` and `pi` should have length equal to K+2 and have entries
-corresponding to $X$, $Y$, and then each of the $Z_k$ variables.
-
-In 'general' mode, you can omit the parameters specific to 'xyz' mode and instead supply `G`, a matrix of direct effects. The diagonal
-entries of `G` should be equal to 0 and
-`h2` and `pi` should have length equal to the number of rows (or columns) of `G` (which should be square). All variables have variance 1
-so `G[i,j]^2` is the proportion of variance of trait j explained by the effect of trait i.
-Currently, this function does no checking that `G`
-is acyclic and (I think) will run forever if `G` contains a cycle. Use caution when using this option.
+# Use xyz_to_G to generate G from xyz specification
+myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
+        dir_xz = c(1, -1), dir_yz = c(1,1), beta = 0)
+# If N is a scalar or a vector, there is no sample overlap
+dat <- sim_mv(N = 10000, J = 20000, h2 = rep(0.4, 4),
+              pi = c(500, 500, 1000, 1000)/20000,
+              G = myG)
+plot(dat$beta_marg[,3], dat$beta_marg[,1])
+abline(0, dat$total_trait_effects[3,1])
 }
