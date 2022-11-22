@@ -77,35 +77,50 @@ gen_bhat_from_b <- function(b_joint_std, R,  N,
   ld_size <- sum(l)
   full_reps <- floor(J/ld_size) # Recall l is list of block sizes
   remainder <- J  - full_reps*ld_size
-  blocks_rem <- max(which(cumsum(l) <= remainder)) # full blocks in last partial repeat
-  final_remainder <- remainder-cumsum(l)[blocks_rem] # partial block in last partial repeat
 
-  last_block <- with(R_LD[[blocks_rem + 1]], (vectors %*% diag(values) %*% t(vectors))[1:final_remainder, 1:final_remainder])
-  R_LD[[nblock + 1]] <- eigen(last_block)
-  block_index <- c(rep(seq(nblock), full_reps), seq(blocks_rem), nblock + 1)
-  l <- c(l, final_remainder)[block_index] # l is now lengths of blocks in data
+  if(remainder > 0){
+    blocks_rem <- max(which(cumsum(l) <= remainder)) # full blocks in last partial repeat
+    final_remainder <- remainder-cumsum(l)[blocks_rem] # partial block in last partial repeat
+
+    if(final_remainder > 0){
+      last_block <- with(R_LD[[blocks_rem + 1]], (vectors %*% diag(values) %*% t(vectors))[1:final_remainder, 1:final_remainder])
+      R_LD[[nblock + 1]] <- eigen(last_block)
+      block_index <- c(rep(seq(nblock), full_reps), seq(blocks_rem), nblock + 1)
+      l <- c(l, final_remainder)[block_index] # l is now lengths of blocks in data
+    }else{
+      block_index <- c(rep(seq(nblock), full_reps), seq(blocks_rem))
+      l <- l[block_index] # l is now lengths of blocks in data
+    }
+    #Create SNP info for full data set
+    snp_info_full <- snp_info[c(rep(seq(ld_size), full_reps), seq(remainder)),]
+    if(full_reps > 0) snp_info_full$rep <- c(rep(seq(full_reps), each = ld_size), rep(full_reps + 1, remainder))
+  }else{
+    block_index <- rep(seq(nblock), full_reps)
+    l <- l[block_index] # l is now lengths of blocks in data
+    #Create SNP info for full data set
+    snp_info_full <- snp_info[rep(seq(ld_size), full_reps),]
+    if(full_reps > 0) snp_info_full$rep <- rep(seq(full_reps), each = ld_size)
+  }
+  if(full_reps == 0){
+    snp_info_full$rep <- 1
+  }
   start_ix <- cumsum(c(1, l[-length(l)]))
   end_ix <- start_ix + l-1
 
-  #Create SNP info for full data set
-  snp_info_full <- snp_info[c(rep(seq(ld_size), full_reps), seq(remainder)),]
-  if(full_reps == 0){
-    snp_info_full$rep <- rep(1, remainder)
-  }else{
-    snp_info_full$rep <- c(rep(seq(full_reps), each = ld_size), rep(full_reps + 1, remainder))
-  }
   snp_info_full$SNP <- with(snp_info_full, paste0(SNP, ".", rep))
   sx <- with(snp_info_full, sqrt(2*AF*(1-AF)))
 
 
   # Multiply errors by square root of LD matrix
   E_LD_Z <- lapply(seq_along(block_index), function(i){
-    with(R_LD[[block_index[i]]], vectors %*% sqrt(diag(values)) %*% E_Z[start_ix[i]:end_ix[i], ])
+    #with(R_LD[[block_index[i]]], vectors %*% diag(sqrt(values)) %*% E_Z[start_ix[i]:end_ix[i], ])
+    with(R_LD[[block_index[i]]], tcrossprod(vectors, tcrossprod(t(E_Z[start_ix[i]:end_ix[i], ]), diag(sqrt(values)))))
   }) %>% do.call( rbind, .)
 
   # Transform Z by LD matrix
   Z <- lapply(seq_along(block_index), function(i){
-    with(R_LD[[block_index[i]]], vectors %*% diag(values) %*% t(vectors) %*% Z[start_ix[i]:end_ix[i], ])
+    #with(R_LD[[block_index[i]]], vectors %*% diag(values) %*% t(vectors) %*% Z[start_ix[i]:end_ix[i], ])
+    with(R_LD[[block_index[i]]], tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(Z[start_ix[i]:end_ix[i], ])))
   }) %>% do.call( rbind, .)
 
   Z_hat <- Z + E_LD_Z
@@ -124,7 +139,8 @@ gen_bhat_from_b <- function(b_joint_std, R,  N,
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
     L_mat <- lapply(seq_along(block_index),
                     function(i){with(R_LD[[block_index[i]]],
-                                     vectors %*% diag(values) %*% t(vectors) %*% L_mat[start_ix[i]:end_ix[i], ])
+                                     #vectors %*% diag(values) %*% t(vectors) %*% L_mat[start_ix[i]:end_ix[i], ])
+                                     tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(L_mat[start_ix[i]:end_ix[i], ])))
                               }) %>%
              do.call( rbind, .)
     L_mat <- L_mat/sx
@@ -134,7 +150,8 @@ gen_bhat_from_b <- function(b_joint_std, R,  N,
     theta <- theta_joint_std*sx
     theta <- lapply(seq_along(block_index),
                     function(i){with(R_LD[[block_index[i]]],
-                                     vectors %*% diag(values) %*% t(vectors) %*% theta[start_ix[i]:end_ix[i], ])
+                                     #vectors %*% diag(values) %*% t(vectors) %*% theta[start_ix[i]:end_ix[i], ])
+                                     tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(theta[start_ix[i]:end_ix[i], ])))
                     }) %>%
       do.call( rbind, .)
     theta <- theta/sx
