@@ -97,3 +97,47 @@ direct_to_total <- function(G_dir){
   G_total <- G_dir %*% solve(diag(n) - G_dir)
   return(G_total)
 }
+
+check_R_LD <- function(R_LD){
+  if(class(R_LD) != "list"){
+    stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
+  }
+  cl <- sapply(R_LD, function(x){
+    case_when("matrix" %in% class(x) ~ "matrix",
+              class(x) == "dsCMatrix" ~ "matrix",
+              class(x) == "eigen" ~ "eigen",
+              TRUE ~ "not_allowed")
+  })
+  if(any(cl == "not_allowed")){
+    stop("R_LD should be a list with elements of class matrix, dsCMatrix, or eigen.")
+  }
+  if(all(cl == "matrix")){
+    R_LD <- lapply(R_LD, function(x){eigen(x)})
+  }else if(any(cl == "matrix")){
+    ii <- which(cl == "matrix")
+    R_LD[ii] <- lapply(R_LD[ii], function(x){eigen(x)})
+  }
+  return(R_LD)
+}
+
+# l is list of block lengths
+check_snpinfo <- function(snp_info, l){
+  if(nrow(snp_info) != sum(l)){
+    stop(paste0("R_LD contains information for ", sum(l), " variants but snp_info contains information for ", nrow(snp_info), " variants."))
+  }
+  if(!all(c("SNP", "AF") %in% names(snp_info))){
+    stop("snp_info must contain columns AF and SNP")
+  }
+  snp_info$block <- rep(seq(length(l)), l)
+  snp_info$ix_in_block <- sapply(l, function(ll){seq(ll)}) %>% unlist()
+  return(snp_info)
+}
+
+
+calc_ld_score <- function(R_LD){
+  l2 <- lapply(R_LD, function(r){
+    r2 <- with(r, tcrossprod(vectors, tcrossprod(vectors, diag(values)))^2)
+    colSums(r2)
+  }) %>% unlist()
+  return(l2)
+}
