@@ -76,7 +76,7 @@
 #'abline(0, dat$total_trait_effects[3,1])
 #'@export
 sim_mv <- function(N, J,
-                   h2, pi, G, R_E,
+                   h2, pi, G, R_E = NULL,
                    R_LD = NULL, snp_info = NULL, af = NULL,
                    sporadic_pleiotropy = TRUE,
                    return_dat  = FALSE){
@@ -96,7 +96,8 @@ sim_mv <- function(N, J,
   F_mat <- t(G_t)
 
   dat <- sim_sumstats_lf(F_mat = F_mat,
-                         N = N, J = J, h2_trait = h2,
+                         N = N, J = J,
+                         h2_trait = h2,
                          omega = rep(1, n),
                          pi_L = pi,
                          af = af,
@@ -111,7 +112,7 @@ sim_mv <- function(N, J,
             se_beta_hat = dat$se_beta_hat,
             direct_SNP_effects_marg = direct_SNP_effects,
             direct_SNP_effects_joint = direct_SNP_effects_joint,
-            direct_trait_effects = G,
+            direct_trait_effects = G$G_dir,
             total_trait_effects = t(dat$F_mat)/diag(dat$F_mat),
             beta_joint = dat$beta_joint,
             beta_marg = dat$beta_marg,
