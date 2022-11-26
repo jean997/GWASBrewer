@@ -1,7 +1,7 @@
 
 #See simulating_data.Rmd for explanation
 #'@title Simulate summary statistics
-#'@description Simulate summary statistcs from a specified factor structure
+#'@description Simulate summary statistics from a specified factor structure
 #'@param F_mat factor matrix M by K (M = number of traits, K = number of factors)
 #'@param N GWAS sample size. N can be a scalar, vector, or matrix. If N is a scalar, all GWAS have the same sample size
 #'and there is no overlap between studies. If N is a vector, each element of N specifies the sample size of the corresponding
@@ -90,45 +90,44 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   #R_E
   nn <- check_N(N, M)
-  if(!Matrix::isDiagonal(nn$Nc)){
-    if(missing(R_E) | is.null(R_E)){
+
+  if(missing(R_E) | is.null(R_E)){
+    if(!Matrix::isDiagonal(nn$Nc)){
       message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for no environmental covariance.")
-      R_E <- diag(M)
     }
-    if(missing(h2_factor))('h2_factor must be provided if there are overlapping samples.')
-    R_E <- check_matrix(R_E, "R_E", M, M)
-    R_E <- check_psd(R_E, "R_E")
-    if(!Matrix::isSymmetric(R_E)) stop("R_E must be sy")
+    R_E <- diag(M)
   }
+  if(!!Matrix::isDiagonal(nn$Nc) & (missing(h2_factor) | is.null(h2_factor))){
+    stop('h2_factor must be provided if there are overlapping samples.')
+  }
+  R_E <- check_matrix(R_E, "R_E", M, M)
+  R_E <- check_psd(R_E, "R_E")
+
 
   #af
-  if(missing(R_LD) | is.null(R_LD)){
+  if(is.null(R_LD)){
     if(is.null(af)){
       sx <- rep(1, J)
     }else if(class(af) == "function"){
       myaf <- af(J)
       sx <- sqrt(2*myaf*(1-myaf))
+      af <- myaf
     }else{
       af <- check_scalar_or_numeric(af, "af", J)
       af <- check_01(af)
       sx <- sqrt(2*af*(1-af))
     }
-  }else{
-    if(missing(snp_info) | is.null(snp_info)) stop("Please provide snp_info to go with R_LD.")
-    l <- sapply(R_LD, function(e){length(e$values)})
-    stopifnot(nrow(snp_info) == sum(l))
-    stopifnot(all(c("SNP", "AF") %in% names(snp_info)))
-    snp_info$block <- rep(seq(length(l)), l)
   }
 
 
   #Re-scale F or generate it if it is missing
-  if(any(rowSums(F_mat == 0) == K & omega >0)){
-      stop("One row of F is zero but corresponds to non-zero omega\n")
+  srs <- omega*h2_trait # target rowSums(F^2)
+  if(any(rowSums(F_mat == 0) == K & srs >0)){
+      stop("One row of F is zero but corresponds to non-zero omega and h2_trait\n")
   }
   #Re scale rows of F
-  scale <- sqrt(omega*h2_trait/rowSums(F_mat^2))
-  scale[omega == 0] <- 0
+  scale <- sqrt(srs/rowSums(F_mat^2))
+  scale[srs == 0] <- 0
   F_mat <- F_mat*scale
 
 
@@ -193,36 +192,23 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   true_h2 = colSums(beta_std^2) # this assumes no ld
 
   #Compute row covariance
-  if(!Matrix::isDiagonal(nn$Nc)){
-    Sigma_G <- F_mat %*% t(F_mat) + J*diag(pi_theta*sigma_theta^2)
+  Sigma_G <- F_mat %*% t(F_mat) + J*diag(pi_theta*sigma_theta^2)
 
-    sigma2_F <- (1-h2_factor)/(h2_factor)
-    Sigma_FE <- F_mat %*% diag(sigma2_F) %*% t(F_mat)
+  sigma2_F <- (1-h2_factor)/(h2_factor)
+  Sigma_FE <- F_mat %*% diag(sigma2_F) %*% t(F_mat)
 
-    if(any(h2_trait + diag(Sigma_FE) > 1)){
-      stop("Provided parameters are incompatible with F_mat.\n")
-    }
-
-    sigma_E <- sqrt(1 - h2_trait - diag(Sigma_FE))
-    Sigma_E <- diag(sigma_E) %*% R_E %*% diag(sigma_E)
-    #correlation of z-scores
-    R <- Sigma_G + Sigma_FE + Sigma_E
-    R <- nn$Nc*R
-    #R <- overlap_prop*R + (1- overlap_prop)*diag(M)
-
-    # Covariance of normalized effects
-    # Sigma <- diag(sqrt(1/N)) %*% R %*% diag(sqrt(1/N))
-
-    # Compute proportion of environmental variance from factors
-    #tau <- diag(Sigma_FE)/(1-h2_trait)
-  }else{
-    R <- diag(M)
-    #tau <- NULL
-    R_E = NULL
+  if(any(h2_trait + diag(Sigma_FE) > 1)){
+    stop("Provided parameters are incompatible with F_mat.\n")
   }
 
-  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std, R = R,  N = nn$N,
-                               R_LD = R_LD, snp_info = snp_info, maf = af,
+  sigma_E <- sqrt(1 - h2_trait - diag(Sigma_FE))
+  Sigma_E <- diag(sigma_E) %*% R_E %*% diag(sigma_E)
+  # Trait correlation
+  trait_corr <- Sigma_G + Sigma_FE + Sigma_E
+
+
+  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std, trait_corr = trait_corr,  N = N,
+                               R_LD = R_LD, snp_info = snp_info, af = af,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
 
@@ -236,8 +222,9 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               theta_joint = theta/sum_stats$sx,
               beta_joint = beta_std/sum_stats$sx,
               beta_marg = beta_marg,
-              R_E = R_E, #tau = tau,
-              R=R,
+              R_E = R_E,
+              trait_corr = trait_corr,
+              R=sum_stats$R,
               true_h2 = true_h2,
               sx = sum_stats$sx)
 
