@@ -1,10 +1,10 @@
 #'@title Generate G from XYZ Specification
 #'@param taux_xz,tau_yz Effect size between Z and X or Y as signed percent variance explained (see details)
 #'@param dir_xz,dir_yz Effect direction between Z and X or Y (see details)
-#'@param beta Signed variance of Y explained by X, see details
+#'@param gamma Signed variance of Y explained by X, see details
 #'@details
 #'This function generates a matrix G of direct effects corresponding to a model in with variables Y, X, and Z_1, ..., Z_K.
-#'There is a causal effect of X on Y given by beta, which specifies the proportion of the variance of Y explained by X.
+#'There is a causal effect of X on Y given by gamma, which specifies the proportion of the variance of Y explained by X.
 #'The K variables Z_1, ..., Z_K can have
 #'effects to or from X and Y but do not have direct effects on each other. Vectors \code{dir_xz} and \code{dir_yz} specify the direction
 #'of these effects with +1 corresponding to "to" effects and -1 corresponding to "from" effects. For example, \code{dir_xz = c(1, -1)}
@@ -22,15 +22,15 @@
 #'@return A matrix of direct effects corresponding to variables in the order (Y, X, Z_1, ..., Z_K)
 #'@examples
 #'xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-#'         dir_xz = c(1, -1), dir_yz = c(1,1), beta = 0)
+#'         dir_xz = c(1, -1), dir_yz = c(1,1), gamma = 0)
 #' # code below will give an error due to specification of a cyclic graph.
 #'xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-#'         dir_xz = c(1, -1), dir_yz = c(-1,1), beta = 0.1)
-#' # with beta = 0, there is no cycle so no error
+#'         dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0.1)
+#' # with gamma = 0, there is no cycle so no error
 #'xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-#'         dir_xz = c(1, -1), dir_yz = c(-1,1), beta = 0)
+#'         dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0)
 #'@export
-xyz_to_G <- function(tau_xz, tau_yz, dir_xz, dir_yz, beta){
+xyz_to_G <- function(tau_xz, tau_yz, dir_xz, dir_yz, gamma){
   nz <- length(tau_xz)
   n <- nz+2
   tau_xz <- check_scalar_or_numeric(tau_xz, "tau_xz", nz)
@@ -45,11 +45,11 @@ xyz_to_G <- function(tau_xz, tau_yz, dir_xz, dir_yz, beta){
   }
   tau_xz <- sqrt(abs(tau_xz))*sign(tau_xz)
   tau_yz <- sqrt(abs(tau_yz))*sign(tau_yz)
-  beta <- sqrt(abs(beta))*sign(beta)
+  gamma <- sqrt(abs(gamma))*sign(gamma)
 
   # Direct Effects
   G <- matrix(0, nrow = n, ncol = n)
-  G[2,1] <- beta
+  G[2,1] <- gamma
   G[which(dir_xz == 1) + 2, 2] <- tau_xz[dir_xz ==1]
   G[2, which(dir_xz == -1) + 2] <- tau_xz[dir_xz == -1]
 
