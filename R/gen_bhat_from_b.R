@@ -8,7 +8,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   #type <- match.arg(type, type)
   if(!missing(b_joint)){
-    if(!missing(beta_joint_std)){
+    if(!missing(b_joint_std)){
       stop("Please provide only one of b_joint or b_joint_std")
     }
     if(!"matrix" %in% class(b_joint)){
