@@ -10,4 +10,3 @@ installed automatically:
 
 + DiagrammeR (use `install.packages`)
 + reshape2 (use `install.packages`)
-+ GRAPPLE (`devtools::install_github("jingshuw/grapple")`)
