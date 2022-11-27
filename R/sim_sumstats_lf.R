@@ -225,8 +225,8 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               R_E = R_E,
               trait_corr = trait_corr,
               R=sum_stats$R,
-              true_h2 = true_h2,
-              sx = sum_stats$sx)
+              true_h2 = true_h2)
+              #sx = sum_stats$sx)
 
   if(!is.null(R_LD)){
     ret$snp_info <- sum_stats$snp_info

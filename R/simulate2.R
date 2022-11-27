@@ -116,9 +116,11 @@ sim_mv <- function(N, J,
             total_trait_effects = t(dat$F_mat)/diag(dat$F_mat),
             beta_joint = dat$beta_joint,
             beta_marg = dat$beta_marg,
+            trait_corr = dat$trait_corr,
             R = dat$R,
-            true_h2 = dat$true_h2,
-            sx = dat$sx)
+            R_E = dat$R_E,
+            true_h2 = dat$true_h2)
+            #sx = dat$sx)
   if(return_dat){
     R$L_mat <- dat$L_mat
     R$L_mat_joint_std <- dat$L_mat_joint_std
