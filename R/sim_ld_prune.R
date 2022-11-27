@@ -11,19 +11,20 @@
 #'and which mutually have squared correlation less than \code{r2_thresh}.
 #'@return A vector of indices corresponding to the LD-pruned variant set.
 #'@examples
-#' data("ld_evd_list")
+#' data("ld_mat_list")
 #' data("snpdata")
-#' head(snpdata)
+#'
 #' # Two traits with no causal relationship, non-overlapping GWAS
 #' set.seed(1)
 #' G <- matrix(0, nrow = 2, ncol = 2)
 #' dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G,  R_LD = ld_evd_list, snp_info = snpdata)
+#'                G = G,  R_LD = ld_mat_list, snp_info = snpdata)
 #'
 #'# prune on p-value for first trait
 #'pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
-#'prune_set_1 <- sim_ld_prune(dat, pvalue = pvals[,1], R_LD = ld_evd_list, pval_thresh = 1e-5)
-#'length(prune_set_1)
+#'prune_set_1 <- sim_ld_prune(dat, pvalue = pvals[,1], R_LD = ld_mat_list, pval_thresh = 1e-5)
+#'# Above is equivalent to
+#'prune_set_1 <- sim_ld_prune(dat, pvalue = 1, R_LD = ld_mat_list, pval_thresh = 1e-5)
 #'@export
 sim_ld_prune <- function(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1){
   if(missing(pvalue)){
@@ -130,18 +131,18 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
 #'@param R_LD List of eigen-decompositions used in original simulation
 #'@return An LD matrix. SNP order matches original index order
 #'@examples
-#' data("ld_evd_list")
+#' data("ld_mat_list")
 #' data("snpdata")
 #' # Two traits with no causal relationship, non-overlapping GWAS
 #' set.seed(1)
 #' G <- matrix(0, nrow = 2, ncol = 2)
 #' dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G,  R_LD = ld_evd_list, snp_info = snpdata)
+#'                G = G,  R_LD = ld_mat_list, snp_info = snpdata)
 #'
 #'# extract ld matrix for all variants with p-value for trait 1 less than 1e-5
 #'pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
 #'index <- which(pvals[,1] < 1e-5)
-#'ld_mat <- sim_extract_ld(dat$snp_info, index, ld_evd_list)
+#'ld_mat <- sim_extract_ld(dat, index, ld_mat_list)
 #'dim(ld_mat)
 #'length(index)
 #'@export

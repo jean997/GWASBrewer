@@ -31,17 +31,18 @@ the function will return a list of variants that have \code{p < pval_thresh}
 and which mutually have squared correlation less than \code{r2_thresh}.
 }
 \examples{
-data("ld_evd_list")
+data("ld_mat_list")
 data("snpdata")
-head(snpdata)
+
 # Two traits with no causal relationship, non-overlapping GWAS
 set.seed(1)
 G <- matrix(0, nrow = 2, ncol = 2)
 dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G,  R_LD = ld_evd_list, snp_info = snpdata)
+               G = G,  R_LD = ld_mat_list, snp_info = snpdata)
 
 # prune on p-value for first trait
 pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
-prune_set_1 <- sim_ld_prune(dat, pvalue = pvals[,1], R_LD = ld_evd_list, pval_thresh = 1e-5)
-length(prune_set_1)
+prune_set_1 <- sim_ld_prune(dat, pvalue = pvals[,1], R_LD = ld_mat_list, pval_thresh = 1e-5)
+# Above is equivalent to
+prune_set_1 <- sim_ld_prune(dat, pvalue = 1, R_LD = ld_mat_list, pval_thresh = 1e-5)
 }

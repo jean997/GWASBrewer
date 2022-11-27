@@ -59,7 +59,7 @@
 
 #'@export
 sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
-                            pi_L, pi_theta, R_E,
+                            pi_L, pi_theta, R_E=NULL,
                             af = NULL, R_LD = NULL, snp_info = NULL,
                             #g_F, nz_factor,
                             sporadic_pleiotropy = TRUE){
@@ -70,10 +70,7 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   h2_trait <- check_scalar_or_numeric(h2_trait, "h2_trait", M)
   h2_trait <- check_01(h2_trait)
-  if(!missing(h2_factor)){
-    h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
-    h2_factor <- check_01(h2_factor)
-  }
+
   F_mat <- check_matrix(F_mat, "F_mat", M, K)
   omega <- check_scalar_or_numeric(omega, "omega", M)
   omega <- check_01(omega)
@@ -91,15 +88,22 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   #R_E
   nn <- check_N(N, M)
 
-  if(missing(R_E) | is.null(R_E)){
+  if(is.null(R_E)){
     if(!Matrix::isDiagonal(nn$Nc)){
       message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for no environmental covariance.")
     }
     R_E <- diag(M)
   }
-  if(!!Matrix::isDiagonal(nn$Nc) & (missing(h2_factor) | is.null(h2_factor))){
-    stop('h2_factor must be provided if there are overlapping samples.')
+  if(!missing(h2_factor)){
+    h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
+    h2_factor <- check_01(h2_factor)
+  }else{
+    if(!Matrix::isDiagonal(nn$Nc)){
+      warning("h2_factors is not supplied and there are overlapping samples. Using h2_factor = 1\n")
+    }
+    h2_factor <- rep(1, K)
   }
+
   R_E <- check_matrix(R_E, "R_E", M, M)
   R_E <- check_psd(R_E, "R_E")
 

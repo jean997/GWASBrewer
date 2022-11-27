@@ -41,9 +41,11 @@ Z_2 explains 25\% of the variance of Y.
 xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
         dir_xz = c(1, -1), dir_yz = c(1,1), gamma = 0)
 # code below will give an error due to specification of a cyclic graph.
-xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-        dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0.1)
+\dontrun{
+xyz_to_G(tau_xz = c(0.2), tau_yz = c(0.1),
+        dir_xz = c(1), dir_yz = c(-1), gamma = 0.1)
+}
 # with gamma = 0, there is no cycle so no error
-xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-        dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0)
+xyz_to_G(tau_xz = c(0.2), tau_yz = c(0.1),
+        dir_xz = c(1), dir_yz = c(-1), gamma = 0)
 }

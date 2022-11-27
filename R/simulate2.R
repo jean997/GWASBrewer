@@ -13,7 +13,7 @@
 #'@param R_E Environmental correlation between traits. R_E is ignored if there is no sample overlap.
 #'@param R_LD List of eigen decompositions of LD correlation matrices, may be missing.
 #'@param snp_info If R_LD is provided, provide a data frame with columns "SNP" and "AF"
-#'@param maf Optional vector of allele frequencies.
+#'@param af Optional vector of allele frequencies.
 #'This option is only used when data are generated without LD.
 #'Otherwise the allele frequency in snp_info is used instead.
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
@@ -67,7 +67,7 @@
 #'
 #' # Use xyz_to_G to generate G from xyz specification
 #' myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-#'         dir_xz = c(1, -1), dir_yz = c(1,1), beta = 0)
+#'         dir_xz = c(1, -1), dir_yz = c(1,1), gamma = 0)
 #' # If N is a scalar or a vector, there is no sample overlap
 #' dat <- sim_mv(N = 10000, J = 20000, h2 = rep(0.4, 4),
 #'               pi = c(500, 500, 1000, 1000)/20000,

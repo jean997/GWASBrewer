@@ -13,7 +13,7 @@ sim_sumstats_lf(
   h2_factor,
   pi_L,
   pi_theta,
-  R_E,
+  R_E = NULL,
   af = NULL,
   R_LD = NULL,
   snp_info = NULL,
