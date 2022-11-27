@@ -98,7 +98,8 @@ direct_to_total <- function(G_dir){
   return(G_total)
 }
 
-check_R_LD <- function(R_LD){
+check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt")){
+  return <- match.arg(return, return)
   if(class(R_LD) != "list"){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
   }
@@ -111,11 +112,47 @@ check_R_LD <- function(R_LD){
   if(any(cl == "not_allowed")){
     stop("R_LD should be a list with elements of class matrix, dsCMatrix, or eigen.")
   }
-  if(all(cl == "matrix")){
-    R_LD <- lapply(R_LD, function(x){eigen(x)})
-  }else if(any(cl == "matrix")){
-    ii <- which(cl == "matrix")
-    R_LD[ii] <- lapply(R_LD[ii], function(x){eigen(x)})
+  if(return=="eigen"){
+    if(all(cl == "matrix")){
+      R_LD <- lapply(R_LD, function(x){eigen(x)})
+    }else if(any(cl == "matrix")){
+      ii <- which(cl == "matrix")
+      R_LD[ii] <- lapply(R_LD[ii], function(x){eigen(x)})
+    }
+  }else if(return=="matrix"){
+    if(all(cl == "eigen")){
+      R_LD <- lapply(R_LD, function(x){
+        tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
+      })
+    }else if(any(cl == "eigen")){
+      ii <- which(cl == "eigen")
+      R_LD[ii] <- lapply(R_LD[ii], function(x)function(x){
+        tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
+      })
+    }else{
+      R_LD <- lapply(R_LD, as.matrix)
+    }
+  }else if(return == "sqrt"){
+    if(all(cl == "eigen")){
+      R_LD <- lapply(R_LD, function(x){
+        tcrossprod(x$vectors, diag(sqrt(x$values)))
+      })
+    }else if(all(cl == "matrix")){
+      R_LD <- lapply(R_LD, function(m){
+        x <- eigen(m)
+        tcrossprod(x$vectors, diag(sqrt(x$values)))
+      })
+    }else{
+      ie <- which(cl == "eigen")
+      R_LD[ie] <- lapply(R_LD[ie], function(x){
+        tcrossprod(x$vectors, diag(sqrt(x$values)))
+      })
+      im <- which(cl == "matrix")
+      R_LD[im] <- lapply(R_LD[im], function(m){
+        x <- eigen(m)
+        tcrossprod(x$vectors, diag(sqrt(x$values)))
+      })
+    }
   }
   return(R_LD)
 }
