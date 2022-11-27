@@ -54,7 +54,7 @@ are all missing, SNPs are assumed to be scaled to variance 1,}
 \item{sporadic_pleiotropy}{Allow a single SNP to affect multiple factors (default TRUE).}
 }
 \description{
-Simulate summary statistcs from a specified factor structure
+Simulate summary statistics from a specified factor structure
 }
 \details{
 This function will generate GWAS summary statistics for M traits with K common factors.

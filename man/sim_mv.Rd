@@ -10,7 +10,7 @@ sim_mv(
   h2,
   pi,
   G,
-  R_E,
+  R_E = NULL,
   R_LD = NULL,
   snp_info = NULL,
   af = NULL,

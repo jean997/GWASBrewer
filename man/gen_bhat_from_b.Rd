@@ -6,20 +6,18 @@
 \usage{
 gen_bhat_from_b(
   b_joint_std,
-  R,
+  b_joint,
+  trait_corr,
   N,
   R_LD = NULL,
   snp_info = NULL,
-  maf = NULL,
+  af = NULL,
   L_mat_joint_std = NULL,
   theta_joint_std = NULL
 )
 }
 \arguments{
 \item{b_joint_std}{variants by traits matrix of direct joint SNP effects.}
-
-\item{R}{traits by traits correlation matrix. This gives the correlation of z-scores due to sample overlap and environmental correlation.
-This is output as the R object from sim_mv.}
 }
 \description{
 Generate beta hats from standardized direct SNP effects and LD

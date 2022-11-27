@@ -9,13 +9,15 @@ sim_ld_prune(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1)
 \arguments{
 \item{dat}{Data object produced by sim_mv}
 
-\item{pvalue}{A vector of p-values to use to prioritize variants.}
+\item{pvalue}{Either a vector used to prioritize variants or an integer.
+If pvalue is an integer, i, variants will be priorized by the p-value for trait i.
+If pvalue is missing, variants will be prioritized randomly.}
 
-\item{R_LD}{The same list of eigen-decompositions used to generate dat}
+\item{R_LD}{LD pattern used to generate dat}
 
-\item{r2_thresh}{r^2 thershold for pruning}
+\item{r2_thresh}{r^2 threshold for pruning}
 
-\item{pval_thresh}{p-value threshod for pruning (see details)}
+\item{pval_thresh}{p-value threshold for pruning (see details)}
 }
 \value{
 A vector of indices corresponding to the LD-pruned variant set.

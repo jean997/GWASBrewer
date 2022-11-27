@@ -4,12 +4,12 @@
 \alias{xyz_to_G}
 \title{Generate G from XYZ Specification}
 \usage{
-xyz_to_G(tau_xz, tau_yz, dir_xz, dir_yz, beta)
+xyz_to_G(tau_xz, tau_yz, dir_xz, dir_yz, gamma)
 }
 \arguments{
 \item{dir_xz, dir_yz}{Effect direction between Z and X or Y (see details)}
 
-\item{beta}{Signed variance of Y explained by X, see details}
+\item{gamma}{Signed variance of Y explained by X, see details}
 
 \item{taux_xz, tau_yz}{Effect size between Z and X or Y as signed percent variance explained (see details)}
 }
@@ -21,7 +21,7 @@ Generate G from XYZ Specification
 }
 \details{
 This function generates a matrix G of direct effects corresponding to a model in with variables Y, X, and Z_1, ..., Z_K.
-There is a causal effect of X on Y given by beta, which specifies the proportion of the variance of Y explained by X.
+There is a causal effect of X on Y given by gamma, which specifies the proportion of the variance of Y explained by X.
 The K variables Z_1, ..., Z_K can have
 effects to or from X and Y but do not have direct effects on each other. Vectors \code{dir_xz} and \code{dir_yz} specify the direction
 of these effects with +1 corresponding to "to" effects and -1 corresponding to "from" effects. For example, \code{dir_xz = c(1, -1)}
@@ -39,11 +39,11 @@ Z_2 explains 25\% of the variance of Y.
 }
 \examples{
 xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-        dir_xz = c(1, -1), dir_yz = c(1,1), beta = 0)
+        dir_xz = c(1, -1), dir_yz = c(1,1), gamma = 0)
 # code below will give an error due to specification of a cyclic graph.
 xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-        dir_xz = c(1, -1), dir_yz = c(-1,1), beta = 0.1)
-# with beta = 0, there is no cycle so no error
+        dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0.1)
+# with gamma = 0, there is no cycle so no error
 xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
-        dir_xz = c(1, -1), dir_yz = c(-1,1), beta = 0)
+        dir_xz = c(1, -1), dir_yz = c(-1,1), gamma = 0)
 }

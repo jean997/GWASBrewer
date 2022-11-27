@@ -4,14 +4,14 @@
 \alias{sim_ld_proxy}
 \title{Retrieve LD proxies}
 \usage{
-sim_ld_proxy(snpinfo, index, R_LD, r2_thresh = 0.64)
+sim_ld_proxy(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
 }
 \arguments{
-\item{snpinfo}{snp_info data frame from a simulation object produced by sim_mv}
+\item{dat}{Simulation object produced by `sim_mv`}
 
 \item{index}{list of indexes to retrieve proxies for}
 
-\item{R_LD}{list of eigen-decompositions used originally in sim_mv}
+\item{R_LD}{LD pattern used to generate dat}
 
 \item{r2_thresh}{Get proxies with r^2 >= r2_thresh with one of the index variants}
 }

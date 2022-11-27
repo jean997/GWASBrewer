@@ -4,10 +4,10 @@
 \alias{sim_extract_ld}
 \title{Extract LD matrix from simulated data}
 \usage{
-sim_extract_ld(snpinfo, index, R_LD)
+sim_extract_ld(dat, index, R_LD)
 }
 \arguments{
-\item{snpinfo}{snp_info table from data object created by sim_mv}
+\item{dat}{Simulation object produced by `sim_mv`}
 
 \item{index}{vector of indices for snps to extract LD}
 
@@ -22,7 +22,6 @@ Extract LD matrix for specific variants in simulated data set
 \examples{
 data("ld_evd_list")
 data("snpdata")
-head(snpdata)
 # Two traits with no causal relationship, non-overlapping GWAS
 set.seed(1)
 G <- matrix(0, nrow = 2, ncol = 2)
