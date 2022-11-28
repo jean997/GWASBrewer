@@ -44,16 +44,16 @@ a latent factor structure for a set of traits. Direct usage of `sim_sumstats_lf`
 
 The `sim_mv` function has five required arguments:
 
-+ `N`: The GWAS sample size for each trait. This can be a scalar, vector or matrix (more on this below).
++ `N`: The GWAS sample size for each trait. This can be a scalar, vector or matrix. If a vector, `N` should have length equal to the number of traits. If there are overlapping samples between GWAS, `N` should be a matrix (see "Sample Overlap" below). 
 + `J`: The number of SNPs to simulate (scalar).
 + `h2`: The hertiability of each trait. This can be a scalar or a vector with length equal to the number of traits generated.
 + `pi`: The proportion of all SNPs that have a direct effect on each trait. This can be a scalar or a vector with length equal to the number of traits generated.
-+ `G`: The matrix specifying direct effects in the linear SEM. 
++ `G`: A matrix specifying direct effects in the linear structural equation model. 
 
 There are additional optional arguments:
 
-+ `R_E`: Matrix giving correlation between environmental components of each trait (see section below for more details). This option is ignored if there is no sample overlap.
-+ `R_LD` and `snp_info`: Options used if GWAS data should have LD
++ `R_E`: Matrix giving correlation between environmental components of each trait (see "Sample Overlap" for more details). Defaults to the identity. `R_E` only affects summary statistics when there is sample overlap.
++ `R_LD` and `snp_info`: Options used if GWAS data should have LD (See "Simulating Data with LD"). 
 + `af`: Optional vector of allele frequencies. This option is only used if data have no LD.
 + `sporadic_pleiotropy`: Allow a single variant to have direct effects on multiple traits. Defaults to TRUE.
 + `return_dat`: A developer option, return some extra data that is useful for debugging and testing. 
@@ -63,20 +63,20 @@ There are additional optional arguments:
 The `sim_mv` function returns a list with the following elements
 
 + `beta_hat`, `se_beta_hat`: Simulated GWAS effect estimates and standard errors
-+ `direct_SNP_effects_marg`: direct effects of SNPs on traits (marginal). Direct here means not mediated by other traits.
-+ `direct_SNP_effects_joint`: direct effects of SNPs on traits (joint). Joint and marginal effects 
-are the same if there is no LD. With LD, the joint effects are the direct causal effect of the SNP on the trait
-while the marginal effect includes LD.
-+ `beta_joint` and `beta_marg`: Total associations (including those mediated by other traits). `beta_marg` is the expected value of `beta_hat`.
-+ `R`: Correlation in standard errors across traits. This is the identity if there is no
-sample overlap. Otherwise it depends on supplied environmental correlation, the genetic 
-correlation and the sample overlap. 
++ `beta_joint`: Total causal effects of SNPs on traits. 
++ `beta_marg`: Expected marginal association of SNPs on traits. `beta_marg` is the expected value of `beta_hat`. When there is no 
+LD, `beta_marg` and `beta_joint` are the same. 
++ `direct_SNP_effects_joint`: Direct causal effects of SNPs on traits. Direct means not mediated by other traits. 
++ `direct_SNP_effects_marg`: Like `beta_marg` but considering only direct rather than total effects. 
++ `trait_corr`: Population trait correlation. This is determined by genetic sharing (from trait heritability and `G`) and environmental correlation, `R_E`.
++ `R`: Correlation in sampling error of `beta_hat` across traits. This is the identity if there is no
+sample overlap. Otherwise it is a function of `trait_corr` and the amount of sample overlap. 
 + `direct_trait_effects`: Matrix of direct effects between traits
 + `total_trait_effects`: Matrix of total effects between traits
 
-When used in general mode, the order of the columns in `beta_hat`, `se_beta_hat`, and `B` corresponds
-to the order of variables in `G`. When used in xyz mode, the first column is $X$, the second 
-column is $Y$ and subsequent columns are the $Z_k$'s in the order they were provided.
+The order of the columns in `beta_hat`, `se_beta_hat`, `direct_SNP_effects_joint`, 
+`direct_SNP_effects_marg`, `beta_joint`, and `beta_marg` corresponds
+to the order of variables in `G`. 
 
 ## Specifying the DAG
 
@@ -150,19 +150,21 @@ In the "XYZ" DAG,
 there is an exposure ($X$), an outcome ($Y$), and $K-2$ other variables, $Z_1, \dots, Z_{K-2}$. 
 
 There is a (possibly 0) effect of $X$ on $Y$ specified by the `gamma` argument. 
-Variables $Z_1, \dots, Z_{K-2}$ can have effects either on or from $X$, $Y$ or both. So
-$Z_k$ could be a confounder of $X$ and $Y$ (effects on both variables), a child (collider) of
-$X$ and $Y$ (effects from both variables), or a mediator between $X$ and $Y$ (effect from $X$ and to $Y$). 
-As special cases, any of these effects could be zero. So $Z_k$ could also be a parent only or child only of $X$ or $Y$. 
-The program will give an error if the user tries to specify a mediator between $Y$ and $X$ as well as a non-zero
-effect of $X$ on $Y$ as this would create a cycle.
-
-
+Variables $Z_1, \dots, Z_{K-2}$ can have effects either on or from $X$ and/or $Y$ or both
+but there are no affects $Z_1, \dots, Z_{K-2}$ on each other. 
 Effects between each $Z_k$ and $X$ and $Y$ respectively are given in the `tau_xz` and `tau_yz` arguments. 
-The direction of these effects is given in the `dir_xz` and `dir_yz` arguments. 
-Effect size arguments `beta`, `tau_xz`, and `tau_yz` are all given as signed proportion of variance explained. 
+The direction of these effects is given in the `dir_xz` and `dir_yz` arguments. All four of
+these arguments should have length $k-2$. 
+
+The direction parameters `dir_xz` and `dir_yz` are vectors of 1 or -1 with 1 indicating an effect on $X$ or $Y$ and -1 indicating an effect from $X$ or $Y$. 
+Effect size arguments `gamma`, `tau_xz`, and `tau_yz` are given as signed proportion of variance explained. 
 So if `gamma = -0.3`, The direct effect of $X$ explains 30\% of the variance of $Y$ and the 
-effect of $X$ on $Y$ is negative. The direction parameters `dri_xz` and `dir_yz` are vectors of 1 or -1 with length $K-2$. These specify the direction of effect between $Z_k$ and $X$ or $Y$ with 1 indicating an effect on $X$ or $Y$ and -1 indicating an effect to $X$ or $Y$. 
+effect of $X$ on $Y$ is negative. 
+
+
+
+
+
 
 For example, the code
 
@@ -218,8 +220,14 @@ sim_dat1$direct_trait_effects
 sim_dat1$total_trait_effects
 ```
 
-The true SNP effects are also stored in the simulation object. The `direct_SNP_effects_joint` and `beta_joint` tablse give the direct and total SNP effects. The `_joint` ending here indicates that these variables store the expected *joint* association, conditional on all other variants. GWAS effect estimates measure the marginal association, so we also store the expected direct and total *marginal* associations in 
-`direct_SNP_effects_marg` and `beta_marg`. When all variants are independent (no LD),  the expected joint and marginal associations are the same. However, if we had generated data with LD, this would not be the case (see below for more on LD). With or without LD, `beta_marg` is always the expected value of `beta_hat`, that is `beta_marg` is the association we would measure with infinite GWAS sample size. 
+True variant effects are also stored in the simulation object. The `direct_SNP_effects_joint` and `beta_joint` objects give the direct and total SNP effects. The `_joint` ending here indicates that these variables store the expected *joint* association, conditional on all other variants, i.e. the causal effects. GWAS effect estimates measure the marginal association, so we also store the expected direct and total *marginal* associations in 
+`direct_SNP_effects_marg` and `beta_marg`. When all variants are independent (no LD),  the expected joint and marginal associations are the same. 
+
+```{r}
+all.equal(sim_dat1$beta_joint, sim_dat1$beta_marg)
+```
+
+However, if we had generated data with LD, this would not be the case (see below for more on LD). `beta_marg` is always the expected value of `beta_hat`, that is `beta_marg` is the association we would measure with infinite GWAS sample size. 
 
 Direct SNP effects are always independent across traits while total SNP effects are the sum of direct effects and indirect effects mediated by other traits. To see the difference, we make some plots.
 
@@ -229,9 +237,9 @@ plot(sim_dat1$direct_SNP_effects_joint[,3], sim_dat1$direct_SNP_effects_joint[,4
      xlab = "Direct Z effect", ylab = "Direct W effect")
 ```
 
-Because SNP effects are generated from a point-normal distribution, most SNPs are non-zero in at most one of $Z$ or $W$. However, there are a handful of variants that have direct effects on both. This is "sporadic pleiotropy" and can be prevented with `sporadic_pleiotropy=FALSE` if it is not desired. 
+Because direct effects are generated from a point-normal distribution, most variants have direct effects on at most one of $Z$ or $W$. However, there are a handful of variants that have direct effects on both. This is "sporadic pleiotropy" and can be prevented with `sporadic_pleiotropy=FALSE` if it is not desired. 
 
-Next we plot the total SNP effects on $Z$ vs the total SNP effects on $W$. Because $Z$ has a causal effect on $W$, all variants with effects on $Z$ also affect $W$. The line in the plot has slope equal to the total effect of $Z$ on $W$. The majority SNPs that have non-zero effect on $Z$ fall exactly on this line. With `sporadic_pleiotropy= FALSE`, all of the variants with non-zero effect on $Z$ would fall on this line. There are also some variants that have zero effect on $Z$ but non-zero effect on $W$. These are the variants with non-zero direct effect on $W$ but no direct effect on $Z$. 
+Next we plot the total SNP effects on $Z$ vs the total SNP effects on $W$. Because $Z$ has a causal effect on $W$, all variants with effects on $Z$ also affect $W$. The line in the plot has slope equal to the total effect of $Z$ on $W$. The majority SNPs that have non-zero effect on $Z$ fall exactly on this line. With `sporadic_pleiotropy= FALSE`, all of the variants with non-zero effect on $Z$ would fall on this line. The variants on the vertical line at 0 are variants with non-zero direct effect on $W$ but no direct effect on $Z$. 
 
 ```{r}
 plot(sim_dat1$beta_joint[,3], sim_dat1$beta_joint[,4], 
@@ -239,7 +247,7 @@ plot(sim_dat1$beta_joint[,3], sim_dat1$beta_joint[,4],
 abline(0, sim_dat1$total_trait_effects[3,4], col = "red", lty = 2, lwd = 2)
 ```
 
-Finally, we can verify that the observed GWAS effect estimate is a noisy measurement of `beta_marg` (in this case equal to `beta_joint`)
+Finally, we can verify that the observed GWAS effect estimate is a noisy measurement of `beta_marg`.
 
 ```{r}
 plot(sim_dat1$beta_marg[,3], sim_dat1$beta_hat[,3], 
@@ -249,12 +257,12 @@ abline(0, 1, col = "red", lty = 2, lwd = 2)
 
 ## Standardized vs Non-Standardized Effects
 
-By default, when there is no LD, `sim_mv` returns standardized effects and standardized effect estimates. These are the estimates we would obtain if genotypes were scaled to have population variance 1 rather than being coded as 0, 1, and 2. The relationship between standardized and non-standardized effect estimates is simply $\hat{\beta}_j^{(non-std)} = \hat{\beta}_j^{(std)}/sd(g_j)$ where $j$ indexes variants, $sd(g_j)$ is the population standard deviation of variant $j$. Similarly the relationship between the variance of standardized and non-standardized effect estimates is $se\left(\hat{\beta}_j^{(non-std)}\right) = se\left(\hat{\beta}_j^{(std)}\right)/sd(g_j)$. 
+By default, when there is no LD, `sim_mv` returns standardized effects and standardized effect estimates. These are the estimates we would obtain if genotypes were scaled to have population variance 1 rather than being coded as 0, 1, and 2. The relationship between standardized and non-standardized effect estimates is simply $\hat{\beta}_j^{(non-std)} = \hat{\beta}_j^{(std)}/sd(g_j)$ where $j$ indexes variants, $sd(g_j)$ is the population standard deviation of variant $j$ (i.e. $\sqrt{2 f_j (1-f_j)}$ where $f_j$ is the allele frequency of variant $j$). Similarly the relationship between the standard error of standardized and non-standardized effect estimates is $se\left(\hat{\beta}_j^{(non-std)}\right) = se\left(\hat{\beta}_j^{(std)}\right)/sd(g_j)$. 
 
-In our previously generated `sim_dat1`, every effect estimate has the same standard error. This is because the standard error of $\hat{\beta}_j^{(std)}$ is approximately $1/\sqrt{N}$ and we used a common sample size across all traits. Non-standardized effect estimates will have different standard errors because these also depend on variant allele frequency. 
+In our previously generated `sim_dat1`, every effect estimate has the same standard error. This is because the standard error of $\hat{\beta}_j^{(std)}$ is approximated as $1/\sqrt{N}$ and we used a common sample size across all traits. Non-standardized effect estimates will have different standard errors for different variants because these also depend on variant allele frequency. 
 
 
-Generating non-standardized effects requires input allele frequencies which are used to calculate the variance of each SNP. This can be provided by the `af` argument which can accept either a scalar, in which case the same allele frequency is used for every SNP, a vector of length `J`, or a function that takes a single argument and returns a vector of allele frequencies with length determined by the argument. IF the `af` argument is provided, `sim_mv` will return both effect estimates and expected associations/true effects on the non-standardized scale.
+Generating non-standardized effects requires input allele frequencies which are used to calculate the variance of each SNP. This can be provided by the `af` argument which can accept either a scalar, in which case the same allele frequency is used for every SNP, a vector of length `J`, or a function that takes a single argument and returns a vector of allele frequencies with length determined by the argument. If the `af` argument is provided, `sim_mv` will return both effect estimates and expected associations/true effects on the non-standardized scale.
 
 
 ```{r}
@@ -373,7 +381,7 @@ all(ld_mat2^2 < 0.1)
 
 If two GWAS are performed on different traits using overlapping samples, the sampling errors of effect estimates will be correlated.
 If the two GWAS have sample sizes $N_1$ and $N_2$ with $N_c$ overlapping samples, then the correlation of 
-$\hat{z}_{1j}$ and $\hat{z}_{2j}$, $z$-scores for variant $j$ in study 1 and study 2, is approximates $\frac{N_c}{\sqrt{N_1 N_2}} \rho_{1,2}$ where $\rho_{1,2}$ is the trait correlation. 
+$\hat{z}_{1j}$ and $\hat{z}_{2j}$, $z$-scores for variant $j$ in study 1 and study 2, is approximately $\frac{N_c}{\sqrt{N_1 N_2}} \rho_{1,2}$ where $\rho_{1,2}$ is the trait correlation. 
 
 In `sim_mv` it is possible to specify sample overlap between studies by providing `N` as a matrix rather than a scalar or a vector. If `N` is a matrix than `N[i,i]` is the sample size of study $i$ and `N[i,j]` is the number of overlapping samples between studies $i$ and $j$. In the model used by `simGWAS`, all traits can be decomposed into a genetic component and an environmental component. We always assume the 
 environmental trait component is independent of the genetic trait component. Correlation between the genetic components of the specified traits is determined by the supplied DAG. It is also possible to supply the correlation between the environmental components of the traits using the `R_E` parameter. 
@@ -382,14 +390,14 @@ environmental trait component is independent of the genetic trait component. Cor
 Below is an example using the same 4 trait DAG we have been using so far. Below we specify that all four GWAS have sample size 60,000 and 
 there are 30,000 samples overlapping between any pair of GWAS.
 Note that `simGWAS` assumes that the trait correlation is the same in any subset of samples so it doesn't matter if the same 30,000
-samples are in all studies or if different sets overlap between different pairs.
-Prior to this, our commands have all specified that the GWAS were performed in non-overlapping samples.
+samples are in all studies or if different sets overlap between different pairs of studies.
+We also specify an envrionmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. `R_E` defaults to the identity if it is not provided.
 
 ```{r}
 set.seed(10)
 R_E <- matrix(0.4, nrow = 4, ncol = 4)
 diag(R_E) <- 1
-N <- matrix(30000, nrow = 4, ncol = 4)
+N <- matrix(60000, nrow = 4, ncol = 4)
 diag(N) <- 30000
 sim_dat3 <- sim_mv(G = G,
                   N = N, J = 1e5, R_E = R_E,
@@ -412,7 +420,7 @@ sim_dat1_LD$trait_corr
 sim_dat1_LD$R
 ```
 
-The `R` object will always be the identity if there is no sample overlap. 
+The `R` matrix will always be the identity if there is no sample overlap. 
 
 ## Generating Data for Multiple GWAS with the Same Variant Effects
 

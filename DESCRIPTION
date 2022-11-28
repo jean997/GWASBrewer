@@ -1,13 +1,21 @@
 Package: simGWAS
 Type: Package
 Title: Simulate GWAS Summary Statistics
-Version: 0.2.0.0037
+Version: 0.2.0.0038
 Author: Jean Morrison
 Maintainer: Jean Morrison <jvmorr@umich.edu>
 Description: Simulate GWAS summary statistics from specified DAG or factor structure.
-License: What license is it under?
+License: GPL (>= 3)
+URL: https://github.com/jean997/simGWAS
+BugReports: https://github.com/jean997/simGWAS/issues
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.1
 Depends: 
     R (>= 2.10)
+IMPORTS:
+  dplyr
+  purrr
+  tidyr
+VignetteBuilder:
+  knitr
