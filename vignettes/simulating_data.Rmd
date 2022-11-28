@@ -391,14 +391,18 @@ Below is an example using the same 4 trait DAG we have been using so far. Below 
 there are 30,000 samples overlapping between any pair of GWAS.
 Note that `simGWAS` assumes that the trait correlation is the same in any subset of samples so it doesn't matter if the same 30,000
 samples are in all studies or if different sets overlap between different pairs of studies.
-We also specify an envrionmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. `R_E` defaults to the identity if it is not provided.
+We also specify an environmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. `R_E` defaults to the identity if it is not provided.
+
+```{r}
+R_E <- matrix(0.4, nrow = 4, ncol = 4)
+diag(R_E) <- 1
+N <- matrix(30000, nrow = 4, ncol = 4)
+diag(N) <- 60000
+N
+```
 
 ```{r}
 set.seed(10)
-R_E <- matrix(0.4, nrow = 4, ncol = 4)
-diag(R_E) <- 1
-N <- matrix(60000, nrow = 4, ncol = 4)
-diag(N) <- 30000
 sim_dat3 <- sim_mv(G = G,
                   N = N, J = 1e5, R_E = R_E,
                   h2 = c(0.3, 0.3, 0.5, 0.4), 
