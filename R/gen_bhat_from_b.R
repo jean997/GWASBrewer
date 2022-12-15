@@ -1,4 +1,4 @@
-#'@title Generate beta hats from standardized direct SNP effects and LD
+#'@title Generate beta hats from standardized or non-standardized direct SNP effects and LD
 #'@param b_joint_std Matrix of standardized joint (causal) effects (dimension variants by traits)
 #'@param b_joint  Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
 #'\code{b_joint_std}.
@@ -35,17 +35,12 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     if(!missing(b_joint_std)){
       stop("Please provide only one of b_joint or b_joint_std")
     }
-    if(!"matrix" %in% class(b_joint)){
-      stop("b_joint_std must have class matrix\n")
-    }
+    b_joint <- check_matrix(b_joint, "b_joint")
     M <- ncol(b_joint)
     J <- nrow(b_joint)
     b_type <- "non_std"
   }else if(!missing(b_joint_std)){
-    if(!"matrix" %in% class(b_joint_std)){
-      stop("b_joint_std must have class matrix\n")
-    }
-    # Expected z-score
+    b_joint_std <- check_matrix(b_joint_std, "b_joint_std")
     M <- ncol(b_joint_std)
     J <- nrow(b_joint_std)
     b_type <- "std"
@@ -110,71 +105,34 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   snp_info <- check_snpinfo(snp_info, l)
   nblock <- length(l)
 
-  #Bookkeeping: Figure out how much/how many replicates of supplied LD we need
-  ld_size <- sum(l)
-  full_reps <- floor(J/ld_size) # Recall l is list of block sizes
-  remainder <- J  - full_reps*ld_size
-
-  block_index <- rep(seq(nblock), full_reps)
-  if(remainder > 0){
-    if(l[1] >= remainder){
-      blocks_rem <- 0
-      final_remainder <- remainder
-    }else{
-      blocks_rem <- max(which(cumsum(l) <= remainder)) # full blocks in last partial repeat
-      final_remainder <- remainder-cumsum(l)[blocks_rem] # partial block in last partial repeat
-      block_index <- c(block_index, seq(blocks_rem))
-    }
-    if(final_remainder > 0){
-      block_index <- c(block_index, nblock + 1)
-
-
-      #if(type == "new"){
-      last_block <- ld_mat[[blocks_rem + 1]][seq(final_remainder), seq(final_remainder)]
-      ld_mat[[nblock + 1]] <- last_block
-      elb <- eigen(last_block)
-      ld_sqrt[[nblock + 1]] <- with(elb, vectors %*% diag(sqrt(values)))
-      #}else{
-      #  last_block <- with(R_LD[[blocks_rem + 1]], (vectors %*% diag(values) %*% t(vectors))[1:final_remainder, 1:final_remainder])
-      #  R_LD[[nblock +1]] <- eigen(last_block)
-      #}
-
-      l <- c(l, final_remainder)[block_index] # l is now lengths of blocks in data
-    }else{
-      l <- l[block_index] # l is now lengths of blocks in data
-    }
-    #Create SNP info for full data set
-    snp_info_full <- snp_info[c(rep(seq(ld_size), full_reps), seq(remainder)),]
-    if(full_reps > 0) snp_info_full$rep <- c(rep(seq(full_reps), each = ld_size), rep(full_reps + 1, remainder))
-  }else{
-    block_index <- rep(seq(nblock), full_reps)
-    l <- l[block_index] # l is now lengths of blocks in data
-    #Create SNP info for full data set
-    snp_info_full <- snp_info[rep(seq(ld_size), full_reps),]
-    if(full_reps > 0) snp_info_full$rep <- rep(seq(full_reps), each = ld_size)
+  block_info <- assign_ld_blocks(l, J)
+  if(!is.null(block_info$last_block_info)){
+    b <- block_info$last_block_info[1]
+    x <- block_info$last_block_info[2]
+    last_block <- ld_mat[[b]][seq(x), seq(x)]
+    ld_mat[[nblock + 1]] <- last_block
+    elb <- eigen(last_block)
+    ld_sqrt[[nblock + 1]] <- with(elb, vectors %*% diag(sqrt(values)))
   }
-  if(full_reps == 0){
-    snp_info_full$rep <- 1
-  }
-  start_ix <- cumsum(c(1, l[-length(l)]))
-  end_ix <- start_ix + l-1
 
-
+  snp_info$block <- rep(seq(length(l)), each = l)
+  snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)})
+  snp_info_full <- snp_info[block_info$index,]
+  snp_info_full$rep <- rep(block_info$rep, each = block_info$l)
   snp_info_full$SNP <- with(snp_info_full, paste0(SNP, ".", rep))
+
+  nb <- length(block_info$l)
+  start_ix <- cumsum(c(1, block_info$l[-nb]))
+  end_ix <- start_ix + block_info$l-1
+
   sx <- with(snp_info_full, sqrt(2*AF*(1-AF)))
   se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1)) # J by M
 
-  # Multiply errors by square root of LD matrix
-  #if(type == "new"){
-  E_LD_Z <- lapply(seq_along(block_index), function(i){
+
+  E_LD_Z <- lapply(seq(nb), function(i){
     tcrossprod(ld_sqrt[[block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], ]))
   }) %>% do.call( rbind, .)
-  #}else{
-  #  E_LD_Z <- lapply(seq_along(block_index), function(i){
-      #with(R_LD[[block_index[i]]], vectors %*% diag(sqrt(values)) %*% E_Z[start_ix[i]:end_ix[i], ])
-  #    with(R_LD[[block_index[i]]], tcrossprod(vectors, tcrossprod(t(E_Z[start_ix[i]:end_ix[i], ]), diag(sqrt(values)))))
-  #  }) %>% do.call( rbind, .)
-  #}
+
 
   if(b_type == "non_std"){
     Z <- b_joint/se_beta_hat
@@ -182,18 +140,9 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     Z <- t(t(b_joint_std)*sqrt(nn$N))
   }
 
-  # Transform Z by LD matrix
-  #if(type == "new"){
-  Z <- lapply(seq_along(block_index), function(i){
+  Z <- lapply(seq(nb), function(i){
           tcrossprod(ld_mat[[block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
     }) %>% do.call( rbind, .)
-  # }else{
-  #   Z <- lapply(seq_along(block_index), function(i){
-  #     #with(R_LD[[block_index[i]]], vectors %*% diag(values) %*% t(vectors) %*% Z[start_ix[i]:end_ix[i], ])
-  #     with(R_LD[[block_index[i]]], tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(Z[start_ix[i]:end_ix[i], ])))
-  #     #tcrossprod(ld_mat[[block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
-  #   }) %>% do.call( rbind, .)
-  # }
 
   Z_hat <- Z + E_LD_Z
   beta_hat <- Z_hat*se_beta_hat
@@ -208,43 +157,20 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   if(!is.null(L_mat_joint_std)){
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
     #if(type == "new"){
-    L_mat <- lapply(seq_along(block_index),
-                    function(i){
+    L_mat <- lapply(seq(nb), function(i){
                      tcrossprod(ld_mat[[block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
                       }) %>%
              do.call( rbind, .)
-    # }else{
-    #   L_mat <- lapply(seq_along(block_index),
-    #                   function(i){
-    #                     with(R_LD[[block_index[i]]],
-    #                     #vectors %*% diag(values) %*% t(vectors) %*% L_mat[start_ix[i]:end_ix[i], ])
-    #                        tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(L_mat[start_ix[i]:end_ix[i], ])))
-    #                   }) %>%
-    #     do.call( rbind, .)
-    # }
     L_mat <- L_mat/sx
     ret$L_mat <- L_mat
   }
   if(!is.null(theta_joint_std)){
     theta <- theta_joint_std*sx
     #if(type == "new"){
-    theta <- lapply(seq_along(block_index),
-                    function(i){
-                      #with(R_LD[[block_index[i]]],
-                                     #vectors %*% diag(values) %*% t(vectors) %*% theta[start_ix[i]:end_ix[i], ])
-                      #               tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(theta[start_ix[i]:end_ix[i], ])))
+    theta <- lapply(seq(nb), function(i){
                       tcrossprod(ld_mat[[block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
                     }) %>%
       do.call( rbind, .)
-     #}else{
-          # theta <- lapply(seq_along(block_index),
-          #           function(i){
-          #             with(R_LD[[block_index[i]]],
-          #             #vectors %*% diag(values) %*% t(vectors) %*% theta[start_ix[i]:end_ix[i], ])
-          #                            tcrossprod(tcrossprod(vectors, tcrossprod(vectors, diag(values))), t(theta[start_ix[i]:end_ix[i], ])))
-          #             }) %>%
-          # do.call( rbind, .)
-     #}
     theta <- theta/sx
     ret$theta <- theta
   }
