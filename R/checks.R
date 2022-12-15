@@ -32,12 +32,19 @@ check_matrix <- function(x, string, n, p){
   return(x)
 }
 
-check_N <- function(N, n){
+check_N <- function(N, n, allow_mat = TRUE){
   if("matrix" %in% class(N) | "data.frame" %in% class(N)){
     if(ncol(N) ==1){
       N <- check_scalar_or_numeric(N, "N", n)
       Nc <- diag(n)
     }else{
+      if("data.frame" %in% class(N) & "trait_1" %in% names(N)){
+        nn <- check_Ndf(N, n)
+        return(nn)
+      }
+      if(!allow_mat){
+        stop("Matrix format for N is not allowed. Use scalar, vector, or data frame format.\n")
+      }
       N <- check_matrix(N, "N", n, n)
       N <- check_psd(N, "N")
       Nc <- cov2cor(N)
@@ -49,6 +56,62 @@ check_N <- function(N, n){
   }
   return(list("Nc"= Nc, "N" = N))
 }
+
+make_Ndf_indep <- function(N){
+  M <- length(N)
+  df <- data.frame(diag(M))
+  names(df) <- paste0("trait_", 1:M)
+  df$N <- N
+  df <- mutate_at(df,paste0("trait_", 1:M), as.logical)
+  return(df)
+}
+
+check_Ndf <- function(N, M){
+  if(!"data.frame" %in% class(N)){
+    stop("class(N) does not include data.frame\n")
+  }
+  if(missing(M)){
+    M <- ncol(N)-1
+  }
+  if(!"N" %in% names(N)){
+    stop("Did not find column N in data frame N")
+  }
+  if(!all(paste0("trait_", 1:M) %in% names(N))){
+    stop(paste0("Did not find all of trait_1 ...trait_", M, " in data frame N\n"))
+  }
+  N <- dplyr::select(N, all_of(c(paste0("trait_", 1:M), "N"))) %>%
+        mutate_at(paste0("trait_", 1:M), as.logical)
+  nr <- nrow(N)
+  nd <- select(N, -N) %>% distinct() %>% nrow()
+  if(nr != nd){
+    warning(paste0("Data frame N contains non-unique study combinations. Duplicated rows will be collapsed\n"))
+    N <- N %>% group_by_at(paste0("trait_", 1:M)) %>% summarize(N = sum(N)) %>% ungroup()
+  }
+  trait_present <- N %>% select(-N) %>% apply(2, max)
+  if(!all(trait_present)){
+    stop(paste0("Not all traits have sample size given in data frame N. Missing ", paste0(which(!trait_present), collapse = ","), "\n"))
+  }
+
+
+  Nmat_long <- expand.grid(1:M, 1:M) %>% filter(Var1 <= Var2)
+  #Nmat_long$N <- NA
+  Nmat_long$N <- sapply(seq(nrow(Nmat_long)), function(i){
+    v1 <- paste0("trait_", Nmat_long$Var1[i])
+    v2 <- paste0("trait_", Nmat_long$Var2[i])
+    filter_at(N, vars(all_of(c(v1, v2))), all_vars(. == TRUE)) %>% with(., sum(N))
+  })
+  Nmat <- reshape2::acast(Nmat_long, Var1 ~ Var2, value.var = "N", drop = FALSE, fill = 0)
+  Nmat2 <-reshape2::acast(Nmat_long, Var2 ~ Var1, value.var = "N", drop = FALSE, fill = 0)
+  diag(Nmat2) <- 0
+  Nmat <- Nmat + Nmat2
+  Nc <- cov2cor(Nmat)
+  return(list(Ndf = N, N = diag(Nmat), Nc = Nc))
+}
+
+
+
+
+
 
 check_psd <- function(M, string){
   if(!Matrix::isSymmetric(M)){
@@ -156,6 +219,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt")){
   }
   return(R_LD)
 }
+
 
 # l is list of block lengths
 check_snpinfo <- function(snp_info, l){
