@@ -2,7 +2,7 @@
 % Please edit documentation in R/gen_bhat_from_b.R
 \name{gen_bhat_from_b}
 \alias{gen_bhat_from_b}
-\title{Generate beta hats from standardized direct SNP effects and LD}
+\title{Generate beta hats from standardized or non-standardized direct SNP effects and LD}
 \usage{
 gen_bhat_from_b(
   b_joint_std,
@@ -33,7 +33,7 @@ gen_bhat_from_b(
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
 }
 \description{
-Generate beta hats from standardized direct SNP effects and LD
+Generate beta hats from standardized or non-standardized direct SNP effects and LD
 }
 \details{
 This function can be used to generate new GWAS results with the same effect sizes by passing in the \code{beta_joint} table
