@@ -5,7 +5,7 @@ gen_genos_mvn <- function(n, J, R_LD, af){
   af <- check_01(af, "af")
 
   if(is.null(R_LD)){
-    X <- replicate(n = n, rbinom(n = J, size = 2, prob = af))
+    X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
     return(list(X = X, af = af))
   }
 
@@ -41,15 +41,28 @@ gen_genos_mvn <- function(n, J, R_LD, af){
 #'@param b_joint_std Matrix of standardized joint (causal) effects (dimension variants by traits)
 #'@param b_joint  Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
 #'\code{b_joint_std}.
-#'@param trait_corr Matrix of population trait correlation (traits by traits)
 #'@param N Sample size, scalar, vector, or special sample size format data frame, see details.
+#'@param V_E Vector with length equal to the number of traits giving the environmental variance of each trait.
+#'@param R_E Environmental correlation matrix, (traits by traits). If missing, R_E is assumed to be the identity.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param snp_info (optional, required if \code{R_LD} is supplied).
-#'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
+#'@param af Allele frequencies. This can be a scalar, vector or a function. For this function, af must be
+#'supplied if R_LD is not supplied. If a vector, af should have length equal to the number of variants.
 #'@details This function can be used to generate individual level GWAS data by passing in the \code{beta_joint} table
 #'from a data set simulated using `sim_mv`. If the
 #'original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
 #'it contains non-standardized effects. Use the appropriate argument, either \code{b_joint_std} or \code{b_joint}.
+#'@examples
+#' # Use gen_gwas_from_b to generate individual level data with given effect size.
+#' Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
+#' G <- matrix(0, nrow = 2, ncol = 2)
+#' R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
+#' # original data
+#' dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
+#'                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
+#'# Now generate GWAS data
+#'gw_dat <- gen_gwas_from_b(b_joint = dat$beta_joint, N = Ndf, V_E = c(0.6, 0.7),
+#'                            R_E = R_E, af = dat$af, calc_sumstats = TRUE)
 #'@export
 gen_gwas_from_b <- function(b_joint_std, b_joint,
                             N, V_E, R_E = NULL,
@@ -82,7 +95,7 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
   V_E <- check_scalar_or_numeric(V_E, "V_E", M)
   V_E <- check_01(V_E, "V_E")
   if(is.null(R_E)){
-    R_E <- diag(M, nrow = M)
+    R_E <- diag(M)
   }
   R_E <- check_matrix(R_E, "R_E", M, M)
   R_E <- check_psd(R_E, "R_E")
@@ -97,6 +110,7 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
     }
     if(class(af) == "function"){
       myaf <- af(J)
+      af <- myaf
     }
     af <- check_scalar_or_numeric(af, "af", J)
     af <- check_01(af)
@@ -107,10 +121,11 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
     }
     X <- sim_func(ntotal, J, R_LD, sim_info$AF)
   }
-  genos <- check_matrix(X$X, "genos", ntotal, J)
   af <- check_scalar_or_numeric(X$af, "af", J)
+  X <- check_matrix(X$X, "genos", ntotal, J)
 
-  if(type == "std"){
+
+  if(b_type == "std"){
     # Compute non-standardized effects
     sx <- sqrt(2*af*(1-af))
     b_joint <- b_joint_std/sx
@@ -140,8 +155,9 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
   if(!calc_sumstats) return(R)
 
   ## Calculate GWAS estimates fast
-  R$sumstats <- fast_lm(X, Y, check = FALSE)
-
+  sumstats <- fast_lm(X, Y, check = FALSE)
+  R$beta_hat <- dplyr::select(sumstats, all_of(paste0("bhat_", 1:M)) ) %>% as.matrix()
+  R$se_beta_hat <- dplyr::select(sumstats, all_of(paste0("s_", 1:M)) ) %>% as.matrix()
   return(R)
 
 }

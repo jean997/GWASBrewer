@@ -61,17 +61,18 @@
 sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                             pi_L, pi_theta, R_E=NULL,
                             af = NULL, R_LD = NULL, snp_info = NULL,
-                            #g_F, nz_factor,
-                            sporadic_pleiotropy = TRUE){
+                            sporadic_pleiotropy = TRUE,
+                            estimate_s = FALSE){
 
   # Argument checks
+  F_mat <- check_matrix(F_mat, "F_mat")
   M <- nrow(F_mat)
   K <- ncol(F_mat)
 
   h2_trait <- check_scalar_or_numeric(h2_trait, "h2_trait", M)
   h2_trait <- check_01(h2_trait)
 
-  F_mat <- check_matrix(F_mat, "F_mat", M, K)
+
   omega <- check_scalar_or_numeric(omega, "omega", M)
   omega <- check_01(omega)
   pi_L <- check_scalar_or_numeric(pi_L, "pi_L", K)
@@ -211,8 +212,13 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
 
-  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std, trait_corr = trait_corr,  N = N,
-                               R_LD = R_LD, snp_info = snp_info, af = af,
+  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std,
+                               trait_corr = trait_corr,
+                               N = N,
+                               R_LD = R_LD,
+                               snp_info = snp_info,
+                               af = af,
+                               estimate_s = estimate_s,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
 
@@ -229,7 +235,11 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               R_E = R_E,
               trait_corr = trait_corr,
               R=sum_stats$R,
-              true_h2 = true_h2)
+              true_h2 = true_h2,
+              af = af)
+  if(estimate_s){
+    ret$s_estimate <- sum_stats$s_estimate
+  }
               #sx = sum_stats$sx)
 
   if(!is.null(R_LD)){

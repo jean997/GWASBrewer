@@ -79,6 +79,7 @@ sim_mv <- function(N, J,
                    h2, pi, G, R_E = NULL,
                    R_LD = NULL, snp_info = NULL, af = NULL,
                    sporadic_pleiotropy = TRUE,
+                   estimate_s = FALSE,
                    return_dat  = FALSE){
 
 
@@ -103,8 +104,11 @@ sim_mv <- function(N, J,
                          af = af,
                          h2_factor = rep(1, n),
                          pi_theta = 1,
-                         R_E = R_E, R_LD = R_LD, snp_info  = snp_info,
-                         sporadic_pleiotropy = sporadic_pleiotropy)
+                         R_E = R_E,
+                         R_LD = R_LD,
+                         snp_info  = snp_info,
+                         sporadic_pleiotropy = sporadic_pleiotropy,
+                         estimate_s = estimate_s)
   direct_SNP_effects <- t(t(dat$L_mat)*diag(dat$F_mat))
 
   direct_SNP_effects_joint <- t(t(dat$L_mat_joint)*diag(dat$F_mat))
@@ -119,8 +123,11 @@ sim_mv <- function(N, J,
             trait_corr = dat$trait_corr,
             R = dat$R,
             R_E = dat$R_E,
-            true_h2 = dat$true_h2)
-            #sx = dat$sx)
+            true_h2 = dat$true_h2,
+            af = dat$af)
+  if(estimate_s){
+    R$s_estimate <- dat$s_estimate
+  }
   if(return_dat){
     R$L_mat <- dat$L_mat
     R$L_mat_joint_std <- dat$L_mat_joint_std

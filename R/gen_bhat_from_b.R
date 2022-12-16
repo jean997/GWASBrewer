@@ -28,6 +28,7 @@
 gen_bhat_from_b <- function(b_joint_std, b_joint,
                             trait_corr,  N,
                             R_LD = NULL, snp_info = NULL, af = NULL,
+                            estimate_s = FALSE,
                             L_mat_joint_std = NULL, theta_joint_std = NULL){
 
   #type <- match.arg(type, type)
@@ -82,6 +83,12 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                 R=R,
                 Z = Z)
 
+    if(estimate_s){
+      s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
+      s2_denom <- matrix(rchisq(n = J*M, df = nn$N-1), nrow = J, byrow = T )*sx^2
+      ret$s_estimate <- sqrt(t(t(1/s2_denom)*s2_num))
+    }
+
     if(!is.null(L_mat_joint_std)){
       ret$L_mat <-(1/sx)*L_mat_joint_std
     }
@@ -115,10 +122,10 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     ld_sqrt[[nblock + 1]] <- with(elb, vectors %*% diag(sqrt(values)))
   }
 
-  snp_info$block <- rep(seq(length(l)), each = l)
-  snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)})
+  snp_info$block <- rep(seq(length(l)), l)
+  snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)}) %>% unlist()
   snp_info_full <- snp_info[block_info$index,]
-  snp_info_full$rep <- rep(block_info$rep, each = block_info$l)
+  snp_info_full$rep <- rep(block_info$rep, block_info$l)
   snp_info_full$SNP <- with(snp_info_full, paste0(SNP, ".", rep))
 
   nb <- length(block_info$l)
@@ -130,7 +137,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
 
   E_LD_Z <- lapply(seq(nb), function(i){
-    tcrossprod(ld_sqrt[[block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], ]))
+    tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], ]))
   }) %>% do.call( rbind, .)
 
 
@@ -141,7 +148,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   }
 
   Z <- lapply(seq(nb), function(i){
-          tcrossprod(ld_mat[[block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
+          tcrossprod(ld_mat[[block_info$block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
     }) %>% do.call( rbind, .)
 
   Z_hat <- Z + E_LD_Z
@@ -154,11 +161,17 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
               Z = Z,
               snp_info = snp_info_full)
 
+  if(estimate_s){
+    s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
+    s2_denom <- matrix(rchisq(n = J*M, df = nn$N-1), nrow = J, byrow = T )*sx^2
+    ret$s_estimate <- sqrt(t(t(1/s2_denom)*s2_num))
+  }
+
   if(!is.null(L_mat_joint_std)){
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
     #if(type == "new"){
     L_mat <- lapply(seq(nb), function(i){
-                     tcrossprod(ld_mat[[block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
+                     tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
                       }) %>%
              do.call( rbind, .)
     L_mat <- L_mat/sx
@@ -168,7 +181,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     theta <- theta_joint_std*sx
     #if(type == "new"){
     theta <- lapply(seq(nb), function(i){
-                      tcrossprod(ld_mat[[block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
+                      tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
                     }) %>%
       do.call( rbind, .)
     theta <- theta/sx
