@@ -65,6 +65,16 @@
 #'dat$R
 #'cor(dat$beta_hat - dat$beta_marg)
 #'
+#'# A very simple example with LD
+#'# Use a pattern of two small blocks of LD
+#'A1 <- matrix(0.7, nrow = 10, ncol = 10)
+#'diag(A1) <- 1
+#'A2 <- matrix(0.1, nrow = 6, ncol = 6)
+#'diag(A2) <- 1
+#'snp_info <- data.frame(SNP = 1:16, AF = runif(n = 16))
+#'dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
+#'                G = G, R_E = R_E, R_LD = list(A1, A2), snp_info = snp_info)
+#'
 #' # Use xyz_to_G to generate G from xyz specification
 #' myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
 #'         dir_xz = c(1, -1), dir_yz = c(1,1), gamma = 0)
