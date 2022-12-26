@@ -47,15 +47,13 @@ it contains non-standardized effects. Use the appropriate argument, either \code
 }
 \examples{
 # Use gen_gwas_from_b to generate individual level data with given effect size.
-Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 1000)
+Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
 G <- matrix(0, nrow = 2, ncol = 2)
 R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
 # original data
-dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
+dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
-# data for second GWAS
-# Since we didn't supply af or an LD pattern in the original GWAS,
-# we have standardized effects.
-dat_new <- gen_bhat_from_b(b_joint_std = dat$beta_joint, N = 40000,
-                           trait_corr = dat$trait_corr)
+# Now generate GWAS data
+gw_dat <- gen_gwas_from_b(b_joint = dat$beta_joint, N = Ndf, V_E = c(0.6, 0.7),
+                           R_E = R_E, af = dat$af, calc_sumstats = TRUE)
 }

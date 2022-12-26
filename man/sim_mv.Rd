@@ -15,6 +15,7 @@ sim_mv(
   snp_info = NULL,
   af = NULL,
   sporadic_pleiotropy = TRUE,
+  estimate_s = FALSE,
   return_dat = FALSE
 )
 }

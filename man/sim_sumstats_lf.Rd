@@ -17,7 +17,8 @@ sim_sumstats_lf(
   af = NULL,
   R_LD = NULL,
   snp_info = NULL,
-  sporadic_pleiotropy = TRUE
+  sporadic_pleiotropy = TRUE,
+  estimate_s = FALSE
 )
 }
 \arguments{
