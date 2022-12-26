@@ -72,8 +72,10 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1))
     if(b_type == "non_std"){
       Z <- b_joint/se_beta_hat
+      true_h2 <- colSums( t(t(Z)/sqrt(nn$N)))
     }else{
       Z <- t(t(b_joint_std)*sqrt(nn$N))
+      true_h2 <- colSums(b_joint_std^2)
     }
     beta_hat <- (Z + E_Z)*se_beta_hat
 
@@ -81,7 +83,8 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                 se_beta_hat = se_beta_hat,
                 sx = sx,
                 R=R,
-                Z = Z)
+                Z = Z,
+                true_h2 = true_h2)
 
     if(estimate_s){
       s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
@@ -101,14 +104,11 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   #If LD,
 
   if(is.null(snp_info)) stop("Please provide snp_info to go with R_LD.")
-  #if(type == "new"){
+
   ld_mat <- check_R_LD(R_LD, "matrix")
   ld_sqrt <- check_R_LD(R_LD, "sqrt")
   l <- sapply(ld_mat, nrow)
-  #}else{
-  #  R_LD <- check_R_LD(R_LD, "eigen")
-  #  l <- sapply(R_LD, function(x){length(x$values)})
-  #}
+
   snp_info <- check_snpinfo(snp_info, l)
   nblock <- length(l)
 
@@ -136,6 +136,10 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1)) # J by M
 
 
+  # E_LD_Z are error terms which should have distribution
+  # E_LD_Z ~ N(0, R)
+  # Achieved by transforming E_Z_trait ~ N(0, 1) by
+  # E_LD_Z = sqrt(R) E_Z with sqrt(R) = U D^{1/2}
   E_LD_Z <- lapply(seq(nb), function(i){
     tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], ]))
   }) %>% do.call( rbind, .)
@@ -147,21 +151,33 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     Z <- t(t(b_joint_std)*sqrt(nn$N))
   }
 
-  Z <- lapply(seq(nb), function(i){
+  # E[Z_marg] = R Z_joint
+  Zm <- lapply(seq(nb), function(i){
           tcrossprod(ld_mat[[block_info$block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
     }) %>% do.call( rbind, .)
 
-  Z_hat <- Z + E_LD_Z
+  Z_hat <- Zm + E_LD_Z
   beta_hat <- Z_hat*se_beta_hat
+
+  # Compute true heritability as
+  # h^2 = diag(beta_joint^T Sigma_X beta_joint)
+  # = 1/N *(z_joint ^T R Z_joint)
+  true_h2 <- lapply(seq(nb), function(i){
+    # quad.diag(R, Z_joint)
+    colSums(crossprod(ld_mat[[block_info$block_index[i]]], Z[start_ix[i]:end_ix[i], ])*Z[start_ix[i]:end_ix[i], ])
+  }) %>% Reduce("+", .)
+  true_h2 <- true_h2/nn$N
 
   ret <- list(beta_hat =beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
-              Z = Z,
-              snp_info = snp_info_full)
+              Z = Zm,
+              snp_info = snp_info_full,
+              true_h2 = true_h2)
 
   if(estimate_s){
+    # Random estimate of s does not include correlation in errors due to LD
     s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
     s2_denom <- matrix(rchisq(n = J*M, df = nn$N-1), nrow = J, byrow = T )*sx^2
     ret$s_estimate <- sqrt(t(t(1/s2_denom)*s2_num))

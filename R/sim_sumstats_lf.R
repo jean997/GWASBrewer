@@ -194,7 +194,6 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   # Compute standardized effects
   # Since phenos are scaled to variance 1, sqrt(N_m)*beta_{j,m} = z_{j,m}
   beta_std = L_mat %*% t(F_mat) + theta
-  true_h2 = colSums(beta_std^2) # this assumes no ld
 
   #Compute row covariance
   Sigma_G <- F_mat %*% t(F_mat) + J*diag(pi_theta*sigma_theta^2)
@@ -235,12 +234,11 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               R_E = R_E,
               trait_corr = trait_corr,
               R=sum_stats$R,
-              true_h2 = true_h2,
+              true_h2 = sum_stats$true_h2,
               af = af)
   if(estimate_s){
     ret$s_estimate <- sum_stats$s_estimate
   }
-              #sx = sum_stats$sx)
 
   if(!is.null(R_LD)){
     ret$snp_info <- sum_stats$snp_info
