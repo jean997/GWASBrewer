@@ -108,11 +108,6 @@ check_Ndf <- function(N, M){
   return(list(Ndf = N, N = diag(Nmat), Nc = Nc))
 }
 
-
-
-
-
-
 check_psd <- function(M, string){
   if(!Matrix::isSymmetric(M)){
     stop(paste0(string, " must be symmetric.\n"))
