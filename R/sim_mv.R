@@ -12,7 +12,6 @@
 #'on the diagonal.
 #'@param R_E Environmental correlation between traits. R_E is ignored if there is no sample overlap.
 #'@param R_LD List of eigen decompositions of LD correlation matrices, may be missing.
-#'@param snp_info If R_LD is provided, provide a data frame with columns "SNP" and "AF"
 #'@param af Optional vector of allele frequencies.
 #'This option is only used when data are generated without LD.
 #'Otherwise the allele frequency in snp_info is used instead.
@@ -71,9 +70,9 @@
 #'diag(A1) <- 1
 #'A2 <- matrix(0.1, nrow = 6, ncol = 6)
 #'diag(A2) <- 1
-#'snp_info <- data.frame(SNP = 1:16, AF = runif(n = 16))
+#'af <- runif(n = 16)
 #'dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G, R_E = R_E, R_LD = list(A1, A2), snp_info = snp_info)
+#'                G = G, R_E = R_E, R_LD = list(A1, A2), af = af)
 #'
 #' # Use xyz_to_G to generate G from xyz specification
 #' myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
@@ -87,8 +86,10 @@
 #'@export
 sim_mv <- function(N, J,
                    h2, pi, G, R_E = NULL,
-                   R_LD = NULL, snp_info = NULL, af = NULL,
+                   R_LD = NULL, af = NULL,
                    sporadic_pleiotropy = TRUE,
+                   pi_exact = FALSE,
+                   h2_exact = FALSE,
                    estimate_s = FALSE,
                    return_dat  = FALSE){
 
@@ -106,7 +107,7 @@ sim_mv <- function(N, J,
 
   F_mat <- t(G_t)
 
-  dat <- sim_sumstats_lf(F_mat = F_mat,
+  dat <- sim_lf(F_mat = F_mat,
                          N = N, J = J,
                          h2_trait = h2,
                          omega = rep(1, n),
@@ -116,7 +117,7 @@ sim_mv <- function(N, J,
                          pi_theta = 1,
                          R_E = R_E,
                          R_LD = R_LD,
-                         snp_info  = snp_info,
+                         #snp_info  = snp_info,
                          sporadic_pleiotropy = sporadic_pleiotropy,
                          estimate_s = estimate_s)
   direct_SNP_effects <- t(t(dat$L_mat)*diag(dat$F_mat))
@@ -127,14 +128,14 @@ sim_mv <- function(N, J,
             direct_SNP_effects_marg = direct_SNP_effects,
             direct_SNP_effects_joint = direct_SNP_effects_joint,
             direct_trait_effects = G$G_dir,
-            total_trait_effects = t(dat$F_mat)/diag(dat$F_mat),
+            total_trait_effects = G$G_tot,
             beta_joint = dat$beta_joint,
             beta_marg = dat$beta_marg,
             trait_corr = dat$trait_corr,
             R = dat$R,
-            R_E = dat$R_E,
-            true_h2 = dat$true_h2,
-            af = dat$af)
+            Sigma_G = dat$Sigma_G,
+            Sigma_E = dat$Sigma_E,
+            snp_info = dat$snp_info)
   if(estimate_s){
     R$s_estimate <- dat$s_estimate
   }
@@ -143,8 +144,7 @@ sim_mv <- function(N, J,
     R$L_mat_joint_std <- dat$L_mat_joint_std
     R$F_mat <- dat$F_mat
   }
-  if(!is.null(R_LD)) R$snp_info <- dat$snp_info
-  diag(R$total_trait_effects) <- 0
+
   return(R)
 }
 

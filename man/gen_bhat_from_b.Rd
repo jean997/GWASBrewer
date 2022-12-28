@@ -10,7 +10,6 @@ gen_bhat_from_b(
   trait_corr,
   N,
   R_LD = NULL,
-  snp_info = NULL,
   af = NULL,
   estimate_s = FALSE,
   L_mat_joint_std = NULL,
@@ -28,8 +27,6 @@ gen_bhat_from_b(
 \item{N}{Sample size, scalar, vector, or matrix. See \code{?sim_mv} for more details.}
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
-
-\item{snp_info}{(optional, required if \code{R_LD} is supplied).}
 
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
 }

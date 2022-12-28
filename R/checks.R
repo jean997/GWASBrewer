@@ -156,7 +156,7 @@ direct_to_total <- function(G_dir){
   return(G_total)
 }
 
-check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt")){
+check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   return <- match.arg(return, return)
   if(class(R_LD) != "list"){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
@@ -211,6 +211,19 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt")){
         tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
     }
+  }else if(return == "l"){
+    if(all(cl == "eigen")){
+      l <- sapply(R_LD, function(x){length(x$values)})
+    }else if(all(cl == "matrix")){
+      l <- sapply(R_LD, nrow)
+    }else{
+      l <- rep(NA, length(R_LD))
+      ie <- which(cl == "eigen")
+      l[ie] <- sapply(R_LD[ie], function(x){length(x$values)})
+      im <- which(cl == "matrix")
+      l[im] <- sapply(R_LD[im], function(m){nrow(m)})
+    }
+    return(l)
   }
   return(R_LD)
 }
@@ -227,6 +240,45 @@ check_snpinfo <- function(snp_info, l){
   snp_info$block <- rep(seq(length(l)), l)
   snp_info$ix_in_block <- sapply(l, function(ll){seq(ll)}) %>% unlist()
   return(snp_info)
+}
+
+check_af <- function(af, n, function_ok = TRUE){
+  if(is.null(af)){
+    return(NULL)
+  }else if(class(af) == "function"){
+    if(!function_ok) stop("af cannot be a function.\n")
+    myaf <- af(n)
+    af <- myaf
+  }
+  af <- check_scalar_or_numeric(af, "af", n)
+  af <- check_01(af)
+  return(af)
+}
+
+
+
+check_snp_effect_function <- function(snp_effect_function){
+
+  if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function")){
+    stop("snp_effect_function should either be 'normal' or a function.")
+  }
+  if(class(snp_effect_function) == "function"){
+
+    x <- tryCatch(snp_effect_function(n = 3, sd = 1), error = function(e){
+      stop(paste0("Failed to run snp_effect_function with error: ", e) )
+    })
+    x <- tryCatch(snp_effect_function(n = 3, sd = 1,af= rep(0.5, 3)), error = function(e){
+      stop(paste0("Failed to run snp_effect_function with error: ", e) )
+    })
+    return(snp_effect_function)
+  }else if(snp_effect_function == "normal"){
+    f <- function(n, sd, ...){
+      rnorm(n =n, mean = 0, sd = sd)
+    }
+    return(f)
+  }else{
+    stop("snp_effect_function should either be 'normal' or a function.")
+  }
 }
 
 

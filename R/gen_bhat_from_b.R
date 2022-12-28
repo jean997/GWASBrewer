@@ -5,7 +5,6 @@
 #'@param trait_corr Matrix of population trait correlation (traits by traits)
 #'@param N Sample size, scalar, vector, or matrix. See \code{?sim_mv} for more details.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
-#'@param snp_info (optional, required if \code{R_LD} is supplied).
 #'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
 #'@details This function can be used to generate new GWAS results with the same effect sizes by passing in the \code{beta_joint} table
 #'from a data set simulated using `sim_mv`. If the
@@ -27,9 +26,11 @@
 #'@export
 gen_bhat_from_b <- function(b_joint_std, b_joint,
                             trait_corr,  N,
-                            R_LD = NULL, snp_info = NULL, af = NULL,
+                            R_LD = NULL,
+                            af = NULL,
                             estimate_s = FALSE,
-                            L_mat_joint_std = NULL, theta_joint_std = NULL){
+                            L_mat_joint_std = NULL,
+                            theta_joint_std = NULL){
 
   #type <- match.arg(type, type)
   if(!missing(b_joint)){
@@ -61,30 +62,34 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   if(is.null(R_LD)){
     # compute sqrt(var(genos))
+    af <- check_af(af, J)
     if(is.null(af)){
       sx <- rep(1, J)
     }else{
-      af <- check_scalar_or_numeric(af, "af", J)
       sx <- sqrt(2*af*(1-af))
-      if(length(sx) == 1) sx <- rep(sx, J)
     }
-    # se(beta_hat)_{ij} = 1/(sqrt(N_j)*sd(x_i))
+    # se(beta_hat)_{ij} \approx 1/(sqrt(N_j)*sd(x_i))
     se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1))
     if(b_type == "non_std"){
       Z <- b_joint/se_beta_hat
-      true_h2 <- colSums( t(t(Z)/sqrt(nn$N)))
+      #true_h2 <- colSums( t(t(Z)/sqrt(nn$N)))
     }else{
       Z <- t(t(b_joint_std)*sqrt(nn$N))
-      true_h2 <- colSums(b_joint_std^2)
+      #true_h2 <- colSums(b_joint_std^2)
     }
     beta_hat <- (Z + E_Z)*se_beta_hat
-
+    if(!is.null(af)){
+      snp_info = data.frame(SNP = seq(J), AF = af)
+    }else{
+      snp_info = data.frame(SNP = seq(J), AF = NA)
+    }
     ret <- list(beta_hat =beta_hat,
                 se_beta_hat = se_beta_hat,
                 sx = sx,
                 R=R,
                 Z = Z,
-                true_h2 = true_h2)
+                snp_info = snp_info)
+                #true_h2 = true_h2)
 
     if(estimate_s){
       s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
@@ -103,13 +108,14 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   #If LD,
 
-  if(is.null(snp_info)) stop("Please provide snp_info to go with R_LD.")
+  if(is.null(af)) stop("Please provide af to go with R_LD.")
 
   ld_mat <- check_R_LD(R_LD, "matrix")
   ld_sqrt <- check_R_LD(R_LD, "sqrt")
-  l <- sapply(ld_mat, nrow)
+  l <- check_R_LD(R_LD, "l")
 
-  snp_info <- check_snpinfo(snp_info, l)
+  #snp_info <- check_snpinfo(snp_info, l)
+  af <- check_af(af, sum(l), function_ok = FALSE)
   nblock <- length(l)
 
   block_info <- assign_ld_blocks(l, J)
@@ -122,6 +128,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     ld_sqrt[[nblock + 1]] <- with(elb, vectors %*% diag(sqrt(values)))
   }
 
+  snp_info <- data.frame(SNP = 1:sum(l), AF = af)
   snp_info$block <- rep(seq(length(l)), l)
   snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)}) %>% unlist()
   snp_info_full <- snp_info[block_info$index,]
@@ -159,22 +166,12 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   Z_hat <- Zm + E_LD_Z
   beta_hat <- Z_hat*se_beta_hat
 
-  # Compute true heritability as
-  # h^2 = diag(beta_joint^T Sigma_X beta_joint)
-  # = 1/N *(z_joint ^T R Z_joint)
-  true_h2 <- lapply(seq(nb), function(i){
-    # quad.diag(R, Z_joint)
-    colSums(crossprod(ld_mat[[block_info$block_index[i]]], Z[start_ix[i]:end_ix[i], ])*Z[start_ix[i]:end_ix[i], ])
-  }) %>% Reduce("+", .)
-  true_h2 <- true_h2/nn$N
-
   ret <- list(beta_hat =beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
               Z = Zm,
-              snp_info = snp_info_full,
-              true_h2 = true_h2)
+              snp_info = snp_info_full)
 
   if(estimate_s){
     # Random estimate of s does not include correlation in errors due to LD
@@ -185,7 +182,6 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   if(!is.null(L_mat_joint_std)){
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
-    #if(type == "new"){
     L_mat <- lapply(seq(nb), function(i){
                      tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
                       }) %>%
@@ -195,7 +191,6 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   }
   if(!is.null(theta_joint_std)){
     theta <- theta_joint_std*sx
-    #if(type == "new"){
     theta <- lapply(seq(nb), function(i){
                       tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
                     }) %>%

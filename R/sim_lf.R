@@ -45,24 +45,26 @@
 #'@examples
 #'myF <- generate_random_F(K = 3, M = 10, nz_factor = c(2, 3, 2),
 #'                         omega = rep(0.8, 10), h2_trait = rep(0.6, 10), pad = TRUE)
-#'dat <- sim_sumstats_lf(myF, N = 10000, J = 20000, h2_trait = rep(0.6, 10),
+#'dat <- sim_lf(myF, N = 10000, J = 20000, h2_trait = rep(0.6, 10),
 #'                       omega = rep(0.8, 10), pi_L = 0.1, pi_theta = 0.1)
 #'
 #'myF <- diag(2)
 #'N <- matrix(c(10000, 8000, 8000, 10000), nrow = 2)
 #'R_E <- matrix(c(1, 0.6, 0.6, 1), nrow = 2)
-#'dat <- sim_sumstats_lf(F_mat = myF, N = N, J = 20000, h2_trait = rep(0.6, 2), omega = rep(1, 2), h2_factor = rep(1, 2),
+#'dat <- sim_lf(F_mat = myF, N = N, J = 20000, h2_trait = rep(0.6, 2), omega = rep(1, 2), h2_factor = rep(1, 2),
 #'                        pi_L = 0.1, pi_theta = 0.1, R_E = R_E)
 #'dat$R
 #'cor(dat$beta_hat[,1]-dat$beta_joint[,1], dat$beta_hat[,2]-dat$beta_joint[,2])
-
-
 #'@export
-sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
+sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                             pi_L, pi_theta, R_E=NULL,
-                            af = NULL, R_LD = NULL, snp_info = NULL,
+                            af = NULL,
+                            R_LD = NULL,
                             sporadic_pleiotropy = TRUE,
-                            estimate_s = FALSE){
+                            estimate_s = FALSE,
+                            snp_effect_function = "normal",
+                            h2_exact = FALSE,
+                            pi_exact = FALSE){
 
   # Argument checks
   F_mat <- check_matrix(F_mat, "F_mat")
@@ -79,6 +81,10 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   pi_L <- check_01(pi_L)
   pi_theta <- check_scalar_or_numeric(pi_theta, "pi_theta", M)
   pi_theta <- check_01(pi_theta)
+
+
+  f <- check_snp_effect_function(snp_effect_function)
+
 
   if(any(omega < 1 & pi_theta == 0)){
     i <- which(omega < 1 & pi_theta == 0)
@@ -111,21 +117,18 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   #af
   if(is.null(R_LD)){
-    if(is.null(af)){
-      sx <- rep(1, J)
-    }else if(class(af) == "function"){
-      myaf <- af(J)
-      sx <- sqrt(2*myaf*(1-myaf))
-      af <- myaf
-    }else{
-      af <- check_scalar_or_numeric(af, "af", J)
-      af <- check_01(af)
-      sx <- sqrt(2*af*(1-af))
-    }
+    AF <- check_af(af, J)
+  }else{
+    # We need af to feed to snp effect function
+    if(is.null(af)) stop("Please provide af to go with R_LD.")
+    l <- check_R_LD(R_LD, "l")
+    AF <- check_af(af, sum(l), function_ok = FALSE)
+    block_info <- assign_ld_blocks(l, J)
+    AF <- AF[block_info$index]
   }
 
 
-  #Re-scale F or generate it if it is missing
+  #Re-scale rows of F
   srs <- omega*h2_trait # target rowSums(F^2)
   if(any(rowSums(F_mat == 0) == K & srs >0)){
       stop("One row of F is zero but corresponds to non-zero omega and h2_trait\n")
@@ -138,75 +141,56 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
   #Generate theta
-  sigma_theta <- sqrt( (1/(pi_theta*J)) * (1-omega)*h2_trait)
-  sigma_theta[omega == 1] <- 0
+  theta <- sample_effects_matrix(J = J,
+                                 pi = pi_theta,
+                                 sigma = sqrt((1-omega)*h2_trait),
+                                 f = f,
+                                 sporadic_pleiotropy = sporadic_pleiotropy ,
+                                 pi_exact = pi_exact,
+                                 h2_exact = h2_exact,
+                                 R_LD = R_LD,
+                                 af = af)
 
-  if(all(sigma_theta == 0)){
-    theta <- matrix(0, nrow = J, ncol = M)
-  }else if(sporadic_pleiotropy){
-    theta <- purrr::map(seq(M), function(i){
-      t <- rbinom(n=J, size=1, prob = pi_theta[i])
-      n <- sum(t==1)
-      t[t==1] <- rnorm(n=n, mean=0, sd = sigma_theta[i])
-      return(t)
-    }) %>% do.call(cbind, .)
-  }else{
-    ix <- which(sigma_theta > 0)
-    if(sum(pi_theta[ix]) > 1){
-      stop("You have requested too many traits and too many causal variants to use sporadic_pleiotropy = FALSE.\n")
-    }
-    p <- sum(pi_theta[ix])
-    nz_theta_ix <- sample(c(0, ix), size = J, replace = TRUE, prob = c(1-p, pi_theta[ix]) )
-    theta <- purrr::map(seq(M), function(i){
-      t <- which(nz_theta_ix == i)
-      n <- length(t)
-      val <- rep(0, J)
-      if(n > 0) val[t] <- rnorm(n=n, mean=0, sd = sigma_theta[i])
-      return(val)
-    }) %>% do.call(cbind, .)
-  }
+
 
   #Generate L
-  sigma_L <- sqrt(1/(pi_L*J))
-  if(sporadic_pleiotropy){
-    L_mat <- purrr::map(seq(K), function(i){
-      l <- rbinom(n=J, size=1, prob = pi_L[i])
-      n <- sum(l==1)
-      l[l==1] <- rnorm(n=n, mean=0, sd = sigma_L[i])
-      return(l)
-    }) %>% do.call(cbind, .)
-  }else{
-    if(sum(pi_L) > 1){
-      stop("You have requested too many factors and too many causal variants to use sporadic_pleiotropy = FALSE.\n")
-    }
-    p <- sum(pi_L)
-    nz_L_ix <- sample(c(0, seq(K)), size = J, replace = TRUE, prob = c(1-p, pi_L) )
-    L_mat <- purrr::map(seq(K), function(i){
-      l <- which(nz_L_ix == i)
-      n <- length(l)
-      val <- rep(0, J)
-      if(n > 0) val[l] <- rnorm(n=n, mean=0, sd = sigma_L[i])
-      return(val)
-    }) %>% do.call(cbind, .)
-  }
+  L_mat <- sample_effects_matrix(J = J,
+                                 pi = pi_L,
+                                 sigma = 1,
+                                 f = f,
+                                 sporadic_pleiotropy = sporadic_pleiotropy ,
+                                 pi_exact = pi_exact,
+                                 h2_exact = h2_exact,
+                                 R_LD = R_LD,
+                                 af = af)
 
 
   # Compute standardized effects
   # Since phenos are scaled to variance 1, sqrt(N_m)*beta_{j,m} = z_{j,m}
   beta_std = L_mat %*% t(F_mat) + theta
 
-  #Compute row covariance
-  Sigma_G <- F_mat %*% t(F_mat) + J*diag(pi_theta*sigma_theta^2)
+  #Compute row (trait) covariance
+  # genetic trait covariance
+  #Sigma_G <- F_mat %*% t(F_mat) + diag((1-omega)*h2_trait, nrow = M)
+  # Now using true genetic covariance
+  Sigma_G <- compute_h2(b_joint_std = beta_std,
+                        R_LD = R_LD,
+                        af = af,
+                        full_mat = TRUE)
 
+
+  # trait covariance due to non-genetic factor component
   sigma2_F <- (1-h2_factor)/(h2_factor)
   Sigma_FE <- F_mat %*% diag(sigma2_F) %*% t(F_mat)
 
-  if(any(h2_trait + diag(Sigma_FE) > 1)){
+  if(any(diag(Sigma_G) + diag(Sigma_FE) > 1)){
     stop("Provided parameters are incompatible with F_mat.\n")
   }
 
-  sigma_E <- sqrt(1 - h2_trait - diag(Sigma_FE))
+  # Trait covariance due to environmental contribution not mediated by factors
+  sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
   Sigma_E <- diag(sigma_E) %*% R_E %*% diag(sigma_E)
+
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
@@ -215,13 +199,11 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
-                               snp_info = snp_info,
                                af = af,
                                estimate_s = estimate_s,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
 
-  beta_marg <- with(sum_stats, Z*se_beta_hat)
   ret <- list(beta_hat =sum_stats$beta_hat,
               se_beta_hat = sum_stats$se_beta_hat,
               L_mat = sum_stats$L_mat,
@@ -230,25 +212,14 @@ sim_sumstats_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               L_mat_joint = L_mat/sum_stats$sx,
               theta_joint = theta/sum_stats$sx,
               beta_joint = beta_std/sum_stats$sx,
-              beta_marg = beta_marg,
-              R_E = R_E,
+              beta_marg =  with(sum_stats, Z*se_beta_hat),
+              Sigma_G = Sigma_G,
+              Sigma_E = Sigma_FE + Sigma_E,
               trait_corr = trait_corr,
               R=sum_stats$R,
-              true_h2 = sum_stats$true_h2,
-              af = af)
+              snp_info = sum_stats$snp_info)
   if(estimate_s){
     ret$s_estimate <- sum_stats$s_estimate
   }
-
-  if(!is.null(R_LD)){
-    ret$snp_info <- sum_stats$snp_info
-  }
   return(ret)
 }
-
-
-
-
-
-
-
