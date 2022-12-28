@@ -62,11 +62,11 @@ gen_genos_mvn <- function(n, J, R_LD, af){
 #'                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
 #'# Now generate GWAS data
 #'gw_dat <- gen_gwas_from_b(b_joint = dat$beta_joint, N = Ndf, V_E = c(0.6, 0.7),
-#'                            R_E = R_E, af = dat$af, calc_sumstats = TRUE)
+#'                            R_E = R_E, af = dat$snp_info$AF, calc_sumstats = TRUE)
 #'@export
 gen_gwas_from_b <- function(b_joint_std, b_joint,
                             N, V_E, R_E = NULL,
-                            R_LD = NULL, snp_info = NULL, af = NULL,
+                            R_LD = NULL, af = NULL,
                             sim_func = gen_genos_mvn,
                             calc_sumstats = TRUE){
 
@@ -108,20 +108,16 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
     if(is.null(af)){
       stop("Must supply one of af or R_LD.\n")
     }
-    if(class(af) == "function"){
-      myaf <- af(J)
-      af <- myaf
-    }
-    af <- check_scalar_or_numeric(af, "af", J)
-    af <- check_01(af)
+    af <- check_af(af, J)
     X <- sim_func(ntotal, J, NULL, af)
   }else{
     if(is.null(snp_info)){
       stop("Please provide snp_info with R_LD.\n")
     }
-    X <- sim_func(ntotal, J, R_LD, sim_info$AF)
+    af <- check_af(af, J, function_ok = FALSE)
+    X <- sim_func(ntotal, J, R_LD, af)
   }
-  af <- check_scalar_or_numeric(X$af, "af", J)
+  af <- check_af(X$af, J, function_ok = FALSE)
   X <- check_matrix(X$X, "genos", ntotal, J)
 
 

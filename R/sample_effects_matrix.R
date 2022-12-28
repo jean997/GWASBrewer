@@ -51,7 +51,7 @@ sample_effects_matrix <- function(J, pi, sigma, f,
         if(n > 0) nz_ix[ii] <- i
       }
     }else{
-      p <- sum(pi_theta[ix])
+      p <- sum(pi[ix])
       nz_ix <- sample(c(0, ix), size = J, replace = TRUE, prob = c(1-p, pi[ix]) )
     }
     eff <- purrr::map(seq(M), function(i){

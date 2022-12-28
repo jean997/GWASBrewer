@@ -36,6 +36,16 @@ compute_h2 <- function(b_joint_std,
   af_ld <- check_af(af, sum(l), function_ok = FALSE)
   nblock <- length(l)
   block_info <- assign_ld_blocks(l, J)
+  if(!is.null(block_info$last_block_info)){
+    b <- block_info$last_block_info[1]
+    x <- block_info$last_block_info[2]
+    last_block <- ld_mat[[b]][seq(x), seq(x)]
+    ld_mat[[nblock + 1]] <- last_block
+
+  }
+
+
+
   af <- af_ld[block_info$index]
   sx <- sqrt(2*af*(1-af))
   if(b_type == "non_std"){
