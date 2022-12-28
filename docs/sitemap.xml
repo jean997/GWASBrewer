@@ -22,10 +22,16 @@
     <loc>/reference/gen_bhat_from_b.html</loc>
   </url>
   <url>
+    <loc>/reference/gen_gwas_from_b.html</loc>
+  </url>
+  <url>
     <loc>/reference/generate_random_F.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/rnormalmix.html</loc>
   </url>
   <url>
     <loc>/reference/simGWAS.html</loc>
@@ -40,10 +46,10 @@
     <loc>/reference/sim_ld_prune.html</loc>
   </url>
   <url>
-    <loc>/reference/sim_mv.html</loc>
+    <loc>/reference/sim_lf.html</loc>
   </url>
   <url>
-    <loc>/reference/sim_sumstats_lf.html</loc>
+    <loc>/reference/sim_mv.html</loc>
   </url>
   <url>
     <loc>/reference/xyz_to_G.html</loc>

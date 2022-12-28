@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0037</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0056</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -87,16 +87,19 @@
 <span class="r-in"><span><span class="va">G</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_mv.html">sim_mv</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">10000</span>, J <span class="op">=</span> <span class="fl">50000</span>, h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>, pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
 <span class="r-in"><span>               G <span class="op">=</span> <span class="va">G</span>,  R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, snp_info <span class="op">=</span> <span class="va">snpdata</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 50000 SNPs and 2 traits.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,     G = G, R_LD = ld_mat_list, snp_info = snpdata):</span> unused argument (snp_info = snpdata)</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># extract ld matrix for all variants with p-value for trait 1 less than 1e-5</span></span></span>
 <span class="r-in"><span><span class="va">pvals</span> <span class="op">&lt;-</span> <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">/</span><span class="va">dat</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">index</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">pvals</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;</span> <span class="fl">1e-5</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">ld_mat</span> <span class="op">&lt;-</span> <span class="fu">sim_extract_ld</span><span class="op">(</span><span class="va">dat</span>, <span class="va">index</span>, <span class="va">ld_mat_list</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in group_by(., block, rep):</span> Must group by variables found in `.data`.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Column `block` is not found.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Column `rep` is not found.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ld_mat</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 541 541</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'ld_mat' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">index</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 541</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 42</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0039</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0056</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,14 +148,23 @@ components of each trait (see “Sample Overlap” for more details).
 Defaults to the identity. <code>R_E</code> only affects summary
 statistics when there is sample overlap.</li>
 <li>
-<code>R_LD</code> and <code>snp_info</code>: Options used if GWAS
-data should have LD (See “Simulating Data with LD”).</li>
+<code>R_LD</code>: A list of LD blocks (See “Simulating Data with
+LD”).</li>
 <li>
-<code>af</code>: Optional vector of allele frequencies. This option
-is only used if data have no LD.</li>
+<code>af</code>: Optional vector of allele frequencies.</li>
 <li>
 <code>sporadic_pleiotropy</code>: Allow a single variant to have
 direct effects on multiple traits. Defaults to TRUE.</li>
+<li>
+<code>pi_exact</code>: If TRUE, the number of direct effect SNPs for
+each trait will be exactly equal to <code>round(pi*J)</code>. Defaults
+to FALSE.</li>
+<li>
+<code>h2_exact</code>: If TRUE, the heritability of each trait will
+be exactly <code>h2</code>. Defaults to FALSE.</li>
+<li>
+<code>estimate_s</code>: If TRUE, return estimates of
+se(beta_hat).</li>
 <li>
 <code>return_dat</code>: A developer option, return some extra data
 that is useful for debugging and testing.</li>
@@ -166,45 +175,37 @@ that is useful for debugging and testing.</li>
 </h3>
 <p>The <code>sim_mv</code> function returns a list with the following
 elements</p>
-<ul>
-<li>
-<code>beta_hat</code>, <code>se_beta_hat</code>: Simulated GWAS
-effect estimates and standard errors</li>
-<li>
-<code>beta_joint</code>: Total causal effects of SNPs on
-traits.</li>
-<li>
-<code>beta_marg</code>: Expected marginal association of SNPs on
-traits. <code>beta_marg</code> is the expected value of
+<p>GWAS summary statistics are contained in two or three matrices: +
+<code>beta_hat</code>: Simulated GWAS effect estimates and standard
+errors. + <code>se_beta_hat</code>: True standard errors of
+<code>beta_hat</code>. + <code>s_estimate</code>: If
+<code>estimate_s= TRUE</code> then a simulated estimate of
+<code>se_beta_hat</code>.</p>
+<p>True marginal and joint total and direct effects are contained in
+four matrices: + <code>beta_joint</code>: Total causal effects of SNPs
+on traits. + <code>beta_marg</code>: Expected marginal association of
+SNPs on traits. <code>beta_marg</code> is the expected value of
 <code>beta_hat</code>. When there is no LD, <code>beta_marg</code> and
-<code>beta_joint</code> are the same.</li>
-<li>
-<code>direct_SNP_effects_joint</code>: Direct causal effects of SNPs
-on traits. Direct means not mediated by other traits.</li>
-<li>
-<code>direct_SNP_effects_marg</code>: Like <code>beta_marg</code>
-but considering only direct rather than total effects.</li>
-<li>
-<code>trait_corr</code>: Population trait correlation. This is
-determined by genetic sharing (from trait heritability and
-<code>G</code>) and environmental correlation, <code>R_E</code>.</li>
-<li>
-<code>R</code>: Correlation in sampling error of
-<code>beta_hat</code> across traits. This is the identity if there is no
-sample overlap. Otherwise it is a function of <code>trait_corr</code>
-and the amount of sample overlap.</li>
-<li>
+<code>beta_joint</code> are the same. +
+<code>direct_SNP_effects_joint</code>: Direct causal effects of SNPs on
+traits. Direct means not mediated by other traits. +
+<code>direct_SNP_effects_marg</code>: Like <code>beta_marg</code> but
+considering only direct rather than total effects.</p>
+<p>The relaionship between traits is contained in two matrices: +
 <code>direct_trait_effects</code>: Matrix of direct effects between
-traits</li>
-<li>
-<code>total_trait_effects</code>: Matrix of total effects between
-traits</li>
-</ul>
-<p>The order of the columns in <code>beta_hat</code>,
-<code>se_beta_hat</code>, <code>direct_SNP_effects_joint</code>,
-<code>direct_SNP_effects_marg</code>, <code>beta_joint</code>, and
-<code>beta_marg</code> corresponds to the order of variables in
-<code>G</code>.</p>
+traits + <code>total_trait_effects</code>: Matrix of total effects
+between traits</p>
+<p>Trait covariance is described by four matrices: +
+<code>Sigma_G</code>: Genetic variance-covariance matrix, determined by
+heritability and <code>G</code>. + <code>Sigma_E</code>: Environmental
+variance-covariance matrix. This is determined by heritability and
+<code>R_E</code>. + <code>trait_corr</code>: Population trait
+correlation, equal to <code>Sigma_G + Sigma_E</code>. + <code>R</code>:
+Correlation in sampling error of <code>beta_hat</code> across traits,
+equal to <code>trait_corr</code> scaled by a matrix of sample overlap
+proportions.</p>
+<p>The order of the columns of all results corresponds to the order of
+variables in <code>G</code>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -244,13 +245,97 @@ explained by the direct effect of trait <span class="math inline">\(i\)</span>.<
 <span>                  pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">50000</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 50000 SNPs and 4 traits.</span></span></code></pre></div>
 <p>In the function call above, we specified a GWAS sample size of 60k
-for every GWAS with no overlap. We gave different heritabilities of each
-of the four traits (the <code>h2</code> argument). Every trait has an
-expected 1000 direct effect SNPs (the <code>pi</code> argument). Note
-that <code>pi</code> specifies the expected proportion of direct effect
-SNPs not the expected number of direct effect SNPs. <code>J</code>
-specifies the total number of variants to generate, in this case
-50,000.</p>
+for every GWAS with no overlap. We gave different expected
+heritabilities of each of the four traits (the <code>h2</code>
+argument). Every trait has an expected 1000 direct effect SNPs (the
+<code>pi</code> argument). Note that <code>pi</code> specifies the
+expected proportion of direct effect SNPs not the expected number of
+direct effect SNPs. <code>J</code> specifies the total number of
+variants to generate, in this case 50,000.</p>
+<p>Using the default settings, the number of direct effect variants will
+not be exactly equal to 1000 and the realized heritability will not be
+exactly equal to the input expected heritability. The realized
+heritability is obtained from the diagonal of the genetic
+variance-covariance matrix, <code>Sigma_G</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1032 1026  952  985</span></span>
+<span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">Sigma_G</span></span>
+<span><span class="co">#&gt;            X          Y          Z           W</span></span>
+<span><span class="co">#&gt; X 0.31379739 0.15642833  0.2242326  0.04843606</span></span>
+<span><span class="co">#&gt; Y 0.15642833 0.30692614  0.1112905  0.09569127</span></span>
+<span><span class="co">#&gt; Z 0.22423261 0.11129048  0.4975486 -0.15038721</span></span>
+<span><span class="co">#&gt; W 0.04843606 0.09569127 -0.1503872  0.38516519</span></span></code></pre></div>
+<p>Additionally, direct effect variants are chosen randomly so some
+variants will have direct effects on multiple traits, a phenomenon
+referred to as sporadic pleiotropy.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span> </span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Direct "</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span>, <span class="st">"W"</span><span class="op">)</span>, <span class="st">" effect"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by_all.html" class="external-link">group_by_all</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarize</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="op">-</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="co">#&gt; `summarise()` has grouped output by 'Direct X effect', 'Direct Y effect',</span></span>
+<span><span class="co">#&gt; 'Direct Z effect'. You can override using the `.groups` argument.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 11 × 5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># Groups:   Direct X effect, Direct Y effect, Direct Z effect [7]</span></span></span>
+<span><span class="co">#&gt;    `Direct X effect` `Direct Y effect` `Direct Z effect` `Direct W effect`     n</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> FALSE             FALSE             FALSE             FALSE             <span style="text-decoration: underline;">46</span>127</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> TRUE              FALSE             FALSE             FALSE               973</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> FALSE             TRUE              FALSE             FALSE               960</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> FALSE             FALSE             FALSE             TRUE                935</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> FALSE             FALSE             TRUE              FALSE               883</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> FALSE             TRUE              TRUE              FALSE                30</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> TRUE              FALSE             TRUE              FALSE                21</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> TRUE              TRUE              FALSE             FALSE                21</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> FALSE             FALSE             TRUE              TRUE                 18</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> TRUE              FALSE             FALSE             TRUE                 17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> FALSE             TRUE              FALSE             TRUE                 15</span></span></code></pre></div>
+<p>These features can be controlled using the <code>pi_exact</code>,
+<code>h2_exact</code>, and <code>sporadic_pleiotropy</code> options.
+Using <code>pi_exact = TRUE</code> forces the number of direct effect
+variants to be exactly equal to 1000. <code>h2_exact = TRUE</code>
+forces the realized heritability to be (nearly) exactly equal to the
+input <code>h2</code> and <code>sporadic_pleiotropy = FALSE</code>
+prevents sporadic pleiotropy. If <code>sporadic_pleiotropy = TRUE</code>
+(the default value), <code>h2_exact</code> will result in trait
+heritabilities very close but not exactly equal to <code>h2</code>. Note
+that <code>sporadic_pleiotropy = FALSE</code> will result in an error if
+there are a large number of traits and/or <code>pi</code> is large.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_dat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
+<span>                  N <span class="op">=</span> <span class="fl">60000</span>, J <span class="op">=</span> <span class="fl">50000</span>, </span>
+<span>                  h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.4</span><span class="op">)</span>, </span>
+<span>                  pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">50000</span>, </span>
+<span>                  pi_exact <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>                  h2_exact <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>                  sporadic_pleiotropy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SNP effects provided for 50000 SNPs and 4 traits.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1000 1000 1000 1000</span></span>
+<span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">Sigma_G</span></span>
+<span><span class="co">#&gt;            X          Y          Z           W</span></span>
+<span><span class="co">#&gt; X 0.30000000 0.15000000  0.2236068  0.04114918</span></span>
+<span><span class="co">#&gt; Y 0.15000000 0.30000000  0.1118034  0.09172584</span></span>
+<span><span class="co">#&gt; Z 0.22360680 0.11180340  0.5000000 -0.15190340</span></span>
+<span><span class="co">#&gt; W 0.04114918 0.09172584 -0.1519034  0.40000000</span></span>
+<span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span> </span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Direct "</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Z"</span>, <span class="st">"W"</span><span class="op">)</span>, <span class="st">" effect"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by_all.html" class="external-link">group_by_all</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarize</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="op">-</span><span class="va">n</span><span class="op">)</span></span>
+<span><span class="co">#&gt; `summarise()` has grouped output by 'Direct X effect', 'Direct Y effect',</span></span>
+<span><span class="co">#&gt; 'Direct Z effect'. You can override using the `.groups` argument.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># Groups:   Direct X effect, Direct Y effect, Direct Z effect [4]</span></span></span>
+<span><span class="co">#&gt;   `Direct X effect` `Direct Y effect` `Direct Z effect` `Direct W effect`     n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> FALSE             FALSE             FALSE             FALSE             <span style="text-decoration: underline;">46</span>000</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> FALSE             FALSE             FALSE             TRUE               <span style="text-decoration: underline;">1</span>000</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> FALSE             FALSE             TRUE              FALSE              <span style="text-decoration: underline;">1</span>000</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> FALSE             TRUE              FALSE             FALSE              <span style="text-decoration: underline;">1</span>000</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> TRUE              FALSE             FALSE             FALSE              <span style="text-decoration: underline;">1</span>000</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="generating-g-from-xyz-mode-">Generating <span class="math inline">\(G\)</span> from “XYZ”
 mode.<a class="anchor" aria-label="anchor" href="#generating-g-from-xyz-mode-"></a>
@@ -271,7 +356,7 @@ are vectors of 1 or -1 with 1 indicating an effect on <span class="math inline">
 given as signed proportion of variance explained. So if
 <code>gamma = -0.3</code>, The direct effect of <span class="math inline">\(X\)</span> explains 30% of the variance of <span class="math inline">\(Y\)</span> and the effect of <span class="math inline">\(X\)</span> on <span class="math inline">\(Y\)</span> is negative.</p>
 <p>For example, the code</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">myG</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/xyz_to_G.html">xyz_to_G</a></span><span class="op">(</span>tau_xz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="op">-</span><span class="fl">0.15</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span><span class="op">)</span>, </span>
 <span>                   tau_yz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.2</span>, <span class="op">-</span><span class="fl">0.25</span>, <span class="fl">0.15</span><span class="op">)</span>, </span>
 <span>                   dir_xz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span>, </span>
@@ -291,27 +376,29 @@ example, the effect of <span class="math inline">\(Z_1\)</span> on <span class="
 <h2 id="a-closer-look-at-the-output">A Closer Look at the Output<a class="anchor" aria-label="anchor" href="#a-closer-look-at-the-output"></a>
 </h2>
 <p>We can now take a look at the output. Summary statistics are
-contained in the <code>beta_hat</code> and <code>se_beta_hat</code>
-tables which both have dimension <span class="math inline">\(J\times
-K\)</span>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+contained in the <code>beta_hat</code>, <code>se_beta_hat</code>, and if
+<code>estimate_s = TRUE</code> was used, <code>s_estimate</code>. These
+all have dimension <span class="math inline">\(J\times K\)</span> where
+<span class="math inline">\(K\)</span> is the number of traits.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "beta_hat"                 "se_beta_hat"             </span></span>
 <span><span class="co">#&gt;  [3] "direct_SNP_effects_marg"  "direct_SNP_effects_joint"</span></span>
 <span><span class="co">#&gt;  [5] "direct_trait_effects"     "total_trait_effects"     </span></span>
 <span><span class="co">#&gt;  [7] "beta_joint"               "beta_marg"               </span></span>
 <span><span class="co">#&gt;  [9] "trait_corr"               "R"                       </span></span>
-<span><span class="co">#&gt; [11] "R_E"                      "true_h2"</span></span>
+<span><span class="co">#&gt; [11] "Sigma_G"                  "Sigma_E"                 </span></span>
+<span><span class="co">#&gt; [13] "snp_info"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 50000     4</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                  X             Y             Z             W</span></span>
-<span><span class="co">#&gt; [1,]  0.0006032969  0.0074008360  0.0012957544  2.606933e-07</span></span>
-<span><span class="co">#&gt; [2,] -0.0023938074 -0.0005043024 -0.0006589290 -3.637417e-03</span></span>
-<span><span class="co">#&gt; [3,]  0.0033178233  0.0025144298  0.0080631826  1.817726e-03</span></span>
-<span><span class="co">#&gt; [4,]  0.0011088796  0.0060358783  0.0008868393  3.025173e-03</span></span>
-<span><span class="co">#&gt; [5,] -0.0074194034 -0.0023891747 -0.0012815257 -1.537479e-03</span></span>
-<span><span class="co">#&gt; [6,] -0.0023909927  0.0030201757  0.0061494625  3.285122e-04</span></span>
+<span><span class="co">#&gt; [1,]  0.0074008360  0.0006032969  0.0012957544  2.606933e-07</span></span>
+<span><span class="co">#&gt; [2,] -0.0005043024 -0.0023938074 -0.0006589290 -3.637417e-03</span></span>
+<span><span class="co">#&gt; [3,]  0.0025144298  0.0033178233  0.0080631826  1.817726e-03</span></span>
+<span><span class="co">#&gt; [4,]  0.0060358783  0.0011088796  0.0008868393  3.025173e-03</span></span>
+<span><span class="co">#&gt; [5,] -0.0034143415 -0.0063942366 -0.0012815257 -1.537479e-03</span></span>
+<span><span class="co">#&gt; [6,]  0.0030201757 -0.0023909927  0.0061494625  3.285122e-04</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             [,1]        [,2]        [,3]        [,4]</span></span>
 <span><span class="co">#&gt; [1,] 0.004082483 0.004082483 0.004082483 0.004082483</span></span>
@@ -323,7 +410,7 @@ K\)</span>.</p>
 <p>The <code>direct_trait_effects</code> object is a matrix giving the
 input <code>G</code> while <code>total_trait_effects</code> gives the
 total effect of each trait on each other trait.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">direct_trait_effects</span></span>
 <span><span class="co">#&gt;           X   Y Z          W</span></span>
 <span><span class="co">#&gt; X 0.0000000 0.5 0  0.3872983</span></span>
@@ -339,33 +426,29 @@ total effect of each trait on each other trait.</p>
 <p>True variant effects are also stored in the simulation object. The
 <code>direct_SNP_effects_joint</code> and <code>beta_joint</code>
 objects give the direct and total SNP effects. The <code>_joint</code>
-ending here indicates that these variables store the expected
-<em>joint</em> association, conditional on all other variants, i.e. the
-causal effects. GWAS effect estimates measure the marginal association,
-so we also store the expected direct and total <em>marginal</em>
-associations in <code>direct_SNP_effects_marg</code> and
-<code>beta_marg</code>. When all variants are independent (no LD), the
-expected joint and marginal associations are the same.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+ending indicates that these variables store the expected <em>joint</em>
+association, conditional on all other variants, i.e. the causal effects.
+GWAS effect estimates measure the marginal association, so we also store
+the expected direct and total <em>marginal</em> associations in
+<code>direct_SNP_effects_marg</code> and <code>beta_marg</code>. When
+all variants are independent (no LD), the expected joint and marginal
+associations are the same.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_joint</span>, <span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p>However, if we had generated data with LD, this would not be the case
-(see below for more on LD). <code>beta_marg</code> is always the
-expected value of <code>beta_hat</code>, that is <code>beta_marg</code>
-is the association we would measure with infinite GWAS sample size.</p>
+<p>If we had generated data with LD, this would not be the case (see
+below for more on LD). <code>beta_marg</code> is always the expected
+value of <code>beta_hat</code>.</p>
 <p>Direct SNP effects are always independent across traits while total
 SNP effects are the sum of direct effects and indirect effects mediated
 by other traits. To see the difference, we make some plots.</p>
 <p>First we plot direct SNP effects on <span class="math inline">\(Z\)</span> vs direct SNP effects on <span class="math inline">\(W\)</span></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, <span class="va">sim_dat1</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">4</span><span class="op">]</span>, </span>
 <span>     xlab <span class="op">=</span> <span class="st">"Direct Z effect"</span>, ylab <span class="op">=</span> <span class="st">"Direct W effect"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulating_data_files/figure-html/unnamed-chunk-10-1.png" width="700"></p>
-<p>Because direct effects are generated from a point-normal
-distribution, most variants have direct effects on at most one of <span class="math inline">\(Z\)</span> or <span class="math inline">\(W\)</span>. However, there are a handful of
-variants that have direct effects on both. This is “sporadic pleiotropy”
-and can be prevented with <code>sporadic_pleiotropy=FALSE</code> if it
-is not desired.</p>
+<p><img src="simulating_data_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
+<p>Most variants have direct effects on at most one of <span class="math inline">\(Z\)</span> or <span class="math inline">\(W\)</span> but a small number affect both because
+<code>sporadic_pleiotropy = TRUE</code> by default.</p>
 <p>Next we plot the total SNP effects on <span class="math inline">\(Z\)</span> vs the total SNP effects on <span class="math inline">\(W\)</span>. Because <span class="math inline">\(Z\)</span> has a causal effect on <span class="math inline">\(W\)</span>, all variants with effects on <span class="math inline">\(Z\)</span> also affect <span class="math inline">\(W\)</span>. The line in the plot has slope equal
 to the total effect of <span class="math inline">\(Z\)</span> on <span class="math inline">\(W\)</span>. The majority SNPs that have non-zero
 effect on <span class="math inline">\(Z\)</span> fall exactly on this
@@ -374,87 +457,96 @@ with non-zero effect on <span class="math inline">\(Z\)</span> would
 fall on this line. The variants on the vertical line at 0 are variants
 with non-zero direct effect on <span class="math inline">\(W\)</span>
 but no direct effect on <span class="math inline">\(Z\)</span>.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_joint</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, <span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_joint</span><span class="op">[</span>,<span class="fl">4</span><span class="op">]</span>, </span>
 <span>     xlab <span class="op">=</span> <span class="st">"Total Z effect"</span>, ylab <span class="op">=</span> <span class="st">"Total W effect"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">sim_dat1</span><span class="op">$</span><span class="va">total_trait_effects</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">4</span><span class="op">]</span>, col <span class="op">=</span> <span class="st">"red"</span>, lty <span class="op">=</span> <span class="fl">2</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulating_data_files/figure-html/unnamed-chunk-11-1.png" width="700"></p>
+<p><img src="simulating_data_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
 <p>Finally, we can verify that the observed GWAS effect estimate is a
 noisy measurement of <code>beta_marg</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, <span class="va">sim_dat1</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, </span>
 <span>     xlab <span class="op">=</span> <span class="st">"beta_marg[,3] = E[beta_hat[,3]]"</span>, ylab <span class="op">=</span> <span class="st">"beta_hat[,3]"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, col <span class="op">=</span> <span class="st">"red"</span>, lty <span class="op">=</span> <span class="fl">2</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulating_data_files/figure-html/unnamed-chunk-12-1.png" width="700"></p>
+<p><img src="simulating_data_files/figure-html/unnamed-chunk-15-1.png" width="700"></p>
 </div>
 <div class="section level2">
 <h2 id="standardized-vs-non-standardized-effects">Standardized vs Non-Standardized Effects<a class="anchor" aria-label="anchor" href="#standardized-vs-non-standardized-effects"></a>
 </h2>
-<p>By default, when there is no LD, <code>sim_mv</code> returns
-standardized effects and standardized effect estimates. These are the
-estimates we would obtain if genotypes were scaled to have population
-variance 1 rather than being coded as 0, 1, and 2. The relationship
-between standardized and non-standardized effect estimates is simply
-<span class="math inline">\(\hat{\beta}_j^{(non-std)} =
+<p>If the <code>af</code> argument is omitted, <code>sim_mv</code>
+returns standardized effects and standardized effect estimates. These
+are the estimates we would obtain if genotypes were scaled to have
+population variance 1 rather than being coded as 0, 1, and 2. The
+relationship between standardized and non-standardized effect estimates
+is <span class="math inline">\(\hat{\beta}_j^{(non-std)} =
 \hat{\beta}_j^{(std)}/sd(g_j)\)</span> where <span class="math inline">\(j\)</span> indexes variants, <span class="math inline">\(sd(g_j)\)</span> is the population standard
 deviation of variant <span class="math inline">\(j\)</span> (i.e. <span class="math inline">\(\sqrt{2 f_j (1-f_j)}\)</span> where <span class="math inline">\(f_j\)</span> is the allele frequency of variant
 <span class="math inline">\(j\)</span>). Similarly the relationship
 between the standard error of standardized and non-standardized effect
 estimates is <span class="math inline">\(se\left(\hat{\beta}_j^{(non-std)}\right) =
 se\left(\hat{\beta}_j^{(std)}\right)/sd(g_j)\)</span>.</p>
-<p>In our previously generated <code>sim_dat1</code>, every effect
-estimate has the same standard error. This is because the standard error
-of <span class="math inline">\(\hat{\beta}_j^{(std)}\)</span> is
-approximated as <span class="math inline">\(1/\sqrt{N}\)</span> and we
-used a common sample size across all traits. Non-standardized effect
-estimates will have different standard errors for different variants
-because these also depend on variant allele frequency.</p>
+<p>In <code>sim_dat1</code>, every effect estimate has the same standard
+error because the standard error of <span class="math inline">\(\hat{\beta}_j^{(std)}\)</span> is approximated as
+<span class="math inline">\(1/\sqrt{N}\)</span> and we used a common
+sample size across all traits. Non-standardized effect estimates will
+have different standard errors for different variants because these also
+depend on variant allele frequencies.</p>
 <p>Generating non-standardized effects requires input allele frequencies
 which are used to calculate the variance of each SNP. This can be
-provided by the <code>af</code> argument which can accept either a
-scalar, in which case the same allele frequency is used for every SNP, a
-vector of length <code>J</code>, or a function that takes a single
-argument and returns a vector of allele frequencies with length
-determined by the argument. If the <code>af</code> argument is provided,
-<code>sim_mv</code> will return both effect estimates and expected
-associations/true effects on the non-standardized scale.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_dat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
+provided by the <code>af</code> argument which can accept a scalar, in
+which case the same allele frequency is used for every SNP, a vector of
+length <code>J</code>, or a function that takes a single argument and
+returns a vector of allele frequencies with length determined by the
+argument. If the <code>af</code> argument is provided,
+<code>sim_mv</code> will return all results on the non-standardized
+scale. The return object will also include a data frame,
+<code>snp_info</code> giving the allele frequency of each variant.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_dat3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
 <span>                  N <span class="op">=</span> <span class="fl">60000</span>, J <span class="op">=</span> <span class="fl">50000</span>, </span>
 <span>                  h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.4</span><span class="op">)</span>, </span>
 <span>                  pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">50000</span>, </span>
 <span>                  af <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 50000 SNPs and 4 traits.</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             [,1]        [,2]        [,3]        [,4]</span></span>
-<span><span class="co">#&gt; [1,] 0.016947120 0.016947120 0.016947120 0.016947120</span></span>
-<span><span class="co">#&gt; [2,] 0.006562878 0.006562878 0.006562878 0.006562878</span></span>
-<span><span class="co">#&gt; [3,] 0.027922349 0.027922349 0.027922349 0.027922349</span></span>
-<span><span class="co">#&gt; [4,] 0.008974627 0.008974627 0.008974627 0.008974627</span></span>
-<span><span class="co">#&gt; [5,] 0.011949475 0.011949475 0.011949475 0.011949475</span></span>
-<span><span class="co">#&gt; [6,] 0.014711105 0.014711105 0.014711105 0.014711105</span></span></code></pre></div>
+<span><span class="co">#&gt; [1,] 0.007098238 0.007098238 0.007098238 0.007098238</span></span>
+<span><span class="co">#&gt; [2,] 0.007308474 0.007308474 0.007308474 0.007308474</span></span>
+<span><span class="co">#&gt; [3,] 0.006234568 0.006234568 0.006234568 0.006234568</span></span>
+<span><span class="co">#&gt; [4,] 0.006655536 0.006655536 0.006655536 0.006655536</span></span>
+<span><span class="co">#&gt; [5,] 0.009450082 0.009450082 0.009450082 0.009450082</span></span>
+<span><span class="co">#&gt; [6,] 0.006264830 0.006264830 0.006264830 0.006264830</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">snp_info</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   SNP        AF</span></span>
+<span><span class="co">#&gt; 1   1 0.2091275</span></span>
+<span><span class="co">#&gt; 2   2 0.1934297</span></span>
+<span><span class="co">#&gt; 3   3 0.3112959</span></span>
+<span><span class="co">#&gt; 4   4 0.2512585</span></span>
+<span><span class="co">#&gt; 5   5 0.1041644</span></span>
+<span><span class="co">#&gt; 6   6 0.3058982</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="simulating-data-with-ld">Simulating Data with LD<a class="anchor" aria-label="anchor" href="#simulating-data-with-ld"></a>
 </h2>
 <p><code>sim_mv</code> can be used to generate data with LD by inputting
-a list of LD matrices and a corresponding table of SNP information. The
-function will work fastest if the LD matrix is broken into small blocks.
-The input data format for the LD pattern is a list of either a)
+a list of LD matrices and corresponding allele frequency information.
+The function will work fastest if the LD matrix is broken into small
+blocks. The input data format for the LD pattern is a list of either a)
 matrices, b) sparse matrices (class <code>dsCMatrix</code>) or c) eigen
-decompositions (class <code>eigen</code>). The <code>simGWAS</code>
-package contains a built in data set containing the LD pattern from
-Chromosome 19 in HapMap3 broken into 39 blocks. This LD was estimated
-from the HapMap3 European subset using LDShrink. This data set can also
-be downloaded <a href="https://zenodo.org/record/6761943#.Yrno2njMIUE" class="external-link">here</a>. The LD
-pattern must be accompanied by a data frame containing columns
-<code>SNP</code> giving a SNP name (can be arbitrary) and
-<code>AF</code> giving the allele frequency.</p>
+decompositions (class <code>eigen</code>). <code>R_LD</code> is
+interpreted as providing blocks in a block-diagonal SNP correlation
+matrix. The package contains a built in data set containing the LD
+pattern from Chromosome 19 in HapMap3 broken into 39 blocks. This LD was
+estimated from the HapMap3 European subset using LDShrink. This data set
+can also be downloaded <a href="https://zenodo.org/record/6761943#.Yrno2njMIUE" class="external-link">here</a>. The LD
+pattern must be accompanied by a vector of allele frequencies with
+length equal to the total size of the LD pattern (i.e. the sum of the
+size of each block in the list).</p>
 <p>Let’s look at the built-in LD data</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"ld_mat_list"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"snpdata"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"AF"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">ld_mat_list</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 39</span></span>
@@ -467,7 +559,7 @@ pattern must be accompanied by a data frame containing columns
 <span><span class="co">#&gt; [25] "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix"</span></span>
 <span><span class="co">#&gt; [31] "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix"</span></span>
 <span><span class="co">#&gt; [37] "dsCMatrix" "dsCMatrix" "dsCMatrix"</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># This prints the number of SNPs in each block</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ld_mat_list</span>, <span class="va">nrow</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] 140 519 339 435 523 280 675 325 651 548 274 483 442 744 460 177 469 173 358</span></span>
@@ -477,59 +569,40 @@ pattern must be accompanied by a data frame containing columns
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ld_mat_list</span>, <span class="va">nrow</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 19490</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">snpdata</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 19490    14</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">snpdata</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 14</span></span></span>
-<span><span class="co">#&gt;      AF SNP   allele   chr ld_sn…¹     map    pos regio…² snp_id in_ha…³ ldsco…⁴</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.394 rs81… G,A       19  7.50<span style="color: #949494;">e</span>7 0   <span style="color: #949494;"> </span>   <span style="text-decoration: underline;">260</span>912       1 7.50<span style="color: #949494;">e</span>7 TRUE       93.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 0.455 rs81… A,T       19  7.50<span style="color: #949494;">e</span>7 2.68<span style="color: #949494;">e</span><span style="color: #BB0000;">-5</span> <span style="text-decoration: underline;">260</span>970       1 7.50<span style="color: #949494;">e</span>7 TRUE       81.4</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 0.394 rs81… A,G       19  7.50<span style="color: #949494;">e</span>7 5.59<span style="color: #949494;">e</span><span style="color: #BB0000;">-5</span> <span style="text-decoration: underline;">261</span>033       1 7.50<span style="color: #949494;">e</span>7 TRUE       93.0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 0.939 rs23… T,C       19  7.50<span style="color: #949494;">e</span>7 2.37<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span> <span style="text-decoration: underline;">266</span>034       1 7.50<span style="color: #949494;">e</span>7 TRUE       16.2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 0.399 rs10… C,T       19  7.50<span style="color: #949494;">e</span>7 2.83<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span> <span style="text-decoration: underline;">267</span>039       1 7.50<span style="color: #949494;">e</span>7 TRUE       86.8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> 0.343 rs12… T,C       19  7.50<span style="color: #949494;">e</span>7 7.09<span style="color: #949494;">e</span><span style="color: #BB0000;">-3</span> <span style="text-decoration: underline;">276</span>245       1 7.50<span style="color: #949494;">e</span>7 TRUE       79.3</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># … with 3 more variables: ldscore_hm3 &lt;dbl&gt;, keep_ld_prune_0.1 &lt;lgl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   keep_ld_prune_0.01 &lt;lgl&gt;, and abbreviated variable names ¹​ld_snp_id,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   ²​region_id, ³​in_hapmap, ⁴​ldscore_1kg</span></span></span></code></pre></div>
-<p>The LD pattern covers 19,490 SNPs. The number of rows in the variant
-annotation data frame must match the number of variants in the LD
-pattern. If we wish to generate GWAS data for a larger number of
-variants than are covered by the LD pattern, <code>simGWAS</code> will
-repeat the LD pattern as many times as necessary to give the desired
-number of variants.</p>
-<p>To generate data with LD, the LD pattern and the variant annotation
-data frame are given to the <code>R_LD</code> and <code>snp_info</code>
-parameters. The built-in LD pattern corresponds to a density of about
-1.2 million variants in per genome. However, in the interest of saving
-time and space, we generate data for only 100k variants. This means that
-causal effects will be denser than they might be in more realistic
-data.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">AF</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 19490</span></span></code></pre></div>
+<p>The LD pattern covers 19,490 SNPs, equal to the length of the
+<code>AF</code> object. A supplied LD pattern does not have to be the
+same size as the number of SNPs we wish to generate. It will be repeated
+or subset as necessary to create an LD pattern of the appropriate size.
+The built-in LD pattern corresponds to a density of about 1.2 million
+variants in per genome. However, for this example, we will generate data
+for only 100k variants. This means that causal effects will be denser
+than they might be in more realistic data.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span><span class="va">sim_dat1_LD</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
 <span>                  N <span class="op">=</span> <span class="fl">60000</span>, J <span class="op">=</span> <span class="fl">1e5</span>, </span>
 <span>                  h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.4</span><span class="op">)</span>, </span>
 <span>                  pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">1e5</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, </span>
-<span>                  snp_info <span class="op">=</span> <span class="va">snpdata</span><span class="op">)</span></span>
+<span>                  af <span class="op">=</span> <span class="va">AF</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 100000 SNPs and 4 traits.</span></span></code></pre></div>
 <p>In data with LD, the <code>_joint</code> objects and
 <code>_marg</code> objects are not identical. For example, we can
-compare <code>beta_joint</code> and <code>beta_marg</code> for <span class="math inline">\(Z\)</span>.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+compare <code>beta_joint</code> and <code>beta_marg</code> for the third
+trait (<span class="math inline">\(Z\)</span>).</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat1_LD</span>, <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">beta_joint</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, <span class="va">beta_marg</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, lty <span class="op">=</span> <span class="fl">2</span>, lwd <span class="op">=</span><span class="fl">2</span>, col <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulating_data_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
-<p>We can consider variants with non-zero values of
-<code>beta_joint[,3]</code> to be variants with causal effects on <span class="math inline">\(Z\)</span> while those with non-zero values of
-<code>beta_marg[,3]</code> have non-zero (population) marginal
-association with <span class="math inline">\(Z\)</span>, meaning that
-they are in LD with at least one causal variant. In the plot, we see
-that many variants with no causal effect nevertheless have non-zero
-marginal association, as expected. The causal variants don’t fall
-exactly on the red line because in some cases, multiple causal variants
-are in LD with each other.</p>
+<p><img src="simulating_data_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
+<p>Variants with non-zero values of <code>beta_joint[,3]</code> have
+causal effects on <span class="math inline">\(Z\)</span> while those
+with non-zero values of <code>beta_marg[,3]</code> have non-zero
+(population) marginal association with <span class="math inline">\(Z\)</span>, meaning that they are in LD with at
+least one causal variant. In the plot, we see that many variants with no
+causal effect nevertheless have non-zero marginal association, as
+expected. The causal variants don’t fall exactly on the red line because
+in some cases, multiple causal variants are in LD with each other.</p>
 <div class="section level3">
 <h3 id="ld-pruning-ld-proxies-and-ld-matrix-extraction">LD-Pruning, LD-proxies, and LD matrix extraction<a class="anchor" aria-label="anchor" href="#ld-pruning-ld-proxies-and-ld-matrix-extraction"></a>
 </h3>
@@ -553,7 +626,7 @@ set).</p>
 supply the <code>pvalue_thresh</code> argument. Below we prune based on
 the p-values for trait <span class="math inline">\(Z\)</span> in two
 different equivalent ways.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pruned_set1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_ld_prune.html">sim_ld_prune</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="va">sim_dat1_LD</span>, </span>
 <span>                            pvalue <span class="op">=</span> <span class="fl">3</span>, </span>
 <span>                            R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, </span>
@@ -570,14 +643,14 @@ different equivalent ways.</p>
 <span>                            pval_thresh <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">pruned_set1</span>, <span class="va">pruned_set2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p><code>sim_ld_prune</code> returns a list of indices corresponding to
-an LD-pruned set of variants.</p>
-<p>The <code>sim_ld_proxy</code> function will return LD-proxies
-(variants with LD above a given threshold) with a supplied set of
-variants. Here we extract proxies for a few arbitrary variants. The
-<code>return_mat</code> option will cause the function to return the LD
-matrix for the proxies as well as the indices of proxies</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<p><code>sim_ld_prune</code> returns a vector of indices corresponding
+to an LD-pruned set of variants.</p>
+<p>The <code>sim_ld_proxy</code> function will return indices of
+LD-proxies (variants with LD above a given threshold) with a supplied
+set of variants. Here we extract proxies for a few arbitrary variants.
+The <code>return_mat</code> option will cause the function to return the
+LD matrix for the proxies as well as the indices of proxies</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ld_proxies</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_ld_proxy.html">sim_ld_proxy</a></span><span class="op">(</span><span class="va">sim_dat1_LD</span>, index <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">400</span>, <span class="fl">600</span><span class="op">)</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, r2_thresh <span class="op">=</span> <span class="fl">0.64</span>, return_mat <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">ld_proxies</span></span>
 <span><span class="co">#&gt; [[1]]</span></span>
@@ -626,19 +699,19 @@ matrix for the proxies as well as the indices of proxies</p>
 matrix for a set of variants. We can use this to check the previous
 functions. First, both of the proxies for index 600 should have
 correlation greater than 0.8 with index 600.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ld_mat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_extract_ld.html">sim_extract_ld</a></span><span class="op">(</span><span class="va">sim_dat1_LD</span>, index <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">600</span>, <span class="va">ld_proxies</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">proxy_index</span><span class="op">)</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span><span class="op">)</span></span>
 <span><span class="va">ld_mat1</span></span>
 <span><span class="co">#&gt;            [,1]       [,2]       [,3]</span></span>
 <span><span class="co">#&gt; [1,]  1.0000000 -0.8044757  0.8670863</span></span>
 <span><span class="co">#&gt; [2,] -0.8044757  1.0000000 -0.7193148</span></span>
 <span><span class="co">#&gt; [3,]  0.8670863 -0.7193148  1.0000000</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">ld_mat1</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0.8</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] FALSE</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">ld_mat1</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0.8</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 <p>Next we can check that the LD-pruned set have no mutual correlations
 greater than <span class="math inline">\(\sqrt(0.1) \approx
 0.316\)</span></p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ld_mat2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_extract_ld.html">sim_extract_ld</a></span><span class="op">(</span><span class="va">sim_dat1_LD</span>, index <span class="op">=</span> <span class="va">pruned_set1</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">ld_mat2</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">0</span> <span class="co"># remove the diagonal</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">ld_mat2</span><span class="op">^</span><span class="fl">2</span> <span class="op">&lt;</span> <span class="fl">0.1</span><span class="op">)</span></span>
@@ -678,7 +751,7 @@ of studies. We also specify an environmental correlation matrix in which
 the pairwise correlation in environmental effects for any pair of traits
 is 0.4. <code>R_E</code> defaults to the identity if it is not
 provided.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">R_E</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0.4</span>, nrow <span class="op">=</span> <span class="fl">4</span>, ncol <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">R_E</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">30000</span>, nrow <span class="op">=</span> <span class="fl">4</span>, ncol <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
@@ -689,56 +762,64 @@ provided.</p>
 <span><span class="co">#&gt; [2,] 30000 60000 30000 30000</span></span>
 <span><span class="co">#&gt; [3,] 30000 30000 60000 30000</span></span>
 <span><span class="co">#&gt; [4,] 30000 30000 30000 60000</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span></span>
 <span><span class="va">sim_dat3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
 <span>                  N <span class="op">=</span> <span class="va">N</span>, J <span class="op">=</span> <span class="fl">1e5</span>, R_E <span class="op">=</span> <span class="va">R_E</span>,</span>
 <span>                  h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">0.5</span>, <span class="fl">0.4</span><span class="op">)</span>, </span>
 <span>                  pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">1e5</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 100000 SNPs and 4 traits.</span></span></code></pre></div>
-<p>The simulation data object contains three matrices that describe
-between study correlation. <code>R_E</code> is the environmental
-correlation supplied in the command option, <code>trait_corr</code> is
-the total trait correlation, and <code>R</code> is the correlation
-between noise terms for pairs of GWAS which is obtained by scaling
-<code>trait_corr</code> by the appropriate values.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">R_E</span></span>
-<span><span class="co">#&gt;      [,1] [,2] [,3] [,4]</span></span>
-<span><span class="co">#&gt; [1,]  1.0  0.4  0.4  0.4</span></span>
-<span><span class="co">#&gt; [2,]  0.4  1.0  0.4  0.4</span></span>
-<span><span class="co">#&gt; [3,]  0.4  0.4  1.0  0.4</span></span>
-<span><span class="co">#&gt; [4,]  0.4  0.4  0.4  1.0</span></span>
+<p>The simulation data object contains four matrices that describe
+between study correlation, <code>Sigma_E</code>, the environmental
+covariance, <code>Sigma_G</code> the genetic covaraince,
+<code>trait_corr</code> equal to <code>Sigma_G + Sigma_E</code>, and
+<code>R</code> which is equal to the row correlation of
+<code>beta_hat</code>. <code>R</code> is equal to
+<code>trait_corr</code> scaled by the a matrix of sample overlap
+proportions.</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">Sigma_E</span></span>
+<span><span class="co">#&gt;           X         Y         Z         W</span></span>
+<span><span class="co">#&gt; X 0.7090334 0.2815715 0.2459003 0.2589274</span></span>
+<span><span class="co">#&gt; Y 0.2815715 0.6988607 0.2441299 0.2570632</span></span>
+<span><span class="co">#&gt; Z 0.2459003 0.2441299 0.5330052 0.2244969</span></span>
+<span><span class="co">#&gt; W 0.2589274 0.2570632 0.2244969 0.5909753</span></span>
+<span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">Sigma_G</span></span>
+<span><span class="co">#&gt;            X         Y          Z           W</span></span>
+<span><span class="co">#&gt; X 0.29096656 0.1450691  0.2107734  0.04259396</span></span>
+<span><span class="co">#&gt; Y 0.14506908 0.3011393  0.1049626  0.09462630</span></span>
+<span><span class="co">#&gt; Z 0.21077337 0.1049626  0.4669948 -0.14157782</span></span>
+<span><span class="co">#&gt; W 0.04259396 0.0946263 -0.1415778  0.40902469</span></span>
 <span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">trait_corr</span></span>
-<span><span class="co">#&gt;           X         Y          Z          W</span></span>
-<span><span class="co">#&gt; X 1.0000000 0.4300000 0.46024999 0.30037881</span></span>
-<span><span class="co">#&gt; Y 0.4300000 1.0000000 0.34844659 0.35095546</span></span>
-<span><span class="co">#&gt; Z 0.4602500 0.3484466 1.00000000 0.06718562</span></span>
-<span><span class="co">#&gt; W 0.3003788 0.3509555 0.06718562 1.00000000</span></span>
+<span><span class="co">#&gt;           X         Y         Z         W</span></span>
+<span><span class="co">#&gt; X 1.0000000 0.4266406 0.4566737 0.3015214</span></span>
+<span><span class="co">#&gt; Y 0.4266406 1.0000000 0.3490925 0.3516895</span></span>
+<span><span class="co">#&gt; Z 0.4566737 0.3490925 1.0000000 0.0829191</span></span>
+<span><span class="co">#&gt; W 0.3015214 0.3516895 0.0829191 1.0000000</span></span>
 <span><span class="va">sim_dat3</span><span class="op">$</span><span class="va">R</span></span>
 <span><span class="co">#&gt;           X         Y          Z          W</span></span>
-<span><span class="co">#&gt; X 1.0000000 0.2150000 0.23012499 0.15018940</span></span>
-<span><span class="co">#&gt; Y 0.2150000 1.0000000 0.17422330 0.17547773</span></span>
-<span><span class="co">#&gt; Z 0.2301250 0.1742233 1.00000000 0.03359281</span></span>
-<span><span class="co">#&gt; W 0.1501894 0.1754777 0.03359281 1.00000000</span></span></code></pre></div>
+<span><span class="co">#&gt; X 1.0000000 0.2133203 0.22833684 0.15076068</span></span>
+<span><span class="co">#&gt; Y 0.2133203 1.0000000 0.17454626 0.17584477</span></span>
+<span><span class="co">#&gt; Z 0.2283368 0.1745463 1.00000000 0.04145955</span></span>
+<span><span class="co">#&gt; W 0.1507607 0.1758448 0.04145955 1.00000000</span></span></code></pre></div>
 <p>If there is no sample overlap, the <code>R_E</code> argument to
 <code>sim_mv</code> will have no affect on summary statistics but will
 influence the calculation of <code>trait_corr</code>. For example, in
 our previous data generated without sample overlap and in which we did
 not specify <code>R_E</code> we have</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">R_E</span></span>
-<span><span class="co">#&gt;      [,1] [,2] [,3] [,4]</span></span>
-<span><span class="co">#&gt; [1,]    1    0    0    0</span></span>
-<span><span class="co">#&gt; [2,]    0    1    0    0</span></span>
-<span><span class="co">#&gt; [3,]    0    0    1    0</span></span>
-<span><span class="co">#&gt; [4,]    0    0    0    1</span></span>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">Sigma_E</span></span>
+<span><span class="co">#&gt;           X         Y         Z         W</span></span>
+<span><span class="co">#&gt; X 0.7102574 0.0000000 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; Y 0.0000000 0.6993647 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; Z 0.0000000 0.0000000 0.5315938 0.0000000</span></span>
+<span><span class="co">#&gt; W 0.0000000 0.0000000 0.0000000 0.5913831</span></span>
 <span><span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">trait_corr</span></span>
 <span><span class="co">#&gt;            X          Y          Z           W</span></span>
-<span><span class="co">#&gt; X 1.00000000 0.15000000  0.2236068  0.04114918</span></span>
-<span><span class="co">#&gt; Y 0.15000000 1.00000000  0.1118034  0.09172584</span></span>
-<span><span class="co">#&gt; Z 0.22360680 0.11180340  1.0000000 -0.15190340</span></span>
-<span><span class="co">#&gt; W 0.04114918 0.09172584 -0.1519034  1.00000000</span></span>
+<span><span class="co">#&gt; X 1.00000000 0.14287919  0.2104649  0.03811431</span></span>
+<span><span class="co">#&gt; Y 0.14287919 1.00000000  0.1064977  0.09272913</span></span>
+<span><span class="co">#&gt; Z 0.21046486 0.10649774  1.0000000 -0.14287051</span></span>
+<span><span class="co">#&gt; W 0.03811431 0.09272913 -0.1428705  1.00000000</span></span>
 <span><span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">R</span></span>
 <span><span class="co">#&gt;   X Y Z W</span></span>
 <span><span class="co">#&gt; X 1 0 0 0</span></span>
@@ -751,42 +832,46 @@ sample overlap.</p>
 <div class="section level2">
 <h2 id="generating-data-for-multiple-gwas-with-the-same-variant-effects">Generating Data for Multiple GWAS with the Same Variant Effects<a class="anchor" aria-label="anchor" href="#generating-data-for-multiple-gwas-with-the-same-variant-effects"></a>
 </h2>
-<p>In some cases, it may be desirable to generate multiple sets of
-summary statistics for the same set of effect sizes. This would mimic
-performing multiple GWAS on the same trait. The function
-<code>gen_bhat_from_b</code> allows this. This function takes as input a
-matrix of either standardized or non-standardized joint (causal) effects
-to <code>b_joint_std</code> or <code>b_joint</code>. The function also
-requires the trait correlation matrix and the sample size argument.
-Optionally, LD arguments <code>R_LD</code> and <code>snp_info</code> can
-be supplied, or the allele frequency can be supplied via
-<code>af</code>. Most users will not need the other options.</p>
+<p>In some cases, you may want to generate multiple sets of summary
+statistics for the same set of effect sizes. This would mimic performing
+multiple GWAS on the same trait. The function
+<code>gen_bhat_from_b</code> allows you to do this. This function takes
+as input a matrix of either standardized or non-standardized joint
+(causal) effects to <code>b_joint_std</code> or <code>b_joint</code>.
+The function also requires the trait correlation matrix and the sample
+size argument. Optionally, <code>af</code> and <code>R_LD</code> can be
+supplied. The <code>estimate_s</code> argument functions in the same way
+as in <code>sim_mv</code>.</p>
 <p>Below, we generate new GWAS data for the effects in
 <code>sim_dat1_LD</code>. Here we use the same LD pattern used
-originally but this is not required. For example, we could simulate GWAS
-in samples with different ancestry but supplying a different LD
-pattern.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+originally but we could have done otherwise. For example, we could
+simulate GWAS in samples with different ancestry but supplying a
+different LD pattern.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_dat2_LD</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gen_bhat_from_b.html">gen_bhat_from_b</a></span><span class="op">(</span>b_joint <span class="op">=</span> <span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">beta_joint</span>, </span>
 <span>                               trait_corr <span class="op">=</span> <span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">trait_corr</span>, </span>
 <span>                               N <span class="op">=</span> <span class="fl">40000</span>, </span>
-<span>                               R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, snp_info <span class="op">=</span> <span class="va">snpdata</span><span class="op">)</span></span>
+<span>                               R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, af <span class="op">=</span> <span class="va">AF</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 100000 SNPs and 4 traits.</span></span></code></pre></div>
 <p>The resulting simulation data object only contains effect estimates,
 standard errors, <code>R</code>, and <code>snp_info</code>. All other
 information should match the original data set.</p>
 <p>Below we compare effect estimates in the new study and the old study
 for trait <span class="math inline">\(X\)</span>.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat2_LD</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, <span class="va">sim_dat1_LD</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, col <span class="op">=</span> <span class="st">"red"</span>, lty <span class="op">=</span> <span class="fl">2</span>, lwd <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p><img src="simulating_data_files/figure-html/unnamed-chunk-27-1.png" width="700"></p>
+<p><img src="simulating_data_files/figure-html/unnamed-chunk-30-1.png" width="700"></p>
 <p>Our first simulation object <code>sim_dat1</code> was generated with
 no LD and without supplying the <code>af</code> argument, so the
 <code>beta_joint</code> values for that object represent standardized
 effects. If we were generating secondary studies from this object, we
 should use the <code>b_joint_std</code> argument rather than
-<code>b_joint</code> in the call to <code>get_bhat_from_b</code>.</p>
+<code>b_joint</code> in the call to <code>get_bhat_from_b</code>. If you
+are not sure if you have standardized or non-standardized effects, check
+the <code>snp_info</code> table. If the <code>AF</code> column is equal
+ot <code>NA</code> then the object contains standardized effects.
+Otherwise, it contains non-stanadardized effects.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
