@@ -17,8 +17,6 @@ This package is under active development. Some features that may be added in the
 
 - Support for binary traits
 - Ability to add confounding effects
-- Support for alternative effect size distributions
-
 
 ## Installation
 
@@ -31,4 +29,3 @@ Note that the vignette requires the following packages which will not be
 installed automatically:
 
 + DiagrammeR (use `install.packages`)
-+ reshape2 (use `install.packages`)
