@@ -44,17 +44,18 @@ but non-integer values will not generate an error.}
 
 \item{pi_theta}{Proportion of non-zero elements in theta. Scalar or length M vector.}
 
-\item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.}
+\item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.
+#'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
+If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
+If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).}
 
-\item{af}{Allele frequency (optional). A scalar, a vector, or a function that takes a number n and returns n values between 0 and 1.
-This argument is ignored if R_LD and snp_info are provided. If af, R_LD, and snp_info
-are all missing, SNPs are assumed to be scaled to variance 1,}
+\item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
-\item{R_LD}{List of eigen-decompositions of LD correlation matrices, may be missing.}
+\item{estimate_s}{If TRUE, return estimates of se(beta_hat).}
 
-\item{sporadic_pleiotropy}{Allow a single SNP to affect multiple factors (default TRUE).}
+\item{h2_exact}{If TRUE, the heritability of each trait will be exactly h2.}
 
-\item{snp_info}{If R_LD is provided, provide a data frame with columns "SNP" and "AF"}
+\item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).}
 }
 \description{
 Simulate summary statistics from a specified factor structure
@@ -66,10 +67,9 @@ gives the effect of factor j on trait i. The rows of \code{F_mat} will be scaled
 to provide desired proportion of hertiability of each trait explained by factors but the relative
 size and sign of elements within rows will be retained.
 
-Previously, if F_mat was not provided, a random factor matrix would be generated.
-In the current version, this step must be done manually, see examples.
+A random factor matrix can be generated using \code{generate_random_F} (see Examples).
 
-With these parameters, it is possible to supply a non-feasible set of parameters.
+It is possible to supply a non-feasible set of parameters.
 Usually this occurs if the heritability of the factors is low but the heritability
 of the traits is high leading to a contradiction. The function will return an error if this happens.
 
@@ -77,8 +77,10 @@ Trait covariance: Each trait is composed of four independent components, the gen
 the environmental component mediated by factors, the genetic component not mediated by factors,
 and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
 the sum of four corresponding covariance matrices. The matrix R_E specifies the correlation of the last component only.
-In the returned object, R gives the overall trait correlation matrix multiplied by the overlap proportion matrix,
-which is equal to the correlation in the error terms of \code{beta_hat} (see examples).
+In the returned object, \code{Sigma_G} is equal to the sum of the two genetic covariance components and \code{Sigma_E}
+is equal to the sum of the two environmental components.
+\code{R} gives the overall trait correlation matrix multiplied by the overlap proportion matrix,
+which is equal to the correlation in the error terms of \code{beta_hat} (See Examples).
 }
 \examples{
 myF <- generate_random_F(K = 3, M = 10, nz_factor = c(2, 3, 2),

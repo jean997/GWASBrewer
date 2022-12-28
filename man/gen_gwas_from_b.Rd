@@ -11,7 +11,6 @@ gen_gwas_from_b(
   V_E,
   R_E = NULL,
   R_LD = NULL,
-  snp_info = NULL,
   af = NULL,
   sim_func = gen_genos_mvn,
   calc_sumstats = TRUE
@@ -31,10 +30,10 @@ gen_gwas_from_b(
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 
-\item{snp_info}{(optional, required if \code{R_LD} is supplied).}
-
 \item{af}{Allele frequencies. This can be a scalar, vector or a function. For this function, af must be
 supplied if R_LD is not supplied. If a vector, af should have length equal to the number of variants.}
+
+\item{snp_info}{(optional, required if \code{R_LD} is supplied).}
 }
 \description{
 Generate GWAS data from standardized or non-standardized direct SNP effects and LD
@@ -55,5 +54,5 @@ dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
 # Now generate GWAS data
 gw_dat <- gen_gwas_from_b(b_joint = dat$beta_joint, N = Ndf, V_E = c(0.6, 0.7),
-                           R_E = R_E, af = dat$af, calc_sumstats = TRUE)
+                           R_E = R_E, af = dat$snp_info$AF, calc_sumstats = TRUE)
 }
