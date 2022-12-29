@@ -1,33 +1,49 @@
-sample_effects_matrix <- function(J, pi, sigma, f,
+sample_effects_matrix <- function(J, M, pi, sigma, f,
                                   sporadic_pleiotropy,
                                   pi_exact,
                                   h2_exact,
                                   R_LD = NULL, af = NULL){
 
-  M <- length(pi)
+  #M <- length(pi)
   #skip checks for internal function
-  #pi <- check_scalar_or_numeric(pi, "pi", M)
-  #sigma <- check_scalar_or_numeric(sigma, "sigma", M)
-  #pi <- check_01(pi)
+
+  pi <- check_pi(pi, J, M)
+  if(class(pi) == "matrix"){
+    pi_mat <- TRUE
+    if(pi_exact) stop("If pi is a mtarix, pi_exact must be FALSE.\n")
+    if(!sporadic_pleiotropy) stop("If pi is a mtarix, sporadic_pleiotropy must be TRUE.\n")
+  }else{
+    pi_mat <- FALSE
+  }
+  sigma <- check_scalar_or_numeric(sigma, "sigma", M)
 
   if(all(sigma == 0)){
     eff <- matrix(0, nrow = J, ncol = M)
     return(eff)
   }
 
-  if(pi_exact){
+  if(pi_mat){
+    sig_j <- sqrt(1/colSums(pi) * sigma^2)
+  }else if(pi_exact){
     sig_j <- sqrt( (1/round(pi*J)) * sigma^2)
   }else{
     sig_j <- sqrt( (1/(pi*J)) * sigma^2)
   }
 
-  if(pi_exact & sporadic_pleiotropy){
+  if(pi_mat){
+    eff <- purrr::map(seq(M), function(i){
+      t <- rbinom(n=J, size=1, prob = pi[,i])
+      n <- sum(t==1)
+      if(n > 0) t[t==1] <- f(n=n, sd = sig_j[i], af = af[t==1])
+      return(t)
+    }) %>% do.call(cbind, .)
+  }else if(pi_exact & sporadic_pleiotropy){
     eff <- purrr::map(seq(M), function(i){
       n <- round(pi[i]*J)
       val <- rep(0, J)
       if(n > 0){
         t <- sample(seq(J), size = n, replace = FALSE)
-        val[t] <- f(n=n, sd = sig_j[i], af = af)
+        val[t] <- f(n=n, sd = sig_j[i], af = af[t])
       }
       return(val)
     }) %>% do.call(cbind, .)
@@ -35,7 +51,7 @@ sample_effects_matrix <- function(J, pi, sigma, f,
     eff <- purrr::map(seq(M), function(i){
       t <- rbinom(n=J, size=1, prob = pi[i])
       n <- sum(t==1)
-      if(n > 0) t[t==1] <- f(n=n, sd = sig_j[i], af = af)
+      if(n > 0) t[t==1] <- f(n=n, sd = sig_j[i], af = af[t==1])
       return(t)
     }) %>% do.call(cbind, .)
   }else{
@@ -58,7 +74,7 @@ sample_effects_matrix <- function(J, pi, sigma, f,
       t <- which(nz_ix == i)
       n <- length(t)
       val <- rep(0, J)
-      if(n > 0) val[t] <- f(n=n, sd = sig_j[i], af = af)
+      if(n > 0) val[t] <- f(n=n, sd = sig_j[i], af = af[t])
       return(val)
     }) %>% do.call(cbind, .)
   }

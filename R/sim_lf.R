@@ -79,10 +79,9 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   omega <- check_scalar_or_numeric(omega, "omega", M)
   omega <- check_01(omega)
-  pi_L <- check_scalar_or_numeric(pi_L, "pi_L", K)
-  pi_L <- check_01(pi_L)
-  pi_theta <- check_scalar_or_numeric(pi_theta, "pi_theta", M)
-  pi_theta <- check_01(pi_theta)
+  pi_L <- check_pi(pi_L, J, K)
+  pi_theta <- check_pi(pi_theta, J, M)
+
 
 
   f <- check_snp_effect_function(snp_effect_function)
@@ -143,7 +142,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
   #Generate theta
-  theta <- sample_effects_matrix(J = J,
+  theta <- sample_effects_matrix(J = J, M= M,
                                  pi = pi_theta,
                                  sigma = sqrt((1-omega)*h2_trait),
                                  f = f,
@@ -156,9 +155,9 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
   #Generate L
-  L_mat <- sample_effects_matrix(J = J,
+  L_mat <- sample_effects_matrix(J = J, M = K,
                                  pi = pi_L,
-                                 sigma = rep(1, M),
+                                 sigma = 1,
                                  f = f,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,

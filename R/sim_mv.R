@@ -122,7 +122,7 @@ sim_mv <- function(N, J,
   G <- check_matrix(G, "G", n, n)
   h2 <- check_scalar_or_numeric(h2, "h2", n)
   h2 <- check_01(h2)
-  pi <- check_scalar_or_numeric(pi, "pi", n)
+  pi <- check_pi(pi, J, n)
   nn <- check_N(N, n)
   G <- check_G(G, h2, n)
 
