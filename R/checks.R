@@ -32,6 +32,17 @@ check_matrix <- function(x, string, n, p){
   return(x)
 }
 
+
+check_pi <- function(pi, n, p){
+  if(class(pi) == "matrix"){
+    pi <- check_matrix(pi, "pi", n, p)
+  }else{
+    pi <- check_scalar_or_numeric(pi, "pi", p)
+  }
+  pi <- check_01(pi)
+  return(pi)
+}
+
 check_N <- function(N, n, allow_mat = TRUE){
   if("matrix" %in% class(N) | "data.frame" %in% class(N)){
     if(ncol(N) ==1){
