@@ -14,17 +14,17 @@ hapsim_simple <- function(n, hap, seed = NULL){
 }
 
 
-R_LD_to_haplodat <- function(R_LD, snp_info){
+R_LD_to_haplodat <- function(R_LD, af){
   ld_mat <- check_R_LD(R_LD, "matrix")
-  l <- sapply(ld_mat, nrow)
-  snp_info <- check_snpinfo(snp_info, l)
+  l <- check_R_LD(R_LD, "l")
+  af <- check_af(af, sum(l), function_ok = FALSE)
 
   start <- cumsum(c(1, l))[-(length(l) + 1)]
   stop <- start + l -1
   hdat <- lapply(seq(length(ld_mat)), function(i){
     nloci <- l[i]
     C <- ld_mat[[i]]
-    P <- 1-snp_info$AF[start[i]:stop[i]]
+    P <- 1-af[start[i]:stop[i]]
     Q <- qnorm(P)
     null.mat <- matrix(0, nrow = nloci, ncol = nloci)
     vmat <- .C("covariance", as.integer(nloci), as.double(C),

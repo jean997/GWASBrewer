@@ -1,24 +1,25 @@
 #'@export
 gen_genos_mvn <- function(n, J, R_LD, af){
 
-  af <- check_scalar_or_numeric(af, "af", J)
-  af <- check_01(af, "af")
-
   if(is.null(R_LD)){
+    af <- check_af(af, J)
     X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
     return(list(X = X, af = af))
   }
+  # Checks happen in R_LD_to_haplodat
+  l <- check_R_LD(R_LD, "l")
+  #af <- check_af(af, sum(l), function_ok = FALSE)
 
-  l <- purrr::map(R_LD, function(hh){nrow(hh$cov)}) %>% unlist()
-  hdat <- R_LD_to_haplodat(R_LD, snp_info = data.frame(SNP = 1:J, AF = af))
+
+  hdat <- R_LD_to_haplodat(R_LD, af = af)
   block_info <- assign_ld_blocks(l, J)
   nb <- length(l)
   if(!is.null(block_info$last_block_info)){
     b <- block_info$last_block_info[1]
     x <- block_info$last_block_info[2]
     last_block <- hdat[[b]]$cor[seq(x), seq(x)]
-    last_info <- data.frame(SNP = paste0("last", seq(x)), AF = hdat[[b]]$freqs[seq(x)])
-    hdat_last <- R_LD_to_haplodat(R_LD = list(last_block), last_info)
+    last_af<- hdat[[b]]$freqs[seq(x)]
+    hdat_last <- R_LD_to_haplodat(R_LD = list(last_block), last_af)
     hdat[[nb + 1]] <- hdat_last[[1]]
     l <- c(l, x)
     nb <- nb + 1
@@ -31,7 +32,7 @@ gen_genos_mvn <- function(n, J, R_LD, af){
     names(a) <- paste0("S", 1:n)
     return(a)
   })
-  return(list(X = X, af = af[block_info$index]))
+  return(list(X = t(X), af = af[block_info$index]))
 
 
 }
@@ -45,9 +46,8 @@ gen_genos_mvn <- function(n, J, R_LD, af){
 #'@param V_E Vector with length equal to the number of traits giving the environmental variance of each trait.
 #'@param R_E Environmental correlation matrix, (traits by traits). If missing, R_E is assumed to be the identity.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
-#'@param snp_info (optional, required if \code{R_LD} is supplied).
-#'@param af Allele frequencies. This can be a scalar, vector or a function. For this function, af must be
-#'supplied if R_LD is not supplied. If a vector, af should have length equal to the number of variants.
+#'@param af Allele frequencies. This can be a scalar, vector or a function. For this function, af must always be
+#'supplied.
 #'@details This function can be used to generate individual level GWAS data by passing in the \code{beta_joint} table
 #'from a data set simulated using `sim_mv`. If the
 #'original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
@@ -111,10 +111,11 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
     af <- check_af(af, J)
     X <- sim_func(ntotal, J, NULL, af)
   }else{
-    if(is.null(snp_info)){
-      stop("Please provide snp_info with R_LD.\n")
+    if(is.null(af)){
+      stop("Please provide af with R_LD.\n")
     }
-    af <- check_af(af, J, function_ok = FALSE)
+    l <- check_R_LD(R_LD, "l")
+    af <- check_af(af, sum(l), function_ok = FALSE)
     X <- sim_func(ntotal, J, R_LD, af)
   }
   af <- check_af(X$af, J, function_ok = FALSE)
