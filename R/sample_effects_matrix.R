@@ -8,12 +8,24 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
   #skip checks for internal function
 
   pi <- check_pi(pi, J, M)
-  if(class(pi) == "matrix"){
+  if("matrix" %in% class(pi)){
     pi_mat <- TRUE
     if(pi_exact) stop("If pi is a mtarix, pi_exact must be FALSE.\n")
     if(!sporadic_pleiotropy) stop("If pi is a mtarix, sporadic_pleiotropy must be TRUE.\n")
+    pi_tot <- colSums(pi)
+    if(any(pi_tot == 0 & sigma != 0)){
+      stop("Non-zero heritability requested for a trait with no effect SNPs.\n")
+    }
   }else{
     pi_mat <- FALSE
+    if(any(pi == 0 & sigma != 0)){
+      stop("Non-zero heritability requested for a trait with no effect SNPs.\n")
+    }
+    if(pi_exact){
+      if(any(round(pi*J) == 0 & sigma != 0)){
+        stop("Non-zero heritability requested for a trait with no effect SNPs.\n")
+      }
+    }
   }
   sigma <- check_scalar_or_numeric(sigma, "sigma", M)
 

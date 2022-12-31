@@ -34,7 +34,7 @@ check_matrix <- function(x, string, n, p){
 
 
 check_pi <- function(pi, n, p){
-  if(class(pi) == "matrix"){
+  if("matrix" %in% class(pi)){
     pi <- check_matrix(pi, "pi", n, p)
   }else{
     pi <- check_scalar_or_numeric(pi, "pi", p)
