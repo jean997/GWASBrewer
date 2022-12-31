@@ -21,7 +21,7 @@
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
 #'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly h2.
-#'@param estimate_s If TRUE, return estimates of se(beta_hat).
+#'@param est_s If TRUE, return estimates of se(beta_hat).
 #'@details
 #'This function will generate GWAS summary statistics for M traits with K common factors.
 #'The matrix F_mat provides the effects of each factor on each trait, \code{F_mat[i,j]}
@@ -63,7 +63,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                    R_E=NULL,
                    af = NULL, R_LD = NULL,
                    sporadic_pleiotropy = TRUE,
-                   estimate_s = FALSE,
+                   est_s = FALSE,
                    snp_effect_function = "normal",
                    h2_exact = FALSE,
                    pi_exact = FALSE){
@@ -182,7 +182,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   # trait covariance due to non-genetic factor component
   sigma2_F <- (1-h2_factor)/(h2_factor)
-  Sigma_FE <- F_mat %*% diag(sigma2_F) %*% t(F_mat)
+  Sigma_FE <- F_mat %*% diag(sigma2_F, nrow = K) %*% t(F_mat)
 
   if(any(diag(Sigma_G) + diag(Sigma_FE) > 1)){
     stop("Provided parameters are incompatible with F_mat.\n")
@@ -190,7 +190,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
   # Trait covariance due to environmental contribution not mediated by factors
   sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
-  Sigma_E <- diag(sigma_E) %*% R_E %*% diag(sigma_E)
+  Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
 
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
@@ -201,7 +201,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                                N = N,
                                R_LD = R_LD,
                                af = af,
-                               estimate_s = estimate_s,
+                               est_s = est_s,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
 
@@ -219,7 +219,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               trait_corr = trait_corr,
               R=sum_stats$R,
               snp_info = sum_stats$snp_info)
-  if(estimate_s){
+  if(est_s){
     ret$s_estimate <- sum_stats$s_estimate
   }
   return(ret)

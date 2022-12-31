@@ -28,7 +28,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                             trait_corr,  N,
                             R_LD = NULL,
                             af = NULL,
-                            estimate_s = FALSE,
+                            est_s = FALSE,
                             L_mat_joint_std = NULL,
                             theta_joint_std = NULL){
 
@@ -72,10 +72,8 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1))
     if(b_type == "non_std"){
       Z <- b_joint/se_beta_hat
-      #true_h2 <- colSums( t(t(Z)/sqrt(nn$N)))
     }else{
       Z <- t(t(b_joint_std)*sqrt(nn$N))
-      #true_h2 <- colSums(b_joint_std^2)
     }
     beta_hat <- (Z + E_Z)*se_beta_hat
     if(!is.null(af)){
@@ -91,10 +89,10 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                 snp_info = snp_info)
                 #true_h2 = true_h2)
 
-    if(estimate_s){
-      s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
-      s2_denom <- matrix(rchisq(n = J*M, df = nn$N-1), nrow = J, byrow = T )*sx^2
-      ret$s_estimate <- sqrt(t(t(1/s2_denom)*s2_num))
+    if(est_s){
+      ret$s_estimate <- estimate_s(N = N, beta_hat = beta_hat,
+                                   trait_corr = trait_corr,
+                                   af = af)
     }
 
     if(!is.null(L_mat_joint_std)){
@@ -173,11 +171,10 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
               Z = Zm,
               snp_info = snp_info_full)
 
-  if(estimate_s){
-    # Random estimate of s does not include correlation in errors due to LD
-    s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
-    s2_denom <- matrix(rchisq(n = J*M, df = nn$N-1), nrow = J, byrow = T )*sx^2
-    ret$s_estimate <- sqrt(t(t(1/s2_denom)*s2_num))
+  if(est_s){
+    ret$s_estimate <- estimate_s(N = N, beta_hat = beta_hat,
+                                 trait_corr = trait_corr,
+                                 R_LD = R_LD, af = af)
   }
 
   if(!is.null(L_mat_joint_std)){

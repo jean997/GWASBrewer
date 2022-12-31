@@ -20,7 +20,7 @@
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
 #'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly h2.
-#'@param estimate_s If TRUE, return estimates of se(beta_hat).
+#'@param est_s If TRUE, return estimates of se(beta_hat).
 #'@param return_dat Useful development option.
 #'
 #'@return A list with the following elements:
@@ -31,7 +31,7 @@
 #'
 #' + \code{se_beta_hat} Standard error of effect estimates, equal to sqrt(1/N_m *Var(G_j)).
 #'
-#' + \code{s_estimate} Estimate of \code{se_beta_hat}. Present only if \code{estimate_s = TRUE}.
+#' + \code{s_estimate} Estimate of \code{se_beta_hat}. Present only if \code{est_s = TRUE}.
 #'
 #' Four matrices contain direct and total marginal and joint SNP-trait associations:
 #' + \code{direct_SNP_effects_marg} and \code{direct_SNP_effects_joint} give direct effects of SNPs on traits. These are the
@@ -108,17 +108,18 @@
 #'abline(0, dat$total_trait_effects[3,1])
 #'@export
 sim_mv <- function(N, J,
-                   h2, pi, G, R_E = NULL,
+                   h2, pi, G=0, R_E = NULL,
                    R_LD = NULL, af = NULL,
                    snp_effect_function = "normal",
                    sporadic_pleiotropy = TRUE,
                    pi_exact = FALSE,
                    h2_exact = FALSE,
-                   estimate_s = FALSE,
+                   est_s = FALSE,
                    return_dat  = FALSE){
 
 
-  n <- nrow(G)
+  if(!"matrix" %in% class(G)) n <- 1
+    else n <- nrow(G)
   G <- check_matrix(G, "G", n, n)
   h2 <- check_scalar_or_numeric(h2, "h2", n)
   h2 <- check_01(h2)
@@ -141,7 +142,7 @@ sim_mv <- function(N, J,
                 R_E = R_E,
                 snp_effect_function = snp_effect_function,
                 sporadic_pleiotropy = sporadic_pleiotropy,
-                estimate_s = estimate_s,
+                est_s = est_s,
                 h2_exact = h2_exact,
                 pi_exact = pi_exact)
 
@@ -161,7 +162,7 @@ sim_mv <- function(N, J,
             Sigma_G = dat$Sigma_G,
             Sigma_E = dat$Sigma_E,
             snp_info = dat$snp_info)
-  if(estimate_s){
+  if(est_s){
     R$s_estimate <- dat$s_estimate
   }
   if(return_dat){
