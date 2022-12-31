@@ -4,6 +4,7 @@ gen_genos_mvn <- function(n, J, R_LD, af){
   if(is.null(R_LD)){
     af <- check_af(af, J)
     X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
+    if(J == 1) X <- t(X)
     return(list(X = X, af = af))
   }
   # Checks happen in R_LD_to_haplodat
@@ -32,6 +33,7 @@ gen_genos_mvn <- function(n, J, R_LD, af){
     names(a) <- paste0("S", 1:n)
     return(a)
   })
+
   return(list(X = t(X), af = af[block_info$index]))
 
 

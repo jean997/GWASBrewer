@@ -31,8 +31,10 @@ R_LD_to_haplodat <- function(R_LD, af){
                as.double(P), as.double(Q), rlt = as.double(null.mat),
                PACKAGE = "hapsim")$rlt
     V <- matrix(vmat, nrow = nloci, ncol = nloci)
-    if (!hapsim:::checkpd(V))
+    if (!hapsim:::checkpd(V)){
+      warning("Coercing LD matrix to feasible values.\n")
       V <- hapsim:::makepd(V)
+    }
     eV <- eigen(V)
     return(list(freqs  = P, cor = C, cov = V, eCov = eV))
   })
