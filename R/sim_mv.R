@@ -118,14 +118,14 @@ sim_mv <- function(N, J,
                    return_dat  = FALSE){
 
 
-  if(!"matrix" %in% class(G)) n <- 1
-    else n <- nrow(G)
-  G <- check_matrix(G, "G", n, n)
-  h2 <- check_scalar_or_numeric(h2, "h2", n)
-  h2 <- check_01(h2)
-  pi <- check_pi(pi, J, n)
-  nn <- check_N(N, n)
-  G <- check_G(G, h2, n)
+  G <- check_G(G, h2)
+  h2 <- G$h2
+  M <- G$M
+
+  pi <- check_pi(pi, J, M)
+  nn <- check_N(N, M)
+
+
 
   G_t <- G$G_tot*sqrt(G$dir_h2)
   diag(G_t) <- sqrt(G$dir_h2)
@@ -135,8 +135,8 @@ sim_mv <- function(N, J,
   dat <- sim_lf(F_mat = F_mat,
                 N = N, J = J,
                 h2_trait = h2,
-                omega = rep(1, n),
-                h2_factor = rep(1, n),
+                omega = rep(1, M),
+                h2_factor = rep(1, M),
                 pi_L = pi, pi_theta = 1,
                 R_LD = R_LD, af = af,
                 R_E = R_E,

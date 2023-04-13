@@ -111,14 +111,14 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
     r <- dat$snp_info$rep[i]
     id <- dat$snp_info$ix_in_block[i]
     proxy_index_block <- ii[[b]]$col[ii[[b]]$row == id] %>% sort()
-    proxy_index_dat <- filter(dat$snp_info, rep == r & block == b & ix_in_block %in% proxy_index_block) %>%
-                       arrange(ix_in_block) %>%
-                       with(., ix_in_dat)
+    proxy_index_dat <- filter(dat$snp_info, rep == r & block == b & ix_in_block %in% proxy_index_block) #%>%
+                       #arrange(ix_in_block) %>%
+                       #with(., ix_in_dat)
     ret <- list( index = i,
                 # block = b, rep = r,
                 #proxy_index_block = proxy_index_block,
-                proxy_index = proxy_index_dat)
-    if(return_mat) ret$Rproxy <- R_LD[[b]][proxy_index_block, proxy_index_block]
+                proxy_index = proxy_index_dat$ix_in_dat)
+    if(return_mat) ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
     return(ret)
   })
   return(proxy_info)

@@ -33,9 +33,8 @@ The `sim_mv` function generates GWAS summary statistics for multiple continuous 
 equation model encoded as a matrix of direct effects. Variants can be generated with or without LD.
 There are also some helper functions for LD-pruning and generating special kinds of direct effect matrices. 
 
-The `sim_mv` function is a wrapper to a more general function `sim_sumstats_lf` which generates summary statistics given 
-a latent factor structure for a set of traits. Direct usage of `sim_sumstats_lf` is demonstrated briefly at the end of this vignette.
-
+The `sim_mv` function is a wrapper to a more general function `sim_lf` which generates summary statistics given 
+a latent factor structure for a set of traits. 
 
 
 ## Basic Usage
@@ -48,7 +47,7 @@ The `sim_mv` function has five required arguments:
 + `J`: The number of SNPs to simulate (scalar).
 + `h2`: The hertiability of each trait. This can be a scalar or a vector with length equal to the number of traits generated.
 + `pi`: The proportion of all SNPs that have a direct effect on each trait. This can be a scalar or a vector with length equal to the number of traits generated.
-+ `G`: A matrix specifying direct effects in the linear structural equation model. 
++ `G`: A matrix specifying direct effects in the linear structural equation model. For `M` traits with no causal relationships, use `G = matrix(0, nrow = M, ncol = M )` or `G = M`. 
 
 There are additional optional arguments:
 
@@ -58,7 +57,7 @@ There are additional optional arguments:
 + `sporadic_pleiotropy`: Allow a single variant to have direct effects on multiple traits. Defaults to TRUE.
 + `pi_exact`: If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`. Defaults to FALSE.
 + `h2_exact`: If TRUE, the heritability of each trait will be exactly `h2`. Defaults to FALSE.
-+ `estimate_s`: If TRUE, return estimates of se(beta_hat).
++ `est_s`: If TRUE, return estimates of se(beta_hat).
 + `return_dat`: A developer option, return some extra data that is useful for debugging and testing. 
 
 
@@ -67,22 +66,26 @@ There are additional optional arguments:
 The `sim_mv` function returns a list with the following elements
 
 GWAS summary statistics are contained in two or three matrices:
+
 + `beta_hat`: Simulated GWAS effect estimates and standard errors.
 + `se_beta_hat`: True standard errors of `beta_hat`.
-+ `s_estimate`: If `estimate_s= TRUE` then a simulated estimate of `se_beta_hat`.
++ `s_estimate`: If `est_s= TRUE` then a simulated estimate of `se_beta_hat`.
 
 True marginal and joint total and direct effects are contained in four matrices:
+
 + `beta_joint`: Total causal effects of SNPs on traits. 
 + `beta_marg`: Expected marginal association of SNPs on traits. `beta_marg` is the expected value of `beta_hat`. When there is no 
 LD, `beta_marg` and `beta_joint` are the same. 
 + `direct_SNP_effects_joint`: Direct causal effects of SNPs on traits. Direct means not mediated by other traits. 
 + `direct_SNP_effects_marg`: Like `beta_marg` but considering only direct rather than total effects. 
 
-The relaionship between traits is contained in two matrices:
+The relationship between traits is contained in two matrices:
+
 + `direct_trait_effects`: Matrix of direct effects between traits
 + `total_trait_effects`: Matrix of total effects between traits
 
 Trait covariance is described by four matrices:
+
 + `Sigma_G`: Genetic variance-covariance matrix, determined by heritability and `G`.
 + `Sigma_E`: Environmental variance-covariance matrix. This is determined by heritability and `R_E`.
 + `trait_corr`: Population trait correlation, equal to `Sigma_G + Sigma_E`. 
@@ -93,21 +96,26 @@ to the order of variables in `G`.
 
 ## Specifying the DAG
 
-The matrix `G` specifies a linear structural equation model for a set of traits. `G` must be a square matrix with dimension $K\times K$ where $K$ is the total number of traits. That is, `G` must contain a row and column for every trait even if that trait is independent of all other traits. 
-The `G[i,j]` entry of `G` specifies the direct linear effect of trait $i$ on trait $j$. The
-diagonal entries of $G$ should be 0. An error will be generated if `G` specifies a graph that contains cycles. All traits are assumed to have variance 
+The matrix `G` specifies a linear structural equation model for a set of traits. 
+To generate a set of $M$ traits with no causal relationships, `G` can be set either equal to `M` or to an $M\times M$ matrix of 0's. Otherwise,
+`G` must be an $M \times M$ matrix with `G[i,j]` specifying the direct linear effect of trait $i$ on trait $j$. The
+diagonal entries of $G$ should be 0 (no self effects). An error will be generated if `G` specifies a graph that contains cycles. All traits are assumed to have variance 
 equal to 1, so `G[i,j]^2` is the proportion of trait $j$ variance explained by 
 the direct effect of trait $i$. 
 
-For example, the graph below: 
-
-```{r, echo=FALSE, fig.align='center', fig.width = 5}
+For example, the matrix
+```{r}
 G <- matrix(c(0, sqrt(0.25), 0, sqrt(0.15), 
               0, 0, 0, sqrt(0.1), 
               sqrt(0.2), 0, 0, -sqrt(0.3), 
               0, 0, 0, 0), nrow = 4, byrow = TRUE)
+colnames(G) <- row.names(G) <- c("X", "Y", "Z", "W")
+G
+```
 
+corresponds to the graph
 
+```{r, echo=FALSE, fig.align='center', fig.width = 5}
 d <- melt(G) %>%
      filter(value !=0) %>%
      rename(from = Var1, to = Var2)
@@ -129,43 +137,41 @@ g <- create_graph(nodes_df = n, edges_df = e)
 render_graph(g)
 ```
 
-is represented by the matrix
 
-```{r}
-G <- matrix(c(0, sqrt(0.25), 0, sqrt(0.15), 
-              0, 0, 0, sqrt(0.1), 
-              sqrt(0.2), 0, 0, -sqrt(0.3), 
-              0, 0, 0, 0), nrow = 4, byrow = TRUE)
-colnames(G) <- row.names(G) <- c("X", "Y", "Z", "W")
-G
-```
 
 To simulate data from this graph, we can use
 
 ```{r}
 sim_dat1 <- sim_mv(G = G,
-                  N = 60000, J = 50000, 
+                   J = 50000,
+                  N = 60000,  
                   h2 = c(0.3, 0.3, 0.5, 0.4), 
                   pi = 1000/50000)
 ```
 
-In the function call above, we specified a GWAS sample size of 60k for every GWAS with no overlap. 
-We gave different expected heritabilities of each of the four traits (the `h2` argument). 
-Every trait has an expected 1000 direct effect SNPs (the `pi` argument). Note that `pi` specifies
-the expected proportion of direct effect SNPs not the expected number of direct effect SNPs.
-`J` specifies the total number of variants to generate, in this case 50,000.
+Using `N = 60000` indicates that all four GWAS have a sample size of 60,000 and that
+there is no overlap in samples between GWAS. The `h2` argument provides the heritability
+of each trait. The `pi` argument gives the expected proportion of direct effect
+variants for each trait. In this case, since `J = 50000` and `pi = 1000/50000`, we expect
+each trait to have 1000 direct effect variants. 
 
-Using the default settings, the number of direct effect variants will not be exactly equal to 1000 
-and the realized heritability will not be exactly equal to the input expected heritability. 
-The realized heritability is obtained from the diagonal of the genetic variance-covariance matrix, 
-`Sigma_G`.
+
+Using the default settings, there is some randomness in the number of direct effect
+variants and the total heritability. 
+We can see the realized values by looking at the `direct_SNP_effects_joint` matrix and `Sigma_G` in the
+simulation data object. `Sigma_G` is the realized genetic variance-covariance matrix. The diagonal values are 
+the realized heritability of each trait.
 
 ```{r}
 colSums(sim_dat1$direct_SNP_effects_joint != 0)
 sim_dat1$Sigma_G
 ```
-Additionally, direct effect variants are chosen randomly so some variants will 
+
+By default, we allow variants to
 have direct effects on multiple traits, a phenomenon referred to as sporadic pleiotropy.
+In this case, the majority of variants have direct effects on only one trait but 
+`r sum(rowSums(sim_dat1$direct_SNP_effects_joint != 0) > 1)` variants directly affect more than one
+trait.
 ```{r}
 A <- data.frame(sim_dat1$direct_SNP_effects_joint != 0) 
 names(A) <- paste0("Direct ", c("X", "Y", "Z", "W"), " effect")
@@ -181,19 +187,22 @@ Using `pi_exact = TRUE` forces the number of direct effect variants to be exactl
 sporadic pleiotropy. 
 If `sporadic_pleiotropy = TRUE` (the default value), `h2_exact` will result in 
 trait heritabilities very close but not exactly equal to `h2`.
-Note that `sporadic_pleiotropy = FALSE` 
-will result in an error if there are a large number of traits and/or `pi` is large.
+Note that some scenarios with either many traits or large values of `pi`
+are inconsistent with `sporadic_pleiotropy = FALSE` because 
+there are not enough variants to exclude overlap between traits. In these cases
+using `sporadic_pleiotropy = FALSE` will result in an error. 
 
 
 ```{r}
 sim_dat2 <- sim_mv(G = G,
-                  N = 60000, J = 50000, 
+                   J = 50000,
+                  N = 60000,  
                   h2 = c(0.3, 0.3, 0.5, 0.4), 
                   pi = 1000/50000, 
                   pi_exact = TRUE, 
                   h2_exact = TRUE, 
                   sporadic_pleiotropy = FALSE)
-colSums(sim_dat2$direct_SNP_effects_joint != 0)
+
 sim_dat2$Sigma_G
 A <- data.frame(sim_dat2$direct_SNP_effects_joint != 0) 
 names(A) <- paste0("Direct ", c("X", "Y", "Z", "W"), " effect")
@@ -209,23 +218,19 @@ group_by_all(A) %>%
 
 The function `xyz_to_G` will generate a matrix, $G$, corresponding to a specific "XYZ" DAG form. 
 In the "XYZ" DAG, 
-there is an exposure ($X$), an outcome ($Y$), and $K-2$ other variables, $Z_1, \dots, Z_{K-2}$. 
+there is an exposure ($X$), an outcome ($Y$), and $M-2$ other variables, $Z_1, \dots, Z_{M-2}$. 
 
 There is a (possibly 0) effect of $X$ on $Y$ specified by the `gamma` argument. 
-Variables $Z_1, \dots, Z_{K-2}$ can have effects either on or from $X$ and/or $Y$ or both
-but there are no affects $Z_1, \dots, Z_{K-2}$ on each other. 
-Effects between each $Z_k$ and $X$ and $Y$ respectively are given in the `tau_xz` and `tau_yz` arguments. 
+Variables $Z_1, \dots, Z_{M-2}$ can have effects either on or from $X$ and/or $Y$ or both
+but there are no affects $Z_1, \dots, Z_{M-2}$ on each other. 
+Effects between each $Z_m$ and $X$ and $Y$ respectively are given in the `tau_xz` and `tau_yz` arguments. 
 The direction of these effects is given in the `dir_xz` and `dir_yz` arguments. All four of
-these arguments should have length $k-2$. 
+these arguments should have length $M-2$. 
 
 The direction parameters `dir_xz` and `dir_yz` are vectors of 1 or -1 with 1 indicating an effect on $X$ or $Y$ and -1 indicating an effect from $X$ or $Y$. 
 Effect size arguments `gamma`, `tau_xz`, and `tau_yz` are given as signed proportion of variance explained. 
 So if `gamma = -0.3`, The direct effect of $X$ explains 30\% of the variance of $Y$ and the 
 effect of $X$ on $Y$ is negative. 
-
-
-
-
 
 
 For example, the code
@@ -268,7 +273,7 @@ The weights in the graph give the effect size. Note that this is the square root
 
 ## A Closer Look at the Output 
 
-We can now take a look at the output. Summary statistics are contained in the `beta_hat`, `se_beta_hat`, and if `estimate_s = TRUE` was used, `s_estimate`. These all  have dimension $J\times K$ where $K$ is the number of traits.
+We can now take a look at the output. Summary statistics are contained in the `beta_hat`, `se_beta_hat`, and if `est_s = TRUE` was used, `s_estimate`. These all  have dimension $J\times M$ where $M$ is the number of traits.
 ```{r}
 names(sim_dat1)
 dim(sim_dat1$beta_hat)
@@ -326,7 +331,7 @@ These are the estimates we would obtain if genotypes were scaled to have populat
 In `sim_dat1`, every effect estimate has the same standard error because the standard error of $\hat{\beta}_j^{(std)}$ is approximated as $1/\sqrt{N}$ and we used a common sample size across all traits. Non-standardized effect estimates will have different standard errors for different variants because these also depend on variant allele frequencies. 
 
 
-Generating non-standardized effects requires input allele frequencies which are used to calculate the variance of each SNP. This can be provided by the `af` argument which can accept a scalar, in which case the same allele frequency is used for every SNP, a vector of length `J`, or a function that takes a single argument and returns a vector of allele frequencies with length determined by the argument. If the `af` argument is provided, `sim_mv` will return all results on the non-standardized scale. 
+Generating non-standardized effects requires allele frequencies provided using the `af` argument which can accept a scalar, in which case the same allele frequency is used for every SNP, a vector of length `J`, or a function that takes a single argument and returns a vector of allele frequencies with length determined by the argument. If the `af` argument is provided, `sim_mv` will return all results on the non-standardized scale. 
 The return object will also include a data frame, `snp_info` giving the allele frequency of each variant.
 
 
@@ -377,10 +382,11 @@ an LD pattern of the appropriate size.
 ```{r}
 set.seed(10)
 sim_dat1_LD <- sim_mv(G = G,
-                  N = 60000, J = 1e5, 
-                  h2 = c(0.3, 0.3, 0.5, 0.4), 
-                  pi = 1000/1e5, R_LD = ld_mat_list, 
-                  af = AF)
+                      J = 1e5, 
+                      N = 60000, 
+                      h2 = c(0.3, 0.3, 0.5, 0.4), 
+                      pi = 1000/1e5, R_LD = ld_mat_list, 
+                      af = AF)
 
 ```
 
@@ -399,7 +405,7 @@ Many post-GWAS applications such as Mendelian randomization and polygenic risk s
 
 The `sim_ld_prune` function will perform LD-clumping on simulated data, prioritizing variants according to a supplied `pvalue` vector. Although this argument is called `pvalue`, it can be any numeric vector used to prioritize variants. The `pvalue` argument can also accept an integer. If `pvalue = i`,  variants will be prioritized according to the p-value for the trait in the column `i`. If `pvalue` is omitted, variants will be prioritized randomly (so a different result will be obtained each re-run unless a seed  is set). 
 
-To speed up performance, if you only need variants with $p$-value less than a certain threshold, supply the `pvalue_thresh` argument. Below we prune based on the p-values for trait $Z$ in two different equivalent ways.
+To speed up performance, if you only need variants with $p$-value less than a certain threshold, supply the `pvalue_thresh` argument. Below we prune based on the p-values for trait $Z$ in two equivalent ways.
 
 ```{r}
 pruned_set1 <- sim_ld_prune(dat = sim_dat1_LD, 
@@ -441,19 +447,38 @@ diag(ld_mat2) <- 0 # remove the diagonal
 all(ld_mat2^2 < 0.1)
 ```
 
-## Sample Overlap
+## Sample Overlap and Specifying Sample Size
 
 If two GWAS are performed on different traits using overlapping samples, the sampling errors of effect estimates will be correlated.
 If the two GWAS have sample sizes $N_1$ and $N_2$ with $N_c$ overlapping samples, then the correlation of 
 $\hat{z}_{1j}$ and $\hat{z}_{2j}$, $z$-scores for variant $j$ in study 1 and study 2, is approximately $\frac{N_c}{\sqrt{N_1 N_2}} \rho_{1,2}$ where $\rho_{1,2}$ is the trait correlation. 
 
-In `sim_mv` it is possible to specify sample overlap between studies by providing `N` as a matrix rather than a scalar or a vector. If `N` is a matrix than `N[i,i]` is the sample size of study $i$ and `N[i,j]` is the number of overlapping samples between studies $i$ and $j$. In the model used by `simGWAS`, all traits can be decomposed into a genetic component and an environmental component. We always assume the 
+In `sim_mv` it is possible to specify sample overlap between studies by providing `N` as a matrix or a data frame rather than a scalar or a vector. If `N` is a matrix, it should have dimension $M\times M$ with `N[i,i]` giving the sample size of study $i$ and `N[i,j]` giving the number of overlapping samples between studies $i$ and $j$.
+In data frame format, $N$ should have columns named `trait_1`, ... `trait_[M]` and N. The `trait_[x]` columns will be interpreted as logicals and `N` gives the number of
+samples  in each combination of studies. For example, the following specifications for two traits are equivalent.
+
+```{r}
+N <- matrix(c(60000, 30000, 30000, 60000), nrow = 2, ncol = 2)
+N
+
+Ndf <- data.frame(trait_1 = c(1, 1, 0), 
+                  trait_2 = c(0, 1, 1), 
+                  N = rep(30000, 3))
+Ndf
+```
+
+The data frame format contains more information than the matrix format (for more than two traits) and is
+required to simulate individual level data using `sim_gwas_from_b` which is covered in a different vignette.
+To simulate summary statistics, either format can be used. 
+
+
+In the model used by `simGWAS`, all traits can be decomposed into a genetic component and an environmental component. We always assume the 
 environmental trait component is independent of the genetic trait component. Correlation between the genetic components of the specified traits is determined by the supplied DAG. It is also possible to supply the correlation between the environmental components of the traits using the `R_E` parameter. 
 
 
-Below is an example using the same 4 trait DAG we have been using so far. Below we specify that all four GWAS have sample size 60,000 and 
+Below is an example using the same 4 trait DAG we have been using so far. We specify that all four GWAS have sample size 60,000 and 
 there are 30,000 samples overlapping between any pair of GWAS.
-Note that `simGWAS` assumes that the trait correlation is the same in any subset of samples so it doesn't matter if the same 30,000
+`simGWAS` assumes that the trait correlation is the same in any subset of samples so it doesn't matter if the same 30,000
 samples are in all studies or if different sets overlap between different pairs of studies.
 We also specify an environmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. `R_E` defaults to the identity if it is not provided.
 
@@ -491,12 +516,12 @@ sim_dat1_LD$R
 
 The `R` matrix will always be the identity if there is no sample overlap. 
 
-## Generating Data for Multiple GWAS with the Same Variant Effects
+## Generating Data for Multiple GWAS of the Same Trait 
 
 In some cases, you may want to generate multiple sets of summary statistics for the same set of effect sizes. This
 would mimic performing multiple GWAS on the same trait. The function `gen_bhat_from_b` allows you to do this. This function takes as input
 a matrix of either standardized or non-standardized joint (causal) effects to `b_joint_std` or `b_joint`. The function also requires the trait correlation matrix
-and the sample size argument. Optionally, `af` and `R_LD` can be supplied. The `estimate_s` argument functions in the same way as in `sim_mv`. 
+and the sample size argument. Optionally, `af` and `R_LD` can be supplied. The `est_s` argument functions in the same way as in `sim_mv`. 
 
 Below, we generate new GWAS data for the effects in `sim_dat1_LD`. Here we use the same LD pattern used originally but we could have done otherwise. For example, we could simulate GWAS in samples with different ancestry but supplying a different LD pattern.
 
@@ -514,4 +539,4 @@ plot(sim_dat2_LD$beta_hat[,1], sim_dat1_LD$beta_hat[,1])
 abline(0, 1, col = "red", lty = 2, lwd = 2)
 ```
 
-Our first simulation object `sim_dat1` was generated with no LD and without supplying the `af` argument, so the `beta_joint` values for that object represent standardized effects. If we were generating secondary studies from this object, we should use the `b_joint_std` argument rather than `b_joint` in the call to `get_bhat_from_b`. If you are not sure if you have standardized or non-standardized effects, check the `snp_info` table. If the `AF` column is equal ot `NA` then the object contains standardized effects. Otherwise, it contains non-standardized effects.
+Our first simulation object `sim_dat1` was generated with no LD and without supplying the `af` argument, so the `beta_joint` values for that object represent standardized effects. If we were generating secondary studies from this object, we should use the `b_joint_std` argument rather than `b_joint` in the call to `gen_bhat_from_b`. If you are not sure if you have standardized or non-standardized effects, check the `snp_info` table. If the `AF` column is equal to `NA` then the object contains standardized effects. Otherwise, it contains non-standardized effects.

@@ -130,9 +130,28 @@ check_psd <- function(M, string){
   return(M)
 }
 
-check_G <- function(G, h2, n){
+check_G <- function(G, h2){
+  if(! "matrix" %in% class(G)){
+    if(!(class(G) == "numeric" | class(G) == "integer" )){
+      stop(paste0("G should have class matrix, numeric, or integer, found ", class(G), "\n"))
+    }
+    if(!(G >= 0 & G == round(G))){
+      stop("If G is not a matrix, it should be a non-negative integer. Found ", G, "\n")
+    }
+    if(G == 0 | G == 1){
+      n <- 1
+    }else{
+      n <- G
+    }
+    G <- matrix(0, nrow = n, ncol = n)
+  }else{
+    n <- nrow(G)
+  }
+
+
   G <- check_matrix(G, "G", n, n)
   h2 <- check_scalar_or_numeric(h2, "h2", n)
+  h2 <- check_01(h2)
   if(!all(diag(G) ==0)){
     stop("G must have 0s on the diagonal.")
   }
@@ -152,7 +171,7 @@ check_G <- function(G, h2, n){
     stop(paste0("Supplied G is incompatible with supplied h2. You could try increasing the heritability of traits ",
                 paste0(which(direct_h2 < 0), collapse = ","), ".\n"))
   }
-  return(list(G_dir = G, G_tot = G_tot, dir_h2 = as.vector(direct_h2)))
+  return(list(G_dir = G, G_tot = G_tot, dir_h2 = as.vector(direct_h2), h2 = h2, M = n))
 }
 
 check_01 <- function(x, name){

@@ -57,6 +57,6 @@ xyz_to_G <- function(tau_xz, tau_yz, dir_xz, dir_yz, gamma){
 
   G[which(dir_yz == 1) + 2, 1] <- tau_yz[dir_yz ==1]
   G[1, which(dir_yz == -1) + 2] <- tau_yz[dir_yz == -1]
-  Gc <- check_G(G, rep(1, n), n)
+  Gcheck <- check_G(G, rep(1, n))
   return(G)
 }

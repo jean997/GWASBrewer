@@ -68,10 +68,17 @@ estimate_s <- function(N, beta_hat,
   block_info <- assign_ld_blocks(l, J)
   if(!is.null(block_info$last_block_info)){
     b <- block_info$last_block_info[1]
-    sx_Rl <- with(sx_Rsqrt[[b]], vectors %*% diag(values) %*% vectors)
     x <- block_info$last_block_info[2]
-    last_block <- eigen(sx_Rl[seq(x), seq(x)])
-    sx_Rsqrt[[nblock + 1]] <- with(last_block, vectors %*% diag(sqrt(values)))
+
+    s <- start_ix[b]
+    p <- s + x -1
+    vvt <- kronecker(matrix(v[s:p], ncol=1), matrix(v[s:p], nrow =1))
+    oot <- kronecker(matrix(one_minus_mu[s:p], ncol=1), matrix(one_minus_mu[s:p], nrow =1))
+    sx_Rsqrtl <- (ld_mat[[b]][seq(x), seq(x)]*vvt*oot + (ld_mat[[b]][seq(x), seq(x)]^2)*(vvt^2)) %>%
+             cov2cor() %>%
+             eigen %>% with(., vectors %*% diag(sqrt(values)))
+
+    sx_Rsqrt[[nblock + 1]] <- sx_Rsqrtl
   }
 
   AF <- af[block_info$index]
