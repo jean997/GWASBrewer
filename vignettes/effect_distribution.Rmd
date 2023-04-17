@@ -1,0 +1,185 @@
+---
+title: "Controlling Effect Size Distributions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Controlling Effect Size Distributions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(simGWAS)
+library(dplyr)
+```
+
+## Introduction
+
+`simGWAS` can support a range of effect size distributions. At one end of the spectrum, effect sizes and 
+direct effect variants can be completely deterministic. At the other end of the spectrum, 
+both are random. There are multiple ways to control the distributions of these
+random values demonstrated in this vigentte.
+
+## Default Behavior
+
+
+The default behavior of `sim_mv` is to sample effect variants randomly by first generating
+a $J$-vector $Z_m \sim Binom(1, \pi_m)$ for each trait $m$. $Z_{m,j}$ is 1 if variant $j$
+has a direct effect on trait $m$ and 0 otherwise. We then sample standardized effect sizes for 
+variants with direct effects from a normal $N(0, \sigma^2_m)$ distribution with $\sigma^2_m$
+determined by the SEM and the target expected heritability. This results 
+in effect variants spread evenly throughout the genome and effect sizes that 
+are inversely proportional to $\sqrt{2 f_j (1-f_j)}$
+
+We demonstrate this by simulating data for only one trait.
+```{r}
+set.seed(1)
+sim_dat1 <- sim_mv(G = 1,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = 1000/50000, 
+                   af = function(n){rbeta(n, 1, 5)})
+```
+
+```{r}
+plot(sim_dat1$direct_SNP_effects_joint)
+plot(sim_dat1$snp_info$AF, sim_dat1$direct_SNP_effects_joint)
+
+std_effects <- with(sim_dat1, direct_SNP_effects_joint*sqrt(2*snp_info$AF*(1-snp_info$AF)))
+hist(std_effects[!std_effects == 0], breaks = 30, freq = F, main = "Standardized Direct Effects")
+curve(dnorm(x, sd = sqrt(0.3/1000)), add = T)
+```
+
+
+## Controlling Direct Effect Variants
+
+To control which variants have direct effects, the `pi` argument
+can be supplied as a `J \times M` matrix rather than as a vector of length `M`
+or a scalar. If `pi` has matrix format then  `pi[j,m]` gives the probability than
+variant `j` has a direct effect on trait `m`. To make the set of 
+direct effect variants fully deterministic, set the values of `pi` to be either 0
+or 1. Using `pi` in matrix format is incompatible with options `pi_exact = TRUE`
+and `sporadic_pleiotropy = FALSE`. 
+
+Below, we use the matrix format to force all effect variants to be in the 
+first half of the genome. This strategy could be used to designate
+regions with high concentrations of effect variants.
+
+```{r}
+pi_mat <- matrix(0, nrow = 50000, ncol = 1)
+pi_mat[1:25000,1] <- 1000/25000
+sim_dat2 <- sim_mv(G = 1,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = pi_mat, 
+                   af = function(n){rbeta(n, 1, 5)})
+```
+
+```{r}
+plot(sim_dat2$direct_SNP_effects_joint)
+```
+
+In another application of this option, we can make the probability that a
+variant is an effect variant a function of the allele frequency.
+
+```{r}
+af <- rbeta(n = 50000, 1, 5)
+pi_mat <- matrix(0, nrow = 50000, ncol = 1)
+pi_mat[,1] <- (1-pmin(af, 1-af))^4
+# ensure there are still 1000 effect variants expected
+pi_mat <- 1000*pi_mat/sum(pi_mat) 
+sim_dat3 <- sim_mv(G = 1,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = pi_mat, 
+                   af = function(n){rbeta(n, 1, 5)})
+```
+To verify that we observe the desired effect, we plot the proportion of effect
+variants by bins of minor allele frequency.
+
+```{r}
+x <- seq(0, 0.5, length.out = 100)
+maf <- pmin(af, 1-af)
+snp_dat <- data.frame(maf = maf, 
+                      is_effect = sim_dat3$direct_SNP_effects_joint !=0, 
+                      maf_cat = cut(maf, breaks = x), 
+                      maf_cat_order = cut(maf, breaks = x, labels = FALSE)) %>%
+           group_by(maf_cat) %>% 
+           summarize(n = n(), 
+                     n_eff = sum(is_effect), 
+                     maf_min = first(maf_cat_order)) %>%
+           mutate(eff_prob = n_eff/n)
+snp_dat$maf_min <- x[snp_dat$maf_min]
+with(snp_dat, plot(maf_min, eff_prob))
+```
+
+
+## Controlling Effect Size Distribution
+
+To sample standardized effects from a distribution other
+than the normal distribution, we use the `snp_effect_function` 
+argument in `sim_mv`. This argument can accept a function
+that accepts three arguments, `n` for number of variants, 
+`sd` for total variance, and `af` for allele frequency. The function should
+return a vector of standardized effect sizes $\tilde{\gamma}_1, \dots, \tilde{\gamma}_n$
+such that $\sum_{j = 1}^n E[\tilde{\gamma}_j^2] = \sigma^2$ where $\sigma^2$ is 
+equal to `sd^2` and $E[\tilde{\gamma}_j]  = 0$. Below are two examples using this argument.
+
+### Drawing Effects from a Mixture of Normals
+
+Frequently, we observe a pattern that many effect variants have a small "background" effect
+and some have a larger "forground" effect. This pattern is consistent with an omni-genic
+model for genetic architecture. To simulate this, we can draw standardized
+effects from a mixture of normals rather than from a single normal distribution.
+There is a helper function `mixnorm_to_scale_fam` which generates functions approrpriate to pass
+to `sim_mv`. For example, suppose we want a distribution in which 90\% of variants 
+have standardized direct effects following a $N(0, \sigma^2_1)$ distribution and 10\% 
+have standardized effects from a $N(0, 10 \sigma^2_1)$ distribution. Then we can use
+
+```{r}
+myf <- mixnorm_to_scale_fam(sigma = c(1, sqrt(10)), pi = c(0.9, 0.1))
+```
+
+Note that the `sigma` argument just specifies the relative scalings of the
+variances so it would be equivalent to use 
+
+```{r}
+myf <- mixnorm_to_scale_fam(sigma = c(10, 10*sqrt(10)), pi = c(0.9, 0.1))
+```
+
+```{r}
+set.seed(2)
+sim_dat4 <- sim_mv(G = 1,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = 5000/50000, 
+                   snp_effect_function = myf,
+                   af = function(n){rbeta(n, 1, 5)})
+```
+
+This gives a distribution of standardized direct effects with much heavier tails than 
+using the default behavior. 
+
+```{r}
+std_effects <- with(sim_dat4, direct_SNP_effects_joint*sqrt(2*snp_info$AF*(1-snp_info$AF)))
+hist(std_effects[!std_effects == 0], breaks = 30, freq = F, main = "Standardized Direct Effects")
+```
+
+Note that even if your function does not use the allele frequency, it must be able to 
+accept allele frequency as an argument. An easy way to allow this is to give `...` 
+as one of the arguments to your function. 
+
+## Allowing Effect Size to Depend on Allele Frequency
+
+We can use the custom effect size function argument to control how effect size depends on allele
+frequency. In the LDAK model, 
