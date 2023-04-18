@@ -227,10 +227,10 @@ hist(std_effects1[!std_effects1 == 0], breaks = 30, freq = F, main = "Standardiz
 
 ```{r}
 std_effects2 <- with(sim_dat6, direct_SNP_effects_joint[,2]*sqrt(2*snp_info$AF*(1-snp_info$AF)))
-hist(std_effects2[!std_effects2 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 1")
+hist(std_effects2[!std_effects2 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 2")
 ```
 
-Below is some code that uses combines some of the effect size speicification utilities to simulate GWAS data for only one LD block for two traits. The first trait will have two effect variants that have equal effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4. 
+Below is some code that combines some of the effect size speicification options to simulate GWAS data for one LD block and two traits. The first trait will have two effect variants that have equal standardized effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes across traits. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4 for one trait and 1e-3 for the other. 
 
 ```{r}
 data("ld_mat_list")
@@ -260,23 +260,36 @@ myf2 <- fixed_to_scale_fam(c(-1, 2))
 
 sim_dat7 <- sim_mv(G = 2,
                    J = J,
-                   N = 60000,  
-                   h2 = c(6e-4, 5e-4), 
+                   N = 100000,  
+                   h2 = c(6e-4, 1e-3), 
                    pi = pi_mat,
                    R_LD = list(ld_block),
                    snp_effect_function = list(myf1, myf2),
                    af = af)
 
 ## Plotting joint effects
-plot(sim_dat7$direct_SNP_effects_joint[,1])
+plot(sim_dat7$direct_SNP_effects_joint[,1], main = "Trait 1 Joint Effects", ylab = "beta joint")
 abline(v = c(75, 150))
-plot(sim_dat7$direct_SNP_effects_joint[,2])
+plot(sim_dat7$direct_SNP_effects_joint[,2], main = "Trait 2 Joint Effects", ylab = "beta joint")
 abline(v = c(75, 130))
+```
 
+Note that the effects for the first trait are not the same because we specified standardized effects but have plotted non-standardized effects. The standardized effects, equal to the non-standardized effects scaled these by $\sqrt{2f_j (1-f_j)}$ are equal (see "Standardized vs Non-Standardized Effects" in the Simulating Data vignette).  
+
+```{r}
 ## Plotting marginal effects
-plot(sim_dat7$direct_SNP_effects_marg[,1])
+plot(sim_dat7$direct_SNP_effects_marg[,1], main = "Trait 1 Marginal Effects", ylab = "beta marg")
 abline(v = c(75, 150), h = 0)
-plot(sim_dat7$direct_SNP_effects_marg[,2])
+plot(sim_dat7$direct_SNP_effects_marg[,2], main = "Trait 2 Marginal Effects", ylab = "beta marg")
 abline(v = c(75, 130), h = 0)
 ```
 
+Plotting observed z-scores
+
+```{r}
+## Plotting marginal effects
+with(sim_dat7, plot(beta_hat[,1]/se_beta_hat[,1], main = "Trait 1 Obs. Z-scores", ylab = "zhat marg"))
+abline(v = c(75, 150), h = 0)
+with(sim_dat7, plot(beta_hat[,2]/se_beta_hat[,2], main = "Trait 2 Obs. Z-scores", ylab = "zhat marg"))
+abline(v = c(75, 130), h = 0)
+```

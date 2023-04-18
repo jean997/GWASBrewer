@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0068</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0070</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,8 @@
 <span><span class="co">#&gt;     filter, lag</span></span>
 <span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
+<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
@@ -254,10 +255,139 @@ function.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="allowing-effect-size-to-depend-on-allele-frequency">Allowing Effect Size to Depend on Allele Frequency<a class="anchor" aria-label="anchor" href="#allowing-effect-size-to-depend-on-allele-frequency"></a>
+<h2 id="providing-a-fixed-list-of-effects">Providing a fixed list of effects<a class="anchor" aria-label="anchor" href="#providing-a-fixed-list-of-effects"></a>
 </h2>
-<p>We can use the custom effect size function argument to control how
-effect size depends on allele frequency. In the LDAK model,</p>
+<p>If you want to provide a specific fixed list of variant effects, you
+can do this using the helper function <code>fixed_to_scalefam</code>.
+Effects will still be scaled to give the desired heritability, however
+the relative sizes of effects will be given by a fixed list repeated as
+many times as necessary to give the number of variants provide. For
+example, the function below provides 10 variants in a row that all have
+the same effect followed by 10 that have an effect twice as big as the
+first 10.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">myf</span> <span class="op">&lt;-</span> <span class="fu">fixed_to_scale_fam</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">sim_dat5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                   J <span class="op">=</span> <span class="fl">50000</span>,</span>
+<span>                   N <span class="op">=</span> <span class="fl">60000</span>,  </span>
+<span>                   h2 <span class="op">=</span> <span class="fl">0.3</span>, </span>
+<span>                   pi <span class="op">=</span> <span class="fl">5000</span><span class="op">/</span><span class="fl">50000</span>, </span>
+<span>                   snp_effect_function <span class="op">=</span> <span class="va">myf</span>,</span>
+<span>                   af <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SNP effects provided for 50000 SNPs and 1 traits.</span></span></code></pre></div>
+<p>If you combine a SNP effect function of this type with an argument to
+<code>pi</code> containing only 0’s and 1’s and a vector input to
+<code>af</code>, you can exactly specify the effect size of every
+variant.</p>
+</div>
+<div class="section level2">
+<h2 id="different-effect-distributions-for-different-traits">Different effect distributions for different traits<a class="anchor" aria-label="anchor" href="#different-effect-distributions-for-different-traits"></a>
+</h2>
+<p>The <code>snp_effect_function</code> parameter can accept a list with
+length equal to the number of traits. In this case, the direct effect
+variants for each trait will be drawn from the corresponding element of
+<code>snp_effect_function</code>. If <code>snp_effect_function</code> is
+a list, each elements should either be an acceptable function or the
+string <code>normal</code>. The code below generates data for two
+independent traits. The effects for the first trait are normally
+distributed. The effects for the second trait follow the specification
+in the previous section.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_dat6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>                   J <span class="op">=</span> <span class="fl">50000</span>,</span>
+<span>                   N <span class="op">=</span> <span class="fl">60000</span>,  </span>
+<span>                   h2 <span class="op">=</span> <span class="fl">0.3</span>, </span>
+<span>                   pi <span class="op">=</span> <span class="fl">5000</span><span class="op">/</span><span class="fl">50000</span>, </span>
+<span>                   snp_effect_function <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">'normal'</span>, <span class="va">myf</span><span class="op">)</span>,</span>
+<span>                   af <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SNP effects provided for 50000 SNPs and 2 traits.</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">std_effects1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat6</span>, <span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">snp_info</span><span class="op">$</span><span class="va">AF</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">snp_info</span><span class="op">$</span><span class="va">AF</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">std_effects1</span><span class="op">[</span><span class="op">!</span><span class="va">std_effects1</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span>, breaks <span class="op">=</span> <span class="fl">30</span>, freq <span class="op">=</span> <span class="cn">F</span>, main <span class="op">=</span> <span class="st">"Standardized Direct Effects Trait 1"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-15-1.png" width="700"></p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">std_effects2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat6</span>, <span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fl">2</span><span class="op">*</span><span class="va">snp_info</span><span class="op">$</span><span class="va">AF</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">snp_info</span><span class="op">$</span><span class="va">AF</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">std_effects2</span><span class="op">[</span><span class="op">!</span><span class="va">std_effects2</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span>, breaks <span class="op">=</span> <span class="fl">30</span>, freq <span class="op">=</span> <span class="cn">F</span>, main <span class="op">=</span> <span class="st">"Standardized Direct Effects Trait 2"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-16-1.png" width="700"></p>
+<p>Below is some code that combines some of the effect size
+speicification options to simulate GWAS data for one LD block and two
+traits. The first trait will have two effect variants that have equal
+standardized effect size. The second trait has two effect variants with
+different effect sizes. One pair of variants co-localizes across traits.
+Simulations of this type could be used to test co-localization methods.
+Since we are looking at only one block, we will set the heritability of
+the block to be a reasonable amount of heritability provided by two
+variants, 6e-4 for one trait and 1e-3 for the other.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"ld_mat_list"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"AF"</span><span class="op">)</span></span>
+<span><span class="co"># Pull out sub section of one of the built in LD blocks</span></span>
+<span><span class="va">ld_block</span> <span class="op">&lt;-</span> <span class="va">ld_mat_list</span><span class="op">[[</span><span class="fl">10</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">118</span><span class="op">:</span><span class="fl">350</span>, <span class="fl">118</span><span class="op">:</span><span class="fl">350</span><span class="op">]</span></span>
+<span><span class="va">J</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ld_block</span><span class="op">)</span></span>
+<span><span class="co"># Corresponding allele frequency</span></span>
+<span><span class="va">start_ix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ld_mat_list</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span>, <span class="va">nrow</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fl">118</span> </span>
+<span><span class="va">af</span> <span class="op">&lt;-</span> <span class="va">AF</span><span class="op">[</span><span class="va">start_ix</span><span class="op">:</span><span class="op">(</span><span class="va">start_ix</span> <span class="op">+</span> <span class="va">J</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">## plot the LD block</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">ld_block</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>    <span class="fu">reshape2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/reshape2/man/melt.html" class="external-link">melt</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">Var1</span>, y <span class="op">=</span> <span class="va">Var2</span>, fill <span class="op">=</span> <span class="va">value</span><span class="op">)</span><span class="op">)</span>  <span class="op">+</span> </span>
+<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_tile</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_gradient.html" class="external-link">scale_fill_gradient2</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-17-1.png" width="700"></p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Set causal variants</span></span>
+<span><span class="va">pi_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, nrow <span class="op">=</span> <span class="va">J</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">pi_mat</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">150</span><span class="op">)</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">pi_mat</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">130</span><span class="op">)</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span></span>
+<span><span class="co"># Set effect size functions</span></span>
+<span><span class="va">myf1</span> <span class="op">&lt;-</span> <span class="fu">fixed_to_scale_fam</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">myf2</span> <span class="op">&lt;-</span> <span class="fu">fixed_to_scale_fam</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sim_dat7</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>                   J <span class="op">=</span> <span class="va">J</span>,</span>
+<span>                   N <span class="op">=</span> <span class="fl">100000</span>,  </span>
+<span>                   h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6e-4</span>, <span class="fl">1e-3</span><span class="op">)</span>, </span>
+<span>                   pi <span class="op">=</span> <span class="va">pi_mat</span>,</span>
+<span>                   R_LD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">ld_block</span><span class="op">)</span>,</span>
+<span>                   snp_effect_function <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">myf1</span>, <span class="va">myf2</span><span class="op">)</span>,</span>
+<span>                   af <span class="op">=</span> <span class="va">af</span><span class="op">)</span></span>
+<span><span class="co">#&gt; SNP effects provided for 233 SNPs and 2 traits.</span></span>
+<span></span>
+<span><span class="co">## Plotting joint effects</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat7</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 1 Joint Effects"</span>, ylab <span class="op">=</span> <span class="st">"beta joint"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">150</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-18-1.png" width="700"></p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat7</span><span class="op">$</span><span class="va">direct_SNP_effects_joint</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 2 Joint Effects"</span>, ylab <span class="op">=</span> <span class="st">"beta joint"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">130</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-18-2.png" width="700"></p>
+<p>Note that the effects for the first trait are not the same because we
+specified standardized effects but have plotted non-standardized
+effects. The standardized effects, equal to the non-standardized effects
+scaled these by <span class="math inline">\(\sqrt{2f_j (1-f_j)}\)</span>
+are equal (see “Standardized vs Non-Standardized Effects” in the
+Simulating Data vignette).</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Plotting marginal effects</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat7</span><span class="op">$</span><span class="va">direct_SNP_effects_marg</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 1 Marginal Effects"</span>, ylab <span class="op">=</span> <span class="st">"beta marg"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">150</span><span class="op">)</span>, h <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-19-1.png" width="700"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">sim_dat7</span><span class="op">$</span><span class="va">direct_SNP_effects_marg</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 2 Marginal Effects"</span>, ylab <span class="op">=</span> <span class="st">"beta marg"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">130</span><span class="op">)</span>, h <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-19-2.png" width="700"></p>
+<p>Plotting observed z-scores</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">## Plotting marginal effects</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat7</span>, <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">/</span><span class="va">se_beta_hat</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 1 Obs. Z-scores"</span>, ylab <span class="op">=</span> <span class="st">"zhat marg"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">150</span><span class="op">)</span>, h <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-20-1.png" width="700"></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat7</span>, <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span><span class="op">/</span><span class="va">se_beta_hat</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span>, main <span class="op">=</span> <span class="st">"Trait 2 Obs. Z-scores"</span>, ylab <span class="op">=</span> <span class="st">"zhat marg"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">75</span>, <span class="fl">130</span><span class="op">)</span>, h <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
+<p><img src="effect_distribution_files/figure-html/unnamed-chunk-20-2.png" width="700"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>

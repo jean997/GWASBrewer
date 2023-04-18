@@ -11,7 +11,7 @@ gen_bhat_from_b(
   N,
   R_LD = NULL,
   af = NULL,
-  estimate_s = FALSE,
+  est_s = FALSE,
   L_mat_joint_std = NULL,
   theta_joint_std = NULL
 )

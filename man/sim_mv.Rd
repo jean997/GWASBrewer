@@ -9,7 +9,7 @@ sim_mv(
   J,
   h2,
   pi,
-  G,
+  G = 0,
   R_E = NULL,
   R_LD = NULL,
   af = NULL,
@@ -17,7 +17,7 @@ sim_mv(
   sporadic_pleiotropy = TRUE,
   pi_exact = FALSE,
   h2_exact = FALSE,
-  estimate_s = FALSE,
+  est_s = FALSE,
   return_dat = FALSE
 )
 }
@@ -54,7 +54,7 @@ If R_LD is supplied, af must be a vector with length equal to the size of the su
 
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly h2.}
 
-\item{estimate_s}{If TRUE, return estimates of se(beta_hat).}
+\item{est_s}{If TRUE, return estimates of se(beta_hat).}
 
 \item{return_dat}{Useful development option.}
 }
@@ -67,7 +67,7 @@ Simulated effect estimates and standard errors are contained in matrices
 
 + \code{se_beta_hat} Standard error of effect estimates, equal to sqrt(1/N_m *Var(G_j)).
 
-+ \code{s_estimate} Estimate of \code{se_beta_hat}. Present only if \code{estimate_s = TRUE}.
++ \code{s_estimate} Estimate of \code{se_beta_hat}. Present only if \code{est_s = TRUE}.
 
 Four matrices contain direct and total marginal and joint SNP-trait associations:
 + \code{direct_SNP_effects_marg} and \code{direct_SNP_effects_joint} give direct effects of SNPs on traits. These are the

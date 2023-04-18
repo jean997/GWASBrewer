@@ -17,7 +17,7 @@ sim_lf(
   af = NULL,
   R_LD = NULL,
   sporadic_pleiotropy = TRUE,
-  estimate_s = FALSE,
+  est_s = FALSE,
   snp_effect_function = "normal",
   h2_exact = FALSE,
   pi_exact = FALSE
@@ -51,7 +51,7 @@ If R_LD is supplied, af must be a vector with length equal to the size of the su
 
 \item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
-\item{estimate_s}{If TRUE, return estimates of se(beta_hat).}
+\item{est_s}{If TRUE, return estimates of se(beta_hat).}
 
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly h2.}
 

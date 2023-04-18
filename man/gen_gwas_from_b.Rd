@@ -30,10 +30,8 @@ gen_gwas_from_b(
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 
-\item{af}{Allele frequencies. This can be a scalar, vector or a function. For this function, af must be
-supplied if R_LD is not supplied. If a vector, af should have length equal to the number of variants.}
-
-\item{snp_info}{(optional, required if \code{R_LD} is supplied).}
+\item{af}{Allele frequencies. This can be a scalar, vector or a function. For this function, af must always be
+supplied.}
 }
 \description{
 Generate GWAS data from standardized or non-standardized direct SNP effects and LD
