@@ -54,3 +54,17 @@ rnormalmix <- function(n, sd, pi, mu =0, return.Z=FALSE){
   if(return.Z) return(list("beta"=beta, "Z"=Z))
   return(beta)
 }
+
+
+#'@export
+fixed_to_scale_fam <- function(b){
+  f <- function(n, sd, ...){
+    newb <- b[ ((0:(n-1)) %% length(b)) + 1]
+    Vbase <- sum(newb^2)
+    Vtarget <- sd^2
+    a <- sqrt(Vtarget/Vbase)
+    return(a*newb)
+  }
+  return(f)
+}
+

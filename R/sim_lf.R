@@ -84,7 +84,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
 
-  f <- check_snp_effect_function(snp_effect_function)
+  f <- check_effect_function_list(snp_effect_function, M)
 
 
   if(any(omega < 1 & pi_theta == 0)){

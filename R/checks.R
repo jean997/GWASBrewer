@@ -285,12 +285,26 @@ check_af <- function(af, n, function_ok = TRUE){
   return(af)
 }
 
+check_effect_function_list <- function(snp_effect_function, M){
+  if(!class(snp_effect_function) == "list"){
+    f <- check_snp_effect_function(snp_effect_function)
+    fl <- list()
+    for(i in 1:M) fl[[i]] <- f
+    return(fl)
+  }else{
+    if(length(snp_effect_function) != M){
+      stop(paste0("Expected snp_effect_function to be a list of length ", M, ", a function, or 'normal'"))
+    }
+    fl <- list()
+    for(i in 1:M) fl[[i]] <- check_snp_effect_function(snp_effect_function[[i]])
+    return(fl)
+  }
+}
 
+check_snp_effect_function <- function(snp_effect_function, M){
 
-check_snp_effect_function <- function(snp_effect_function){
-
-  if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function")){
-    stop("snp_effect_function should either be 'normal' or a function.")
+  if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function") ){
+    stop("snp_effect_function should either be 'normal', a function, or a vector.")
   }
   if(class(snp_effect_function) == "function"){
 
@@ -306,8 +320,6 @@ check_snp_effect_function <- function(snp_effect_function){
       rnorm(n =n, mean = 0, sd = sd)
     }
     return(f)
-  }else{
-    stop("snp_effect_function should either be 'normal' or a function.")
   }
 }
 

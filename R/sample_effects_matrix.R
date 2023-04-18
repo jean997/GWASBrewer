@@ -43,10 +43,10 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
   }
 
   if(pi_mat){
-    eff <- purrr::map(seq(M), function(i){
+      eff <- purrr::map(seq(M), function(i){
       t <- rbinom(n=J, size=1, prob = pi[,i])
       n <- sum(t==1)
-      if(n > 0) t[t==1] <- f(n=n, sd = sig_j[i], af = af[t==1])
+      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], af = af[t==1])
       return(t)
     }) %>% do.call(cbind, .)
   }else if(pi_exact & sporadic_pleiotropy){
@@ -55,7 +55,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
       val <- rep(0, J)
       if(n > 0){
         t <- sample(seq(J), size = n, replace = FALSE)
-        val[t] <- f(n=n, sd = sig_j[i], af = af[t])
+        val[t] <- f[[i]](n=n, sd = sig_j[i], af = af[t])
       }
       return(val)
     }) %>% do.call(cbind, .)
@@ -63,7 +63,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
     eff <- purrr::map(seq(M), function(i){
       t <- rbinom(n=J, size=1, prob = pi[i])
       n <- sum(t==1)
-      if(n > 0) t[t==1] <- f(n=n, sd = sig_j[i], af = af[t==1])
+      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], af = af[t==1])
       return(t)
     }) %>% do.call(cbind, .)
   }else{
@@ -86,7 +86,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
       t <- which(nz_ix == i)
       n <- length(t)
       val <- rep(0, J)
-      if(n > 0) val[t] <- f(n=n, sd = sig_j[i], af = af[t])
+      if(n > 0) val[t] <- f[[i]](n=n, sd = sig_j[i], af = af[t])
       return(val)
     }) %>% do.call(cbind, .)
   }

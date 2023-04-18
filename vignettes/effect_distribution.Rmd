@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(simGWAS)
 library(dplyr)
+library(ggplot2)
 ```
 
 ## Introduction
@@ -179,7 +180,103 @@ Note that even if your function does not use the allele frequency, it must be ab
 accept allele frequency as an argument. An easy way to allow this is to give `...` 
 as one of the arguments to your function. 
 
-## Allowing Effect Size to Depend on Allele Frequency
+## Providing a fixed list of effects
 
-We can use the custom effect size function argument to control how effect size depends on allele
-frequency. In the LDAK model, 
+If you want to provide a specific fixed list of variant effects, you can do this using the helper function `fixed_to_scalefam`.  Effects will still be scaled to give the desired heritability, however the relative sizes of effects will be given by a fixed list repeated as many times as necessary to give the number of variants provide. For example, the function below provides 10 variants in a row that all have the same effect followed by 10 that have an effect twice as big as the first 10. 
+
+```{r}
+myf <- fixed_to_scale_fam(rep(c(1, 2), each = 10))
+```
+
+
+```{r}
+set.seed(2)
+sim_dat5 <- sim_mv(G = 1,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = 5000/50000, 
+                   snp_effect_function = myf,
+                   af = function(n){rbeta(n, 1, 5)})
+```
+
+If you combine a SNP effect function of this type with an argument to `pi` containing only 0's and 1's and a vector input to `af`, you can exactly specify the effect size of every variant. 
+
+## Different effect distributions for different traits
+
+The `snp_effect_function` parameter can accept a list with length equal to the number of traits. In this case, the direct effect variants for each trait will be drawn from the corresponding element of `snp_effect_function`. If `snp_effect_function` is a list, each elements should either be an acceptable function or the string `normal`. The code below generates data for two independent traits. The effects for the first trait are normally distributed. The effects for the second trait follow the specification in the previous section. 
+
+
+```{r}
+sim_dat6 <- sim_mv(G = 2,
+                   J = 50000,
+                   N = 60000,  
+                   h2 = 0.3, 
+                   pi = 5000/50000, 
+                   snp_effect_function = list('normal', myf),
+                   af = function(n){rbeta(n, 1, 5)})
+
+
+```
+
+
+```{r}
+std_effects1 <- with(sim_dat6, direct_SNP_effects_joint[,1]*sqrt(2*snp_info$AF*(1-snp_info$AF)))
+hist(std_effects1[!std_effects1 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 1")
+```
+
+```{r}
+std_effects2 <- with(sim_dat6, direct_SNP_effects_joint[,2]*sqrt(2*snp_info$AF*(1-snp_info$AF)))
+hist(std_effects2[!std_effects2 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 1")
+```
+
+Below is some code that uses combines some of the effect size speicification utilities to simulate GWAS data for only one LD block for two traits. The first trait will have two effect variants that have equal effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4. 
+
+```{r}
+data("ld_mat_list")
+data("AF")
+# Pull out sub section of one of the built in LD blocks
+ld_block <- ld_mat_list[[10]][118:350, 118:350]
+J <- nrow(ld_block)
+# Corresponding allele frequency
+start_ix <- sum(sapply(ld_mat_list[1:9], nrow)) + 118 
+af <- AF[start_ix:(start_ix + J-1)]
+## plot the LD block
+as.matrix(ld_block) %>% 
+    reshape2::melt() %>% 
+    ggplot(aes(x = Var1, y = Var2, fill = value))  + 
+      geom_tile() + scale_fill_gradient2()
+```
+
+```{r}
+## Set causal variants
+pi_mat <- matrix(0, nrow = J, ncol = 2)
+pi_mat[c(75, 150), 1] <- 1
+pi_mat[c(75, 130), 2] <- 1
+
+# Set effect size functions
+myf1 <- fixed_to_scale_fam(c(1, 1))
+myf2 <- fixed_to_scale_fam(c(-1, 2))
+
+sim_dat7 <- sim_mv(G = 2,
+                   J = J,
+                   N = 60000,  
+                   h2 = c(6e-4, 5e-4), 
+                   pi = pi_mat,
+                   R_LD = list(ld_block),
+                   snp_effect_function = list(myf1, myf2),
+                   af = af)
+
+## Plotting joint effects
+plot(sim_dat7$direct_SNP_effects_joint[,1])
+abline(v = c(75, 150))
+plot(sim_dat7$direct_SNP_effects_joint[,2])
+abline(v = c(75, 130))
+
+## Plotting marginal effects
+plot(sim_dat7$direct_SNP_effects_marg[,1])
+abline(v = c(75, 150), h = 0)
+plot(sim_dat7$direct_SNP_effects_marg[,2])
+abline(v = c(75, 130), h = 0)
+```
+
