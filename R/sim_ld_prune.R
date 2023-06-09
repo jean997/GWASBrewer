@@ -95,6 +95,8 @@ melt_to_df <- function(x){
 #'@param index list of indexes to retrieve proxies for
 #'@param R_LD LD pattern used to generate dat
 #'@param r2_thresh Get proxies with r^2 >= r2_thresh with one of the index variants
+#'@param return_mat If TRUE, return the correlation matrix between the index variant and the proxies. In this matrix, the
+#'the index variant always corresponds the first row/column and the proxies are in the order returned.
 #'@export
 sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE){
   R_LD <- check_R_LD(R_LD, "matrix")
@@ -118,7 +120,10 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
                 # block = b, rep = r,
                 #proxy_index_block = proxy_index_block,
                 proxy_index = proxy_index_dat$ix_in_dat)
-    if(return_mat) ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
+    if(return_mat){
+      ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
+      rownames(ret$Rproxy) <- colnames(ret$Rproxy) <-  c(i,proxy_index_dat$ix_in_dat)
+    }
     return(ret)
   })
   return(proxy_info)
@@ -168,5 +173,6 @@ sim_extract_ld <- function(dat, index, R_LD){
   o <- match(snpinfo$SNP, snps)
   snps <- snps[o]
   mat <- mat[o, o]
+  rownames(mat) <- colnames(mat) <- index
   return(mat)
 }
