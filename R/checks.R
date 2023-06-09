@@ -167,11 +167,12 @@ check_G <- function(G, h2){
     stop("Supplied G does not correspond to a valid DAG.\n")
   }
   direct_h2 <- solve(diag(n) + t(G_tot)^2) %*% h2
+  direct_e2 <- solve(diag(n) + t(G_tot)^2) %*% (1-h2)
   if(any(direct_h2 < 0)){
     stop(paste0("Supplied G is incompatible with supplied h2. You could try increasing the heritability of traits ",
                 paste0(which(direct_h2 < 0), collapse = ","), ".\n"))
   }
-  return(list(G_dir = G, G_tot = G_tot, dir_h2 = as.vector(direct_h2), h2 = h2, M = n))
+  return(list(G_dir = G, G_tot = G_tot, dir_h2 = as.vector(direct_h2), h2 = h2, M = n, dir_e2 = as.vector(direct_e2)))
 }
 
 check_01 <- function(x, name){
