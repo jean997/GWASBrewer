@@ -47,17 +47,17 @@ The `sim_mv` function has five required arguments:
 + `J`: The number of SNPs to simulate (scalar).
 + `h2`: The hertiability of each trait. This can be a scalar or a vector with length equal to the number of traits generated.
 + `pi`: The proportion of all SNPs that have a direct effect on each trait. This can be a scalar or a vector with length equal to the number of traits generated.
-+ `G`: A matrix specifying direct effects in the linear structural equation model. For `M` traits with no causal relationships, use `G = matrix(0, nrow = M, ncol = M )` or `G = M`. 
++ `G`: A matrix specifying direct effects in the linear structural equation model. For `M` traits with no causal relationships, use `G = matrix(0, nrow = M, ncol = M )` or the shorthand `G = M`. 
 
 There are additional optional arguments:
 
-+ `R_E`: Matrix giving correlation between environmental components of each trait (see "Sample Overlap" for more details). Defaults to the identity. `R_E` only affects summary statistics when there is sample overlap.
++ `R_E` and `R_obs`: Alternative ways to specify the correlation of environmental traut components of each trait (see "Sample Overlap" section below for more details).
 + `R_LD`: A list of LD blocks (See "Simulating Data with LD"). 
-+ `af`: Optional vector of allele frequencies. 
-+ `sporadic_pleiotropy`: Allow a single variant to have direct effects on multiple traits. Defaults to TRUE.
++ `af`: Optional vector of allele frequencies (required if `R_LD` is specified). 
++ `sporadic_pleiotropy`: Allow a single variant to have direct effects on multiple traits at random. Defaults to TRUE.
 + `pi_exact`: If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`. Defaults to FALSE.
 + `h2_exact`: If TRUE, the heritability of each trait will be exactly `h2`. Defaults to FALSE.
-+ `est_s`: If TRUE, return estimates of se(beta_hat).
++ `est_s`: If TRUE, return estimates of se(beta_hat). Currently defaults to FALSE but this is probably generally a good option to use.
 + `return_dat`: A developer option, return some extra data that is useful for debugging and testing. 
 
 
@@ -71,7 +71,7 @@ GWAS summary statistics are contained in two or three matrices:
 + `se_beta_hat`: True standard errors of `beta_hat`.
 + `s_estimate`: If `est_s= TRUE` then a simulated estimate of `se_beta_hat`.
 
-True marginal and joint total and direct effects are contained in four matrices:
+True marginal and joint, total and direct effects are contained in four matrices:
 
 + `beta_joint`: Total causal effects of SNPs on traits. 
 + `beta_marg`: Expected marginal association of SNPs on traits. `beta_marg` is the expected value of `beta_hat`. When there is no 
@@ -168,7 +168,7 @@ sim_dat1$Sigma_G
 ```
 
 By default, we allow variants to
-have direct effects on multiple traits, a phenomenon referred to as sporadic pleiotropy.
+have direct effects on multiple traits, a phenomenon we refer to as sporadic pleiotropy.
 In this case, the majority of variants have direct effects on only one trait but 
 `r sum(rowSums(sim_dat1$direct_SNP_effects_joint != 0) > 1)` variants directly affect more than one
 trait.
@@ -181,17 +181,18 @@ group_by_all(A) %>%
 ```
 
 These features can be controlled using the `pi_exact`, `h2_exact`, and `sporadic_pleiotropy` options.
-Using `pi_exact = TRUE` forces the number of direct effect variants to be exactly equal to 1000.
+Using `pi_exact = TRUE` forces the number of direct effect variants to be exactly equal to `round(pi*J)` (in our case 1000 for each trait).
 `h2_exact = TRUE` forces the realized heritability to be
 (nearly) exactly equal to the input `h2` and `sporadic_pleiotropy = FALSE` prevents
 sporadic pleiotropy. 
 If `sporadic_pleiotropy = TRUE` (the default value), `h2_exact` will result in 
-trait heritabilities very close but not exactly equal to `h2`.
+trait heritabilities very close, but not exactly equal to `h2`.
 Note that some scenarios with either many traits or large values of `pi`
 are inconsistent with `sporadic_pleiotropy = FALSE` because 
 there are not enough variants to exclude overlap between traits. In these cases
 using `sporadic_pleiotropy = FALSE` will result in an error. 
 
+Below, we demonstrate these three options. We can see that the diagonal of `Sigma_G` is now exactly equal to the input heritability, exactly 1000 variants have direct effects on each trait, and there are no variants that directly affect multiple traits.
 
 ```{r}
 sim_dat2 <- sim_mv(G = G,
@@ -219,9 +220,13 @@ group_by_all(A) %>%
 The function `xyz_to_G` will generate a matrix, $G$, corresponding to a specific "XYZ" DAG form. 
 In the "XYZ" DAG, 
 there is an exposure ($X$), an outcome ($Y$), and $M-2$ other variables, $Z_1, \dots, Z_{M-2}$. 
+The XYZ DAG format is an older input format used in early versions of this package. We expect that
+most new users will prefer the default  method of 
+directly specifying $G$,
+but have retained the XYZ format for earlier users and users that find it helpful.
 
-There is a (possibly 0) effect of $X$ on $Y$ specified by the `gamma` argument. 
-Variables $Z_1, \dots, Z_{M-2}$ can have effects either on or from $X$ and/or $Y$ or both
+In XYZ format, we specify a (possibly 0) effect of $X$ on $Y$, given by the `gamma` argument. 
+Variables $Z_1, \dots, Z_{M-2}$ can have effects either on or from $X$ and on or from $Y$, 
 but there are no affects $Z_1, \dots, Z_{M-2}$ on each other. 
 Effects between each $Z_m$ and $X$ and $Y$ respectively are given in the `tau_xz` and `tau_yz` arguments. 
 The direction of these effects is given in the `dir_xz` and `dir_yz` arguments. All four of
@@ -248,7 +253,7 @@ generates the matrix corresponding to the graph below:
 
 ```{r, echo=FALSE, fig.align='center', fig.width = 5}
 
-d <- melt(myG) %>%
+myd <- melt(myG) %>%
      filter(value !=0) %>%
      rename(from = Var1, to = Var2)
 
@@ -261,7 +266,7 @@ n <- create_node_df(n = 6, label = c("Y", "X", "Z1", "Z2", "Z3", "Z4"),
                     color = "black", 
                     x = c(2, 0, -0.5, 1, 1, 1), 
                     y = c(0, 0, 1, 1, -0.5, -1))
-e <- create_edge_df(from = d$from, to = d$to, minlen = 1,  color = "black", 
+e <- create_edge_df(from = myd$from, to = myd$to, minlen = 1,  color = "black", 
                     label = round(d$value, digits = 3))
 g <- create_graph(nodes_df = n, edges_df = e)
 
@@ -269,11 +274,11 @@ render_graph(g)
 ```
 
 
-The weights in the graph give the effect size. Note that this is the square root of the value provided in `tau_xz` and `tau_yz` which specifies the percent variance explained. For example, the effect of $Z_1$ on $X$ is  $0.316 = \sqrt{0.1}$ and the effect of $Z_2$ on $X$ is $-0.387 = - \sqrt{0.15}$. 
+The weights in the graph give the effect size. Note that this is the square root of the value provided in `tau_xz` and `tau_yz` which specifies the percent variance explained. For example, the effect of $Z_1$ on $X$ is  $0.316 = \sqrt{0.1}$ and the effect of $Z_2$ on $X$ is $-0.387 = - \sqrt{0.15}$. The matrix created by `xyz_to_G` can be used in the `G` parameter of `sim_mv`.
 
 ## A Closer Look at the Output 
 
-We can now take a look at the output. Summary statistics are contained in the `beta_hat`, `se_beta_hat`, and if `est_s = TRUE` was used, `s_estimate`. These all  have dimension $J\times M$ where $M$ is the number of traits.
+We can now take a look at the output from running `sim_mv`. Summary statistics are contained in the `beta_hat`, `se_beta_hat`, and if `est_s = TRUE` was used, `s_estimate`. These all  have dimension $J\times M$ where $M$ is the number of traits.
 ```{r}
 names(sim_dat1)
 dim(sim_dat1$beta_hat)
@@ -314,7 +319,7 @@ plot(sim_dat1$beta_joint[,3], sim_dat1$beta_joint[,4],
 abline(0, sim_dat1$total_trait_effects[3,4], col = "red", lty = 2, lwd = 2)
 ```
 
-Finally, we can verify that the observed GWAS effect estimate is a noisy measurement of `beta_marg`.
+Finally, we can verify that the observed GWAS effect estimate is a noisy measurement of `beta_marg` (in this case equal to `beta_joint` plotted above).
 
 ```{r}
 plot(sim_dat1$beta_marg[,3], sim_dat1$beta_hat[,3], 
@@ -349,7 +354,7 @@ head(sim_dat3$snp_info)
 ## Simulating Data with LD
 
 `sim_mv` can be used to generate data with LD by inputting a list of LD matrices and corresponding allele frequency information. The function will work fastest if the LD matrix is broken into small blocks. The input data format for the LD pattern is a list of either a) matrices, b) sparse matrices (class `dsCMatrix`) or c) eigen decompositions (class `eigen`). `R_LD` is interpreted as providing blocks in a block-diagonal SNP correlation matrix.
-The package contains a built in data set containing the LD pattern from Chromosome 19 in HapMap3 broken into 39 blocks. This LD was estimated from the HapMap3 European subset using LDShrink. This data set can also be downloaded [here](https://zenodo.org/record/6761943#.Yrno2njMIUE). The LD pattern must be accompanied by a vector of allele frequencies with length equal to the total size of the LD pattern (i.e. the sum of the size of each block in the list).
+The package contains a built in data set containing the LD pattern from Chromosome 19 in HapMap3 broken into 39 blocks. This LD pattern was estimated from the HapMap3 European subset using LDShrink. This data set can also be downloaded [here](https://zenodo.org/record/6761943#.Yrno2njMIUE). The LD pattern must be accompanied by a vector of allele frequencies with length equal to the total size of the LD pattern (i.e. the sum of the size of each block in the list).
 
 Let's look at the built-in LD data
 
@@ -374,10 +379,10 @@ sapply(ld_mat_list, nrow) %>% sum()
 length(AF)
 ```
 
-The LD pattern covers 19,490 SNPs, equal to the length of the `AF` object. A supplied LD pattern does not have to 
+The LD pattern covers 19,490 SNPs, equal to the length of the `AF` vector. A supplied LD pattern does not have to 
 be the same size as the number of SNPs we wish to generate. It will be repeated or subset as necessary to create
 an LD pattern of the appropriate size.
- The built-in LD pattern corresponds to a density of about 1.2 million variants in per genome. However, for this example, we will generate data for only 100k variants. This means that causal effects will be denser than they might be in more realistic data.
+ The built-in LD pattern corresponds to a density of about 1.2 million variants per genome. However, for this example, we will generate data for only 100k variants. This means that causal effects will be denser than they might be in more realistic data with the same number of effect variants.
 
 ```{r}
 set.seed(10)
@@ -397,9 +402,9 @@ with(sim_dat1_LD, plot(beta_joint[,3], beta_marg[,3]))
 abline(0, 1, lty = 2, lwd =2, col = "red")
 ```
 
-Variants with non-zero values of `beta_joint[,3]` have causal effects on $Z$ while those with non-zero values of `beta_marg[,3]` have non-zero (population) marginal association with $Z$, meaning that they are in LD with at least one causal variant. In the plot, we see that many variants with no causal effect nevertheless have non-zero marginal association, as expected. The causal variants don't fall exactly on the red line because in some cases, multiple causal variants are in LD with each other. 
+Variants with non-zero values of `beta_joint[,3]` have causal effects on $Z$ while those with non-zero values of `beta_marg[,3]` have non-zero expected marginal association with $Z$, meaning that they are in LD with at least one causal variant. In the plot, we see that many variants with no causal effect nevertheless have non-zero marginal association, as expected. The causal variants don't fall exactly on the red line because, multiple causal variants may fall into the same LD block.
 
-### LD-Pruning, LD-proxies, and LD matrix extraction
+### LD-Pruning, LD-Proxies, and LD Matrix Extraction
 
 Many post-GWAS applications such as Mendelian randomization and polygenic risk score construction require an LD-pruned set of variants. `simGWAS` contains a few LD-related functions to help with pruning and testing methods that require input LD matrices. Note that all of these methods use the true LD pattern rather than estimated LD. 
 
@@ -431,7 +436,7 @@ ld_proxies <- sim_ld_proxy(sim_dat1_LD, index = c(100, 400, 600), R_LD = ld_mat_
 ld_proxies
 ```
 
-Finally, the `sim_extract_ld` function will extract the LD matrix for a set of variants. We can use this to check the previous functions. First, both of the proxies for index 600 should have correlation greater than 0.8 with index 600. 
+Finally, the `sim_extract_ld` function will extract the LD matrix for a set of variants. We can use this to verify the behavior of `sim_ld_proxies` and `sim_ld_prune`. First, both of the proxies for index 600 should have correlation greater than 0.8 with index 600. The matrix returned below matches the matrix returned by `sim_ld_proxies` and shows that this is true.
 
 ```{r}
 ld_mat1 <- sim_extract_ld(sim_dat1_LD, index = c(600, ld_proxies[[3]]$proxy_index), R_LD = ld_mat_list)
@@ -439,7 +444,7 @@ ld_mat1
 all(abs(ld_mat1[,1]) > 0.8)
 ```
 
-Next we can check that the LD-pruned set have no mutual correlations greater than $\sqrt(0.1) \approx 0.316$
+Next we can check that the variants in the LD-pruned set have no mutual correlations greater than $\sqrt(0.1) \approx 0.316$
 
 ```{r}
 ld_mat2 <- sim_extract_ld(sim_dat1_LD, index = pruned_set1, R_LD = ld_mat_list)
@@ -447,14 +452,17 @@ diag(ld_mat2) <- 0 # remove the diagonal
 all(ld_mat2^2 < 0.1)
 ```
 
-## Sample Overlap and Specifying Sample Size
+## Specifying Sample Size, Sample Overlap, and Environmental Correlation
 
 If two GWAS are performed on different traits using overlapping samples, the sampling errors of effect estimates will be correlated.
 If the two GWAS have sample sizes $N_1$ and $N_2$ with $N_c$ overlapping samples, then the correlation of 
-$\hat{z}_{1j}$ and $\hat{z}_{2j}$, $z$-scores for variant $j$ in study 1 and study 2, is approximately $\frac{N_c}{\sqrt{N_1 N_2}} \rho_{1,2}$ where $\rho_{1,2}$ is the trait correlation. 
+$\hat{z}_{1j}$ and $\hat{z}_{2j}$, $z$-scores for variant $j$ in study 1 and study 2, is approximately $\frac{N_c}{\sqrt{N_1 N_2}} \rho_{1,2}$ where $\rho_{1,2}$ is the observational trait correlation (assuming the studies are conducted in the same super population). Below we describe how to specify the observational correlation and how to specify sample overlap.
 
-In `sim_mv` it is possible to specify sample overlap between studies by providing `N` as a matrix or a data frame rather than a scalar or a vector. If `N` is a matrix, it should have dimension $M\times M$ with `N[i,i]` giving the sample size of study $i$ and `N[i,j]` giving the number of overlapping samples between studies $i$ and $j$.
-In data frame format, $N$ should have columns named `trait_1`, ... `trait_[M]` and N. The `trait_[x]` columns will be interpreted as logicals and `N` gives the number of
+### Specifying Sample Size and Sample Overlap
+
+
+The sample size argument, `N`, can be specified as a matrix or a data frame rather than a scalar or a vector. If `N` is a matrix, it should have dimension $M\times M$ with `N[i,i]` giving the sample size of study $i$ and `N[i,j]` giving the number of overlapping samples between studies $i$ and $j$.
+In data frame format, $N$ should have columns named `trait_1`, ... `trait_[M]` and `N`. The `trait_[x]` columns will be interpreted as logicals and `N` gives the number of
 samples  in each combination of studies. For example, the following specifications for two traits are equivalent.
 
 ```{r}
@@ -468,19 +476,98 @@ Ndf
 ```
 
 The data frame format contains more information than the matrix format (for more than two traits) and is
-required to simulate individual level data using `sim_gwas_from_b` which is covered in a different vignette.
+required to simulate individual level data using `sim_gwas_from_b` which (covered in a different vignette).
 To simulate summary statistics, either format can be used. 
 
+### Understanding Genetic and Environmental Covariance
 
-In the model used by `simGWAS`, all traits can be decomposed into a genetic component and an environmental component. We always assume the 
-environmental trait component is independent of the genetic trait component. Correlation between the genetic components of the specified traits is determined by the supplied DAG. It is also possible to supply the correlation between the environmental components of the traits using the `R_E` parameter. 
+In the model used by `simGWAS`, each trait has a direct genetic component, a direct environmental component, and components from effects of other traits in the DAG. For example, in the four trait DAG we have been working with, the underlying model really looks like this:
+
+```{r, echo=FALSE, fig.align='center', fig.width = 5}
+
+n <- create_node_df(n = 12, label = c("X", "Y", "Z", "W", 
+                                      "Gx", "Ex", "Gz", "Ez", 
+                                      "Gy", "Ey", "Gw", "Ew"), 
+                    fontname = "Helvetica", 
+                    fontsize = 10, 
+                    width = 0.3, 
+                    fillcolor = "white", 
+                    fontcolor = "black",
+                    color = c(rep("black", 4), rep("blue", 8)), 
+                    x = c(0, 1, 1, 2, -0.5, -0.5, 
+                          0.8, 1.2, 0.8, 1.2, 
+                          2.5, 2.5), 
+                    y = c(0, -0.5, 1, 0, 0.25, -0.25, 
+                          1.5, 1.5, -1, -1, 
+                          0.25, -0.25))
+e <- create_edge_df(from = c(d$from, 5, 6, 7, 8, 9, 10, 11, 12), to = c(d$to, 1, 1, 3, 3, 2, 2, 4, 4), minlen = 1,  color = "black", 
+                    label = round(d$value, digits = 3))
+g <- create_graph(nodes_df = n, edges_df = e)
+
+render_graph(g)
+```
 
 
-Below is an example using the same 4 trait DAG we have been using so far. We specify that all four GWAS have sample size 60,000 and 
+In this picture, $G_x$, $G_y$, $G_z$, and $G_w$ are direct genetic components of each trait and $E_x$, $E_y$, $E_z$, and $E_w$ are direct environmental components. We always assume that the direct genetic components are independent of each other and of the environmental components. By default, we also assume that the environmental components are independent of each other (so all blue circles in the picture above are mutually independent). This means that, by default, the observational trait correlation is explained completely by the specified DAG. In this case, the default trait correlation is 
+
+```{r}
+sim_dat1$trait_corr
+```
+
+The simulation data object contains four matrices that describe trait covarince, `Sigma_E`, the total environmental trait covariance, `Sigma_G` the total genetic trait covariance, `trait_corr`, the trait correlation equal to `Sigma_G + Sigma_E`, and `R`, the row correlation of `beta_hat`. `R` is equal to `trait_corr` scaled by the a matrix of sample overlap proportions. 
+
+
+`Sigma_G` is always determined by the DAG and the heritabilities.
+Currently, there are two ways to modify `Sigma_E`. The first is to specify `R_obs` which directly specifies the observational trait correlation (`trait_corr` in the returned obeject). In some cases, it is possible to request an observational correlation matrix that is impossible. For example, in our example, $Z$ has a strong negative effect on $W$ so it is not possible that all four traits are mutually strongly positively correlated. We can get an error using
+
+```{r, error = TRUE}
+R_obs <- matrix(0.8, nrow = 4, ncol = 4)
+diag(R_obs) <- 1
+
+wont_run <- sim_mv(G = G,
+                   J = 50000,
+                  N = 60000,  
+                  h2 = c(0.3, 0.3, 0.5, 0.4), 
+                  pi = 1000/50000, 
+                  R_obs = R_obs )
+```
+
+A quick way to find out if your desired observational correlation is feasible is to compute `R_obs - Sigma_G` and check that this matrix is positive definite (i.e. check that it has all positive eigenvalues). 
+
+An alternative way to specify the environmental correlation is to specify `R_E` which gives the total correlation of environmental components. Importantly, `R_E` is the correlation of the **total** environmental components, not the direct environmental components shown in the graph above. `R_E` will be equal to `cov2cor(Sigma_E)`. Any positive definite correlation matrix is a valid input for `R_E`, so we could use
+
+```{r}
+R_E <- matrix(0.8, nrow = 4, ncol = 4)
+diag(R_E) <- 1
+
+sim_dat4 <- sim_mv(G = G,
+                   J = 50000,
+                  N = 60000,  
+                  h2 = c(0.3, 0.3, 0.5, 0.4), 
+                  pi = 1000/50000, 
+                  R_E = R_E)
+```
+
+which results in a total trait correlation of 
+
+```{r}
+sim_dat4$trait_corr
+```
+
+It is not currently possible to specify the correlation of the direct environmental components. 
+
+Importantly, the environmental covariance and observational trait correlation only influence the distribution of summary statistics if there is overlap between GWAS samples. This means that `sim_dat3` in the previous code block is actually a sample from exactly the same distribution as `sim_dat1`, because our specification has no sample overlap. We can tell that this is the case because `sim_dat4$R` is the identity, indicating that all summary statistics are independent across traits.
+
+```{r}
+sim_dat4$R
+```
+
+
+Below we combine the sample size specification options and the trait correlation specification options to produce data that are affected by the trait correlation. 
+We will keep using the same 4 trait DAG. We specify that all four GWAS have sample size 60,000 and 
 there are 30,000 samples overlapping between any pair of GWAS.
-`simGWAS` assumes that the trait correlation is the same in any subset of samples so it doesn't matter if the same 30,000
-samples are in all studies or if different sets overlap between different pairs of studies.
-We also specify an environmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. `R_E` defaults to the identity if it is not provided.
+`simGWAS` assumes that there is no sub-population structure, so the trait correlation is the same in any subset of samples. This means that it doesn't matter if the same 30,000 samples are in all studies or if different sets overlap between different pairs of studies.
+We also specify an environmental correlation matrix in which the pairwise correlation in environmental effects for any pair of traits is 0.4. 
 
 ```{r}
 R_E <- matrix(0.4, nrow = 4, ncol = 4)
@@ -492,29 +579,19 @@ N
 
 ```{r}
 set.seed(10)
-sim_dat3 <- sim_mv(G = G,
+sim_dat4 <- sim_mv(G = G,
                   N = N, J = 1e5, R_E = R_E,
                   h2 = c(0.3, 0.3, 0.5, 0.4), 
                   pi = 1000/1e5)
 ```
 
-The simulation data object contains four matrices that describe between study correlation, `Sigma_E`, the environmental covariance, `Sigma_G` the genetic covaraince, `trait_corr` equal to `Sigma_G + Sigma_E`, and `R` which is equal to the row correlation of `beta_hat`. `R` is equal to `trait_corr` scaled by the a matrix of sample overlap proportions.
-
+We can now see that `sim_dat4$R` is not the identity:
 ```{r}
-sim_dat3$Sigma_E
-sim_dat3$Sigma_G
 sim_dat3$trait_corr
 sim_dat3$R
 ```
 
-If there is no sample overlap, the `R_E` argument to `sim_mv` will have no affect on summary statistics but will influence the calculation of `trait_corr`. For example, in our previous data generated without sample overlap and in which we did not specify `R_E` we have
-```{r}
-sim_dat1_LD$Sigma_E
-sim_dat1_LD$trait_corr
-sim_dat1_LD$R
-```
-
-The `R` matrix will always be the identity if there is no sample overlap. 
+Note that we did not have to specify `R_E` to get a non-identity value for `R`. If we use the default value (`NULL`), the data will have the observational correlation created by the DAG structure, and this will be reflected in `R` if there is sample overlap. 
 
 ## Generating Data for Multiple GWAS of the Same Trait 
 
