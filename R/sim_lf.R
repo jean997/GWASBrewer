@@ -15,6 +15,7 @@
 #'@param pi_L Proportion of non-zero elements in L_k. Length K factor
 #'@param pi_theta Proportion of non-zero elements in theta. Scalar or length M vector.
 #'@param R_E Correlation between environmental trait components not mediated by factors. M by M pd matrix.
+#'@param R_obs Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.
 #'#'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 #'If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 #'If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).
@@ -38,7 +39,17 @@
 #'Trait covariance: Each trait is composed of four independent components, the genetic component mediated by factors,
 #'the environmental component mediated by factors, the genetic component not mediated by factors,
 #'and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
-#'the sum of four corresponding covariance matrices. The matrix R_E specifies the correlation of the last component only.
+#'the sum of four corresponding covariance matrices.
+#'
+#'Cov(T) = Sigma_FG + Sigma_FE + Sigma_GDir + Sigma_EDir
+#'
+#'We assume that all cross-trait genetic sharing is explained by the factors so that Sigma_GDir is diagonal.
+#'Each factor is a sum of a genetic component and an environmental components and factors are independent
+#'(both genetic and environmental components) are independent across factors. This means that
+#'Sigma_FG = F S_{FG} F^T and Sigma_FE = F S_{FE} F^T where S_{FG} and S_{FE} are diagonal matrices. The parameter R_E specifies
+#'the correlation of the residual environmental component (i.e. R_E = cov2cor(Sigma_{EDir}).
+#'Alternatively, if \code{R_obs} is specified, Sigma_EDir will be chosen to give the desired observational correlation.
+
 #'In the returned object, \code{Sigma_G} is equal to the sum of the two genetic covariance components and \code{Sigma_E}
 #'is equal to the sum of the two environmental components.
 #'\code{R} gives the overall trait correlation matrix multiplied by the overlap proportion matrix,
@@ -60,7 +71,7 @@
 #'@export
 sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                    pi_L, pi_theta,
-                   R_E=NULL,
+                   R_E=NULL, R_obs = NULL,
                    af = NULL, R_LD = NULL,
                    sporadic_pleiotropy = TRUE,
                    est_s = FALSE,
@@ -96,12 +107,33 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   #R_E
   nn <- check_N(N, M)
 
-  if(is.null(R_E)){
+  if(is.null(R_E) & is.null(R_obs)){
     if(!Matrix::isDiagonal(nn$Nc)){
       message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for no environmental covariance.")
     }
     R_E <- diag(M)
+  }else if(!is.null(R_E)){
+    if(!is.null(R_obs)){
+      stop("Please provide only one of R_E and R_obs.\n")
+    }
+    R_E <- check_matrix(R_E, "R_E", M, M)
+    R_E <- check_psd(R_E, "R_E")
+    if(!all(diag(R_E) == 1)){
+      stop("R_E should be a correlation matrix. All diagonal entries should be 1.")
+    }
+  }else if(!is.null(R_obs)){
+    R_obs <- check_matrix(R_obs, "R_obs", M, M)
+    R_obs <- check_psd(R_obs, "R_obs")
+    if(!all(diag(R_obs) == 1)){
+      stop("R_obs should be a correlation matrix. All diagonal entries should be 1.")
+    }
   }
+  # if(is.null(R_FE)){
+  #   if(!Matrix::isDiagonal(nn$Nc)){
+  #     message("R_FE not provided but overlapping samples are specified. Using R_FE = diag(nfactors) for no environmental covariance.")
+  #   }
+  #   R_FE <- diag(K)
+  # }
   if(!missing(h2_factor)){
     h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
     h2_factor <- check_01(h2_factor)
@@ -112,8 +144,8 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
     h2_factor <- rep(1, K)
   }
 
-  R_E <- check_matrix(R_E, "R_E", M, M)
-  R_E <- check_psd(R_E, "R_E")
+  # R_FE <- check_matrix(R_FE, "R_FE", K, K)
+  # R_FE <- check_psd(R_FE, "R_FE")
 
 
   #af
@@ -130,6 +162,8 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
   #Re-scale rows of F
+  # Scaling is such that variance of genetic component of each factor is 1
+  # and total variance of each trait is 1
   srs <- omega*h2_trait # target rowSums(F^2)
   if(any(rowSums(F_mat == 0) == K & srs >0)){
       stop("One row of F is zero but corresponds to non-zero omega and h2_trait\n")
@@ -181,17 +215,32 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
 
 
   # trait covariance due to non-genetic factor component
-  sigma2_F <- (1-h2_factor)/(h2_factor)
-  Sigma_FE <- F_mat %*% diag(sigma2_F, nrow = K) %*% t(F_mat)
+  # sigma2_F is the variance of the environmental component of each factor
+  varG_realized <- compute_h2(b_joint_std = L_mat, R_LD = R_LD, af = af, full_mat = FALSE)
+  #cat(varG_realized, "\n")
+  sigma2_FE <- varG_realized*(1-h2_factor)/(h2_factor)
+  Sigma_FE <- F_mat %*% diag(sigma2_FE, nrow = K) %*% t(F_mat)
+  #Sigma_FE <- F_mat %*% diag(sigma_FE^2, nrow = K) %*% t(F_mat)
 
   if(any(diag(Sigma_G) + diag(Sigma_FE) > 1)){
+    cat(diag(Sigma_G), "\n")
+    #cat(sigma_FE, "\n")
+    cat(diag(Sigma_FE), "\n")
     stop("Provided parameters are incompatible with F_mat.\n")
   }
 
   # Trait covariance due to environmental contribution not mediated by factors
-  sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
-  Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
-
+  if(!is.null(R_obs)){
+    Sigma_E <- R_obs - Sigma_G - Sigma_FE
+    Sigma_E <- try(check_psd(Sigma_E, "Sigma_E"), silent = TRUE)
+    if( "try-error" %in% class(Sigma_E)){
+      stop("R_obs is incompatible with F_mat and heritability.")
+    }
+  }else{
+    sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
+    Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
+    cat(diag(Sigma_E), "\n")
+  }
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
