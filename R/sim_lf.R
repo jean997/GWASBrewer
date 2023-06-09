@@ -239,7 +239,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   }else{
     sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
     Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
-    cat(diag(Sigma_E), "\n")
+    #cat(diag(Sigma_E), "\n")
   }
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
