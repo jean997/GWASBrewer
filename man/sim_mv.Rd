@@ -10,6 +10,7 @@ sim_mv(
   h2,
   pi,
   G = 0,
+  R_obs = NULL,
   R_E = NULL,
   R_LD = NULL,
   af = NULL,
@@ -36,9 +37,12 @@ but non-integer values will not generate an error.}
 
 \item{G}{Matrix of direct effects. Rows correspond to the 'from' trait
 and columns correspond to the 'to' trait, so \code{G[1,2]} is the direct effect of trait 1 on trait 2. G should have 0
-on the diagonal.}
+on the diagonal.
+#'@param R_obs Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
+See Details for default behavior.}
 
-\item{R_E}{Environmental correlation between traits. R_E is ignored if there is no sample overlap.}
+\item{R_E}{Legacy option, specify the correlation of the environmental components only. Cannot be used with R_obs.
+This parameter will be phased out in the future.}
 
 \item{R_LD}{List of LD blocks. R_LD should have class \code{list}.
 Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
@@ -50,13 +54,13 @@ If R_LD is supplied, af must be a vector with length equal to the size of the su
 
 \item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
-\item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).}
+\item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`.}
 
-\item{h2_exact}{If TRUE, the heritability of each trait will be exactly h2.}
+\item{h2_exact}{If TRUE, the heritability of each trait will be exactly `h2`.}
 
-\item{est_s}{If TRUE, return estimates of se(beta_hat).}
+\item{est_s}{If TRUE, return estimates of se(`beta_hat`). If FALSE, the exact standard error of `beta_hat` is returned. Defaults to FALSE.}
 
-\item{return_dat}{Useful development option.}
+\item{return_dat}{Useful development option, not recommend for general users.}
 }
 \value{
 A list with the following elements:
@@ -110,21 +114,25 @@ These matrices are interpreted as blocks in a block-diagonal LD matrix. The \cod
 and should be a vector with length equal to the total size of the LD pattern (the sum of the sizes of each block).
 \code{R_LD} does not need to have the same size as \code{J}. The LD pattern will be repeated or subset as necessary
 to generate the desired number of variants.
+
+If \code{R_obs} is NULL (default value), we assume that direct environmental effects on each trait are independent and all
+environmental correlation results from the relationships specified in \code{G}. Alternatively \code{R_obs} can be any positive
+definite correlation matrix.
 }
 \examples{
 # Two traits with no causal relationship and some environmental correlation
 # specify completely overlapping GWAS
 N <- matrix(1000, nrow = 2, ncol =2)
 G <- matrix(0, nrow = 2, ncol = 2)
-R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
+R_obs <- matrix(c(1, 0.3, 0.3, 1), nrow = 2, ncol = 2)
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_E = R_E)
-dat$R
-cor(dat$beta_hat - dat$beta_marg)
+               G = G, R_obs = R_obs)
+dat$R # This is the true correlation of the estimation error of beta_hat
+cor(dat$beta_hat - dat$beta_marg) # Should be similar to dat$R
 
 # The af argument can be a scalar, vector, or function.
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_E = R_E, af = function(n){rbeta(n = n, 1, 5)})
+               G = G, R_obs = R_obs, af = function(n){rbeta(n = n, 1, 5)})
 
 # A very simple example with LD
 # Use a pattern of two small blocks of LD
@@ -135,7 +143,7 @@ diag(A2) <- 1
 # If using LD, af should have the same size as the LD pattern
 af <- runif(n = 16)
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_E = R_E, R_LD = list(A1, A2), af = af)
+               G = G, R_obs = R_obs, R_LD = list(A1, A2), af = af)
 
 # Use xyz_to_G to generate G from xyz specification
 myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),

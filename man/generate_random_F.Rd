@@ -7,7 +7,9 @@
 generate_random_F(
   K,
   M,
-  g_F = function(n) {     runif(n, -1, 1) },
+  g_F = function(n) {
+     runif(n, -1, 1)
+ },
   nz_factor,
   omega,
   h2_trait,

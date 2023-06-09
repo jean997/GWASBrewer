@@ -14,6 +14,7 @@ sim_lf(
   pi_L,
   pi_theta,
   R_E = NULL,
+  R_obs = NULL,
   af = NULL,
   R_LD = NULL,
   sporadic_pleiotropy = TRUE,
@@ -44,7 +45,9 @@ but non-integer values will not generate an error.}
 
 \item{pi_theta}{Proportion of non-zero elements in theta. Scalar or length M vector.}
 
-\item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.
+\item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.}
+
+\item{R_obs}{Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.
 #'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).}
@@ -76,7 +79,16 @@ of the traits is high leading to a contradiction. The function will return an er
 Trait covariance: Each trait is composed of four independent components, the genetic component mediated by factors,
 the environmental component mediated by factors, the genetic component not mediated by factors,
 and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
-the sum of four corresponding covariance matrices. The matrix R_E specifies the correlation of the last component only.
+the sum of four corresponding covariance matrices.
+
+Cov(T) = Sigma_FG + Sigma_FE + Sigma_GDir + Sigma_EDir
+
+We assume that all cross-trait genetic sharing is explained by the factors so that Sigma_GDir is diagonal.
+Each factor is a sum of a genetic component and an environmental components and factors are independent
+(both genetic and environmental components) are independent across factors. This means that
+Sigma_FG = F S_{FG} F^T and Sigma_FE = F S_{FE} F^T where S_{FG} and S_{FE} are diagonal matrices. The parameter R_E specifies
+the correlation of the residual environmental component (i.e. R_E = cov2cor(Sigma_{EDir}).
+Alternatively, if \code{R_obs} is specified, Sigma_EDir will be chosen to give the desired observational correlation.
 In the returned object, \code{Sigma_G} is equal to the sum of the two genetic covariance components and \code{Sigma_E}
 is equal to the sum of the two environmental components.
 \code{R} gives the overall trait correlation matrix multiplied by the overlap proportion matrix,
