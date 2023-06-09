@@ -124,7 +124,7 @@ check_psd <- function(M, string){
     stop(paste0(string, " must be symmetric.\n"))
   }
   eM <- eigen(M)
-  if(!all(eM$vaues >= 0)){
+  if(!all(eM$values >= 0)){
     stop(paste0(string, " is not positive semi-definite.\n"))
   }
   return(M)
