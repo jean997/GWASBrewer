@@ -597,8 +597,7 @@ Note that we did not have to specify `R_E` to get a non-identity value for `R`. 
 
 In some cases, you may want to generate multiple sets of summary statistics for the same set of effect sizes. This
 would mimic performing multiple GWAS on the same trait. The function `gen_bhat_from_b` allows you to do this. This function takes as input
-a matrix of either standardized or non-standardized joint (causal) effects to `b_joint_std` or `b_joint`. The function also requires the trait correlation matrix
-and the sample size argument. Optionally, `af` and `R_LD` can be supplied. The `est_s` argument functions in the same way as in `sim_mv`. 
+a matrix of either standardized or non-standardized joint (causal) effects to `b_joint_std` or `b_joint`. The function also requires the observational trait correlation and sample size. Optionally, `af` and `R_LD` can be supplied. The `est_s` argument functions in the same way as in `sim_mv`. 
 
 Below, we generate new GWAS data for the effects in `sim_dat1_LD`. Here we use the same LD pattern used originally but we could have done otherwise. For example, we could simulate GWAS in samples with different ancestry but supplying a different LD pattern.
 
