@@ -31,10 +31,10 @@ random values demonstrated in this vigentte.
 
 
 The default behavior of `sim_mv` is to sample effect variants randomly by first generating
-a $J$-vector $Z_m \sim Binom(1, \pi_m)$ for each trait $m$. $Z_{m,j}$ is 1 if variant $j$
-has a direct effect on trait $m$ and 0 otherwise. We then sample standardized effect sizes for 
-variants with direct effects from a normal $N(0, \sigma^2_m)$ distribution with $\sigma^2_m$
-determined by the SEM and the target expected heritability. This results 
+a $J$-vector $Z_m \sim Binom(1, \pi_m)$ for each trait, $m$. $Z_{m,j}$ is 1 if variant $j$
+has a direct effect on trait $m$ and 0 otherwise. We then sample standardized direct effects for 
+variants with $Z_{m,j} = 1$ from a mean-zero normal  distribution with variance, $\sigma^2_m$,
+determined by the SEM and the target expected heritability. This procedure results 
 in effect variants spread evenly throughout the genome and effect sizes that 
 are inversely proportional to $\sqrt{2 f_j (1-f_j)}$
 
@@ -182,7 +182,7 @@ as one of the arguments to your function.
 
 ## Providing a fixed list of effects
 
-If you want to provide a specific fixed list of variant effects, you can do this using the helper function `fixed_to_scalefam`.  Effects will still be scaled to give the desired heritability, however the relative sizes of effects will be given by a fixed list repeated as many times as necessary to give the number of variants provide. For example, the function below provides 10 variants in a row that all have the same effect followed by 10 that have an effect twice as big as the first 10. 
+If you want to provide a specific fixed list of variant effects, you can do this using the helper function `fixed_to_scalefam`.  Effects will still be scaled to give the desired heritability, however the relative sizes of effects will be given by a fixed list repeated as many times as necessary to give the desired number of variants. For example, the function below provides 10 variants in a row that all have the same effect followed by 10 that have an effect twice as big as the first 10. 
 
 ```{r}
 myf <- fixed_to_scale_fam(rep(c(1, 2), each = 10))
@@ -200,11 +200,11 @@ sim_dat5 <- sim_mv(G = 1,
                    af = function(n){rbeta(n, 1, 5)})
 ```
 
-If you combine a SNP effect function of this type with an argument to `pi` containing only 0's and 1's and a vector input to `af`, you can exactly specify the effect size of every variant. 
+If you combine a SNP effect function of this type with an argument to `pi` containing only 0's and 1's and a vector input to `af`, you can exactly specify the effect size of every variant. However, if you know the exact desired effect size and don't need the scaling features, you may find that `gen_bhat_from_b` is a simpler way to get the results you are looking for.
 
 ## Different effect distributions for different traits
 
-The `snp_effect_function` parameter can accept a list with length equal to the number of traits. In this case, the direct effect variants for each trait will be drawn from the corresponding element of `snp_effect_function`. If `snp_effect_function` is a list, each elements should either be an acceptable function or the string `normal`. The code below generates data for two independent traits. The effects for the first trait are normally distributed. The effects for the second trait follow the specification in the previous section. 
+The `snp_effect_function` parameter can accept a list with length equal to the number of traits. In this case, the direct effect variants for each trait will be drawn from the corresponding element of `snp_effect_function`. If `snp_effect_function` is a list, each element should either be an acceptable function or the string `normal`. The code below generates data for two independent traits. The effects for the first trait are normally distributed. The effects for the second trait follow the specification in the previous section. 
 
 
 ```{r}
@@ -274,7 +274,8 @@ plot(sim_dat7$direct_SNP_effects_joint[,2], main = "Trait 2 Joint Effects", ylab
 abline(v = c(75, 130))
 ```
 
-Note that the effects for the first trait are not the same because we specified standardized effects but have plotted non-standardized effects. The standardized effects, equal to the non-standardized effects scaled these by $\sqrt{2f_j (1-f_j)}$ are equal (see "Standardized vs Non-Standardized Effects" in the Simulating Data vignette).  
+Note that the effects for the first trait are not the same because we specified standardized effects but have plotted non-standardized effects. The standardized effects, equal to the non-standardized effects scaled these by $\sqrt{2f_j (1-f_j)}$,  are equal (see "Standardized vs Non-Standardized Effects" in the Simulating Data vignette). 
+Below we plot the marginal associations and observed $z$-scores for this data.
 
 ```{r}
 ## Plotting marginal effects
@@ -284,12 +285,15 @@ plot(sim_dat7$direct_SNP_effects_marg[,2], main = "Trait 2 Marginal Effects", yl
 abline(v = c(75, 130), h = 0)
 ```
 
-Plotting observed z-scores
 
 ```{r}
-## Plotting marginal effects
+## Plotting observed z-scores
 with(sim_dat7, plot(beta_hat[,1]/se_beta_hat[,1], main = "Trait 1 Obs. Z-scores", ylab = "zhat marg"))
 abline(v = c(75, 150), h = 0)
 with(sim_dat7, plot(beta_hat[,2]/se_beta_hat[,2], main = "Trait 2 Obs. Z-scores", ylab = "zhat marg"))
 abline(v = c(75, 130), h = 0)
 ```
+
+
+## Effect Distributions that Depend on Allele Frequency
+
