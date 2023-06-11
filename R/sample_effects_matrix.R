@@ -1,11 +1,13 @@
-sample_effects_matrix <- function(J, M, pi, sigma, f,
+sample_effects_matrix <- function(J, M, pi,
+                                  sigma, f,
                                   sporadic_pleiotropy,
                                   pi_exact,
                                   h2_exact,
-                                  R_LD = NULL, af = NULL){
+                                  R_LD = NULL,
+                                  snp_info = NULL){
 
-  #M <- length(pi)
-  #skip checks for internal function
+  # Skip most argument checks for internal function
+  # We do check pi here
 
   pi <- check_pi(pi, J, M)
   if("matrix" %in% class(pi)){
@@ -46,7 +48,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
       eff <- purrr::map(seq(M), function(i){
       t <- rbinom(n=J, size=1, prob = pi[,i])
       n <- sum(t==1)
-      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], af = af[t==1])
+      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], snp_info = snp_info[t==1,])
       return(t)
     }) %>% do.call(cbind, .)
   }else if(pi_exact & sporadic_pleiotropy){
@@ -55,7 +57,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
       val <- rep(0, J)
       if(n > 0){
         t <- sample(seq(J), size = n, replace = FALSE)
-        val[t] <- f[[i]](n=n, sd = sig_j[i], af = af[t])
+        val[t] <- f[[i]](n=n, sd = sig_j[i], snp_info = snp_info[t,])
       }
       return(val)
     }) %>% do.call(cbind, .)
@@ -63,7 +65,7 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
     eff <- purrr::map(seq(M), function(i){
       t <- rbinom(n=J, size=1, prob = pi[i])
       n <- sum(t==1)
-      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], af = af[t==1])
+      if(n > 0) t[t==1] <- f[[i]](n=n, sd = sig_j[i], snp_info = snp_info[t==1,])
       return(t)
     }) %>% do.call(cbind, .)
   }else{
@@ -86,13 +88,13 @@ sample_effects_matrix <- function(J, M, pi, sigma, f,
       t <- which(nz_ix == i)
       n <- length(t)
       val <- rep(0, J)
-      if(n > 0) val[t] <- f[[i]](n=n, sd = sig_j[i], af = af[t])
+      if(n > 0) val[t] <- f[[i]](n=n, sd = sig_j[i], snp_info = snp_info[t,])
       return(val)
     }) %>% do.call(cbind, .)
   }
 
   if(h2_exact){
-    h2_eff <- compute_h2(b_joint_std = eff, R_LD = R_LD, af = af)
+    h2_eff <- compute_h2(b_joint_std = eff, R_LD = R_LD, af = snp_info$AF)
     scale <- sqrt((sigma^2)/h2_eff)
     eff <- t(t(eff)*scale)
   }
