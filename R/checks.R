@@ -39,7 +39,7 @@ check_pi <- function(pi, n, p){
   }else{
     pi <- check_scalar_or_numeric(pi, "pi", p)
   }
-  pi <- check_01(pi)
+  pi <- check_01(pi, "pi")
   return(pi)
 }
 
@@ -151,14 +151,13 @@ check_G <- function(G, h2){
 
   G <- check_matrix(G, "G", n, n)
   h2 <- check_scalar_or_numeric(h2, "h2", n)
-  h2 <- check_01(h2)
+  h2 <- check_01(h2, "h2")
   if(!all(diag(G) ==0)){
     stop("G must have 0s on the diagonal.")
   }
-  G_tot <- try(direct_to_total(G), silent = TRUE)
-  if("try-error" %in% class(G_tot)){
+  G_tot <- tryCatch(direct_to_total(G), error = function(e){
     stop("Failed to compute total effects from direct. Check that supplied G corresponds to a valid DAG.\n")
-  }
+  })
   if(!all(diag(G_tot) == 0)){
     stop("Supplied G does not correspond to a valid DAG.\n")
   }
@@ -260,16 +259,17 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
 }
 
 
-# l is list of block lengths
-check_snpinfo <- function(snp_info, l){
-  if(nrow(snp_info) != sum(l)){
-    stop(paste0("R_LD contains information for ", sum(l), " variants but snp_info contains information for ", nrow(snp_info), " variants."))
+
+check_snpinfo <- function(snp_info, J){
+  if(!"data.frame" %in% class(snp_info)){
+    stop("snp_info should have class containing data.frame.\n")
   }
-  if(!all(c("SNP", "AF") %in% names(snp_info))){
-    stop("snp_info must contain columns AF and SNP")
+  if(nrow(snp_info) != J){
+    stop(paste0("Expected snp_info to have ", J, " rows but found ", nrow(snp_info), "."))
   }
-  snp_info$block <- rep(seq(length(l)), l)
-  snp_info$ix_in_block <- sapply(l, function(ll){seq(ll)}) %>% unlist()
+  if(any(c("SNP", "AF") %in% names(snp_info))){
+    warning("Provided snp_info contains columns SNP or AF. These will be over-written.")
+  }
   return(snp_info)
 }
 
@@ -282,13 +282,13 @@ check_af <- function(af, n, function_ok = TRUE){
     af <- myaf
   }
   af <- check_scalar_or_numeric(af, "af", n)
-  af <- check_01(af)
+  af <- check_01(af, "af")
   return(af)
 }
 
-check_effect_function_list <- function(snp_effect_function, M){
+check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
   if(!class(snp_effect_function) == "list"){
-    f <- check_snp_effect_function(snp_effect_function)
+    f <- check_snp_effect_function(snp_effect_function, snp_info)
     fl <- list()
     for(i in 1:M) fl[[i]] <- f
     return(fl)
@@ -297,22 +297,23 @@ check_effect_function_list <- function(snp_effect_function, M){
       stop(paste0("Expected snp_effect_function to be a list of length ", M, ", a function, or 'normal'"))
     }
     fl <- list()
-    for(i in 1:M) fl[[i]] <- check_snp_effect_function(snp_effect_function[[i]])
+    for(i in 1:M) fl[[i]] <- check_snp_effect_function(snp_effect_function[[i]], snp_info)
     return(fl)
   }
 }
 
-check_snp_effect_function <- function(snp_effect_function, M){
+check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 
   if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function") ){
     stop("snp_effect_function should either be 'normal', a function, or a vector.")
   }
   if(class(snp_effect_function) == "function"){
-
-    x <- tryCatch(snp_effect_function(n = 3, sd = 1), error = function(e){
-      stop(paste0("Failed to run snp_effect_function with error: ", e) )
-    })
-    x <- tryCatch(snp_effect_function(n = 3, sd = 1,af= rep(0.5, 3)), error = function(e){
+    if(!is.null(snp_info)){
+      test_snp_info <- snp_info[1:3,]
+    }else{
+      test_snp_info <- data.frame(SNP = 1:3, AF = rep(0.5, 3))
+    }
+    x <- tryCatch(snp_effect_function(n = 3, sd = 1, snp_info = test_snp_info), error = function(e){
       stop(paste0("Failed to run snp_effect_function with error: ", e) )
     })
     return(snp_effect_function)
