@@ -112,7 +112,6 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   ld_sqrt <- check_R_LD(R_LD, "sqrt")
   l <- check_R_LD(R_LD, "l")
 
-  #snp_info <- check_snpinfo(snp_info, l)
   af <- check_af(af, sum(l), function_ok = FALSE)
   nblock <- length(l)
 
