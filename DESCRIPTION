@@ -1,7 +1,7 @@
 Package: simGWAS
 Type: Package
 Title: Simulate GWAS Summary Statistics
-Version: 0.2.0.0085
+Version: 0.2.0.0086
 Author: Jean Morrison
 Maintainer: Jean Morrison <jvmorr@umich.edu>
 Description: Simulate GWAS summary statistics from specified DAG or factor structure.

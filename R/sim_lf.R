@@ -14,15 +14,24 @@
 #'@param h2_factor Heritability of each factor. Length K vector.
 #'@param pi_L Proportion of non-zero elements in L_k. Length K factor
 #'@param pi_theta Proportion of non-zero elements in theta. Scalar or length M vector.
+#'@param est_s If TRUE, return estimates of se(beta_hat).
 #'@param R_E Correlation between environmental trait components not mediated by factors. M by M pd matrix.
 #'@param R_obs Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.
-#'#'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
+#' @param R_LD List of LD blocks. R_LD should have class \code{list}.
+#' Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
+#' All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite.
+#' @param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 #'If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 #'If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
-#'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly h2.
-#'@param est_s If TRUE, return estimates of se(beta_hat).
+#'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).
+#'@param snp_effect_function_L,snp_effect_function_theta Optional function to generate variant effects in \code{L} or \code{theta}.
+#'\code{snp_effect_function_L/theta} can be a single function
+#' or list of functions of length equal to the number of factors/number of traits.
+#' @param snp_info Optional \code{data.frame} of variant information to be passed to variant effect functions. If \code{R_LD} is
+#' specified, \code{snp_info} should have number of rows equal to the size of the supplied LD pattern. Otherwise \code{snp_info}
+#' should have \code{J} rows.
 #'@details
 #'This function will generate GWAS summary statistics for M traits with K common factors.
 #'The matrix F_mat provides the effects of each factor on each trait, \code{F_mat[i,j]}
@@ -69,15 +78,25 @@
 #'dat$R
 #'cor(dat$beta_hat[,1]-dat$beta_joint[,1], dat$beta_hat[,2]-dat$beta_joint[,2])
 #'@export
-sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
-                   pi_L, pi_theta,
-                   R_E=NULL, R_obs = NULL,
-                   af = NULL, R_LD = NULL,
-                   sporadic_pleiotropy = TRUE,
+sim_lf <- function(F_mat,
+                   N,
+                   J,
+                   h2_trait,
+                   omega,
+                   h2_factor,
+                   pi_L,
+                   pi_theta,
                    est_s = FALSE,
-                   snp_effect_function = "normal",
+                   R_E=NULL,
+                   R_obs = NULL,
+                   R_LD = NULL,
+                   af = NULL,
+                   sporadic_pleiotropy = TRUE,
                    h2_exact = FALSE,
-                   pi_exact = FALSE){
+                   pi_exact = FALSE,
+                   snp_effect_function_L = "normal",
+                   snp_effect_function_theta = "normal",
+                   snp_info = NULL){
 
   # Argument checks
   F_mat <- check_matrix(F_mat, "F_mat")
@@ -92,11 +111,6 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   omega <- check_01(omega)
   pi_L <- check_pi(pi_L, J, K)
   pi_theta <- check_pi(pi_theta, J, M)
-
-
-
-  f <- check_effect_function_list(snp_effect_function, M)
-
 
   if(any(omega < 1 & pi_theta == 0)){
     i <- which(omega < 1 & pi_theta == 0)
@@ -128,12 +142,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
       stop("R_obs should be a correlation matrix. All diagonal entries should be 1.")
     }
   }
-  # if(is.null(R_FE)){
-  #   if(!Matrix::isDiagonal(nn$Nc)){
-  #     message("R_FE not provided but overlapping samples are specified. Using R_FE = diag(nfactors) for no environmental covariance.")
-  #   }
-  #   R_FE <- diag(K)
-  # }
+
   if(!missing(h2_factor)){
     h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
     h2_factor <- check_01(h2_factor)
@@ -144,21 +153,50 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
     h2_factor <- rep(1, K)
   }
 
-  # R_FE <- check_matrix(R_FE, "R_FE", K, K)
-  # R_FE <- check_psd(R_FE, "R_FE")
-
-
-  #af
+  #af and snp_info, these go into effect size function and we will need them
+  # later for LD
   if(is.null(R_LD)){
-    AF <- check_af(af, J)
+    AF <-  check_af(af, J)
+    if(is.null(snp_info) & is.null(af)){
+      snp_info <- data.frame(SNP = 1:J, AF = NA)
+    }else if(is.null(snp_info)){
+      snp_info <- data.frame(SNP = 1:J, AF = AF)
+    }else{
+      snp_info <- check_snpinfo(snp_info, J)
+      snp_info$SNP <- 1:J
+      if(is.null(af)) snp_info$AF <- NA
+        else snp_info$AF <- AF
+    }
   }else{
-    # We need af to feed to snp effect function
     if(is.null(af)) stop("Please provide af to go with R_LD.")
-    l <- check_R_LD(R_LD, "l")
+    l <- check_R_LD(R_LD, "l") # vector of LD block sizes
     AF <- check_af(af, sum(l), function_ok = FALSE)
     block_info <- assign_ld_blocks(l, J)
-    AF <- AF[block_info$index]
+    #AF <- AF[block_info$index]
+
+    if(is.null(snp_info)){
+      snp_info <- data.frame(SNP = 1:sum(l), AF = AF)
+    }else{
+      snp_info <- check_snpinfo(snp_info, sum(l))
+      snp_info$SNP <- 1:sum(l)
+      snp_info$AF <- AF
+    }
+
+    snp_info$block <- rep(seq(length(l)), l)
+    snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)}) %>% unlist()
+    snp_info <- snp_info[block_info$index,] # now snp_info has J rows
+    snp_info$rep <- rep(block_info$rep, block_info$l)
+    snp_info$SNP <- with(snp_info, paste0(SNP, ".", rep))
   }
+
+  if(J < 3){
+    test_snp_info <- do.call("rbind", replicate(3, snp_info, simplify = FALSE))[1:3,]
+    test_snp_info$SNP <- 1:3
+  }else{
+    test_snp_info <- snp_info[1:3,]
+  }
+  f_L <- check_effect_function_list(snp_effect_function_L, K, test_snp_info)
+  f_theta <- check_effect_function_list(snp_effect_function_theta, M, test_snp_info)
 
 
   #Re-scale rows of F
@@ -179,12 +217,12 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   theta <- sample_effects_matrix(J = J, M= M,
                                  pi = pi_theta,
                                  sigma = sqrt((1-omega)*h2_trait),
-                                 f = f,
+                                 f = f_theta,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,
                                  h2_exact = h2_exact,
                                  R_LD = R_LD,
-                                 af = af)
+                                 snp_info = snp_info)
 
 
 
@@ -192,12 +230,12 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   L_mat <- sample_effects_matrix(J = J, M = K,
                                  pi = pi_L,
                                  sigma = 1,
-                                 f = f,
+                                 f = f_L,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,
                                  h2_exact = h2_exact,
                                  R_LD = R_LD,
-                                 af = af)
+                                 snp_info = snp_info)
 
 
   # Compute standardized effects
@@ -232,10 +270,9 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
   # Trait covariance due to environmental contribution not mediated by factors
   if(!is.null(R_obs)){
     Sigma_E <- R_obs - Sigma_G - Sigma_FE
-    Sigma_E <- try(check_psd(Sigma_E, "Sigma_E"), silent = TRUE)
-    if( "try-error" %in% class(Sigma_E)){
+    Sigma_E <- tryCatch(check_psd(Sigma_E, "Sigma_E"), error = function(e){
       stop("R_obs is incompatible with F_mat and heritability.")
-    }
+    })
   }else{
     sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
     Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
@@ -249,7 +286,7 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
-                               af = af,
+                               af = AF,
                                est_s = est_s,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
@@ -267,7 +304,8 @@ sim_lf <- function(F_mat, N, J, h2_trait, omega, h2_factor,
               Sigma_E = Sigma_FE + Sigma_E,
               trait_corr = trait_corr,
               R=sum_stats$R,
-              snp_info = sum_stats$snp_info)
+              snp_info = snp_info)
+              #snp_info = sum_stats$snp_info)
   if(est_s){
     ret$s_estimate <- sum_stats$s_estimate
   }

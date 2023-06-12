@@ -10,20 +10,26 @@
 #'@param G Matrix of direct effects. Rows correspond to the 'from' trait
 #'and columns correspond to the 'to' trait, so \code{G[1,2]} is the direct effect of trait 1 on trait 2. G should have 0
 #'on the diagonal.
-#'#'@param R_obs Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
+#'@param est_s If TRUE, return estimates of se(`beta_hat`). If FALSE, the exact standard error of `beta_hat` is returned. Defaults to FALSE.
+#'@param R_obs Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
 #'See Details for default behavior.
 #'@param R_E Legacy option, specify the correlation of the environmental components only. Cannot be used with R_obs.
 #'This parameter will be phased out in the future.
-#'@param R_LD List of LD blocks. R_LD should have class \code{list}.
+#'@param R_LD Optional list of LD blocks. R_LD should have class \code{list}.
 #'Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
-#'All elements be correlation matrices, meaning that they have 1 on the diagonal and are positive definite. See Details.
+#'All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite. See Details and vignettes.
 #'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 #'If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 #'If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).
+#'@param snp_effect_function Optional function to generate variant.
+#'\code{snp_effect_function} can be a single function
+#' or list of functions of length equal to the number of traits.
+#'@param snp_info Optional \code{data.frame} of variant information to be passed to variant effect functions. If \code{R_LD} is
+#' specified, \code{snp_info} should have number of rows equal to the size of the supplied LD pattern. Otherwise \code{snp_info}
+#' should have \code{J} rows.
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
 #'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`.
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly `h2`.
-#'@param est_s If TRUE, return estimates of se(`beta_hat`). If FALSE, the exact standard error of `beta_hat` is returned. Defaults to FALSE.
 #'@param return_dat Useful development option, not recommend for general users.
 #'
 #'@return A list with the following elements:
@@ -57,7 +63,8 @@
 #' Finally,
 #'
 #' + \code{snp_info} Is a data frame with variant information. If \code{R_LD} was omitted, \code{snp_info} contains only the allele frequency of
-#' each variant. If \code{R_LD} was included, \code{snp_info} also contains block and replicate information.
+#' each variant. If \code{R_LD} was included, \code{snp_info} also contains block and replicate information as well as any information supplied to the
+#' \code{snp_info} input parameter.
 #'
 #'@details This function generates GWAS summary statistics from a linear SEM specified by the matrix G.
 #'The previous "xyz" mode is now deprecated. If you are used to using this function in xyz mode,
@@ -114,16 +121,21 @@
 #'plot(dat$beta_marg[,3], dat$beta_marg[,1])
 #'abline(0, dat$total_trait_effects[3,1])
 #'@export
-sim_mv <- function(N, J,
-                   h2, pi, G=0,
+sim_mv <- function(N,
+                   J,
+                   h2,
+                   pi,
+                   G=0,
+                   est_s = FALSE,
                    R_obs = NULL,
                    R_E = NULL,
-                   R_LD = NULL, af = NULL,
+                   R_LD = NULL,
+                   af = NULL,
                    snp_effect_function = "normal",
+                   snp_info = NULL,
                    sporadic_pleiotropy = TRUE,
                    pi_exact = FALSE,
                    h2_exact = FALSE,
-                   est_s = FALSE,
                    return_dat  = FALSE){
 
   G <- check_G(G, h2)
@@ -147,20 +159,26 @@ sim_mv <- function(N, J,
   }
 
 
+  # We use sim_lf to actually generate the data. In the "factors" model, the factors are the
+  # heritable components of each trait
   dat <- sim_lf(F_mat = F_mat,
-                N = N, J = J,
+                N = N,
+                J = J,
                 h2_trait = h2,
-                omega = rep(1, M),
+                omega = rep(1, M), # proportion of trait heritability explained by factors
                 h2_factor = rep(1, M),
-                pi_L = pi, pi_theta = 1,
-                R_LD = R_LD, af = af,
-                R_obs = R_obs,
-                R_E = R_E,
-                snp_effect_function = snp_effect_function,
-                sporadic_pleiotropy = sporadic_pleiotropy,
+                pi_L = pi,
+                pi_theta = 1, # the theta matrix will be all 0s so this doesn't matter
                 est_s = est_s,
+                R_E = R_E,
+                R_obs = R_obs,
+                R_LD = R_LD,
+                af = af,
+                sporadic_pleiotropy = sporadic_pleiotropy,
                 h2_exact = h2_exact,
-                pi_exact = pi_exact)
+                pi_exact = pi_exact,
+                snp_effect_function_L = snp_effect_function,
+                snp_info = snp_info)
 
   direct_SNP_effects <- t(t(dat$L_mat)*diag(dat$F_mat))
 
