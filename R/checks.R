@@ -183,6 +183,9 @@ check_01 <- function(x, name){
 direct_to_total <- function(G_dir){
   n <- nrow(G_dir)
   G_total <- G_dir %*% solve(diag(n) - G_dir)
+  if(!all(diag(G_total) == 0)){
+    stop("Failed to compute total effects from direct. Check that supplied G corresponds to a valid DAG.\n")
+  }
   return(G_total)
 }
 
