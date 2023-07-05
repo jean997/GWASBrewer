@@ -25,7 +25,8 @@
 #'                            trait_corr = dat$trait_corr)
 #'@export
 gen_bhat_from_b <- function(b_joint_std, b_joint,
-                            trait_corr,  N,
+                            N,
+                            trait_corr = NULL,
                             R_LD = NULL,
                             af = NULL,
                             est_s = FALSE,
@@ -51,6 +52,18 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
   message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
 
   nn <- check_N(N, M)
+
+  ## Check for sample overlap
+  if(all(nn$Nc - diag(M) == 0)){
+    if(!is.null(trait_corr)){
+      warning("trait_corr disregarded as there is no sample overlap.")
+    }
+    trait_corr <- diag(M)
+  }else{
+    if(is.null(trait_corr)){
+      stop("trait_corr required due to sample overlap.")
+    }
+  }
   trait_corr <- check_matrix(trait_corr, "trait_corr", M, M)
   trait_corr <- check_psd(trait_corr, "trait_corr")
 
@@ -85,7 +98,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                 se_beta_hat = se_beta_hat,
                 sx = sx,
                 R=R,
-                Z = Z,
+                beta_marg = Z*se_beta_hat,
                 snp_info = snp_info)
                 #true_h2 = true_h2)
 
@@ -162,12 +175,11 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   Z_hat <- Zm + E_LD_Z
   beta_hat <- Z_hat*se_beta_hat
-
   ret <- list(beta_hat =beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
-              Z = Zm,
+              beta_marg = Zm*se_beta_hat,
               snp_info = snp_info_full)
 
   if(est_s){
