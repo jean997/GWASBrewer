@@ -14,6 +14,9 @@ sim_ld_proxy(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
 \item{R_LD}{LD pattern used to generate dat}
 
 \item{r2_thresh}{Get proxies with r^2 >= r2_thresh with one of the index variants}
+
+\item{return_mat}{If TRUE, return the correlation matrix between the index variant and the proxies. In this matrix, the
+the index variant always corresponds the first row/column and the proxies are in the order returned.}
 }
 \description{
 Retrieve LD proxies

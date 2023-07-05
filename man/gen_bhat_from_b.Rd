@@ -7,8 +7,8 @@
 gen_bhat_from_b(
   b_joint_std,
   b_joint,
-  trait_corr,
   N,
+  trait_corr = NULL,
   R_LD = NULL,
   af = NULL,
   est_s = FALSE,
@@ -22,9 +22,9 @@ gen_bhat_from_b(
 \item{b_joint}{Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
 \code{b_joint_std}.}
 
-\item{trait_corr}{Matrix of population trait correlation (traits by traits)}
-
 \item{N}{Sample size, scalar, vector, or matrix. See \code{?sim_mv} for more details.}
+
+\item{trait_corr}{Matrix of population trait correlation (traits by traits)}
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 

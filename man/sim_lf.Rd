@@ -13,15 +13,17 @@ sim_lf(
   h2_factor,
   pi_L,
   pi_theta,
+  est_s = FALSE,
   R_E = NULL,
   R_obs = NULL,
-  af = NULL,
   R_LD = NULL,
+  af = NULL,
   sporadic_pleiotropy = TRUE,
-  est_s = FALSE,
-  snp_effect_function = "normal",
   h2_exact = FALSE,
-  pi_exact = FALSE
+  pi_exact = FALSE,
+  snp_effect_function_L = "normal",
+  snp_effect_function_theta = "normal",
+  snp_info = NULL
 )
 }
 \arguments{
@@ -45,20 +47,33 @@ but non-integer values will not generate an error.}
 
 \item{pi_theta}{Proportion of non-zero elements in theta. Scalar or length M vector.}
 
+\item{est_s}{If TRUE, return estimates of se(beta_hat).}
+
 \item{R_E}{Correlation between environmental trait components not mediated by factors. M by M pd matrix.}
 
-\item{R_obs}{Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.
-#'@param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
+\item{R_obs}{Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.}
+
+\item{R_LD}{List of LD blocks. R_LD should have class \code{list}.
+Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
+All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite.}
+
+\item{af}{Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).}
 
 \item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
-\item{est_s}{If TRUE, return estimates of se(beta_hat).}
-
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly h2.}
 
 \item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to round(pi*J).}
+
+\item{snp_effect_function_L, snp_effect_function_theta}{Optional function to generate variant effects in \code{L} or \code{theta}.
+\code{snp_effect_function_L/theta} can be a single function
+or list of functions of length equal to the number of factors/number of traits.}
+
+\item{snp_info}{Optional \code{data.frame} of variant information to be passed to variant effect functions. If \code{R_LD} is
+specified, \code{snp_info} should have number of rows equal to the size of the supplied LD pattern. Otherwise \code{snp_info}
+should have \code{J} rows.}
 }
 \description{
 Simulate summary statistics from a specified factor structure
