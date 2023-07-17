@@ -338,8 +338,8 @@ standard deviation (square root of total variance explained) (`sd`), and SNP inf
 This last argument can be used to create effect distributions that depend on 
 allele frequency or other features. 
 
-The default model used by `simGWAS` is a sparse version of the GCTA model in which the 
-all causal variants have the same expected heritability explained. We might instead
+The default model used by `simGWAS` is a sparse version of the GCTA model in which
+all causal variants have the same expected heritability explained. We might, instead
 want to use a heritability model like the (LDAK)[https://dougspeed.com/] model
 or we might want to allow the expected heritability explained depend on an annotation. 
 
@@ -348,10 +348,10 @@ For this example, we assume that we would like to use the heritability model
 $$E[h_j^2] = x(f_j (1-f_j))^{0.75}(0.1 A_{1,j} + 0.13 A_{2,j} + 0.9)$$
 
 where $x$ is a scalar that depends on the total heritability and $A_{1,j}$ and $A_{2,j}$ 
-is the value of two annotations for variant $j$. 
+are the values of two annotations for variant $j$. 
 This is a simplified version of the
 LDAK model. 
-To use this model, we would need a data frame containing the annotation which we will pass to the `sim_mv` function to the `snp_info` argument. 
+To use this model, we would need a data frame containing the annotations which we will pass to the `sim_mv` function to the `snp_info` argument. 
 If you are using LD, the `snp_info` data frame should have number of rows equal to the size of the LD pattern. 
 Otherwise, it should have number of rows equal to `J`. 
 For this example, we will generate the two annotations from exponential distributions
@@ -370,10 +370,14 @@ passed to this function will include the information given to the `snp_info` arg
 ```{r}
 myf <- function(n, sd, snp_info){
   stopifnot(nrow(snp_info) == n)
+  # expected heritability explained by each variant up to a scalar
   s2 <- with(snp_info, ((AF*(1-AF))^0.75)*(0.1*A1 + 0.13*A2 + 0.9))
+  # Calculate scale factor
+  scale <- (sd^2)/sum(s2)
+  # Scale s2 to give E[h_j^2] = E[\beta_std^2]
+  s2 <- s2*scale
+  # sample standardized effect size from normal distribution
   x <- rnorm(n = n, mean = 0, sd = sqrt(s2))
-  scale <- sqrt(n)*sd/sqrt(sum(x^2))
-  x <- x*scale # scale to give correct total heritability
   return(x)
 }
 ```
