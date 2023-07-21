@@ -42,11 +42,14 @@ it contains non-standardized effects. Use the appropriate argument, either \code
 \examples{
 # Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.
 N <- matrix(1000, nrow = 2, ncol =2)
-G <- matrix(0, nrow = 2, ncol = 2)
 R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
 # original data
-dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_E = R_E)
+dat <- sim_mv(G = 2,
+              N = N,
+              J = 20000,
+              h2 = c(0.4, 0.3),
+              pi = 1000/20000,
+              R_E = R_E)
 # data for second GWAS
 # Since we didn't supply af or an LD pattern in the original GWAS,
 # we have standardized effects.

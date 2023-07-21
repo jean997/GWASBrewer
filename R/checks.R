@@ -18,6 +18,7 @@ check_matrix <- function(x, string, n, p){
   if("data.frame" %in% class(x)){
     cat("Coercing ", string, " to matrix.\n")
     x <- as.matrix(x)
+    colnames(x) <- NULL
   }else if("numeric" %in% class(x)){
     x <- as.matrix(x, ncol = 1)
   }else if(!"matrix" %in% class(x)){
@@ -335,4 +336,13 @@ calc_ld_score <- function(R_LD){
     colSums(r2)
   }) %>% unlist()
   return(l2)
+}
+
+#https://stackoverflow.com/questions/27870542/r-check-if-function-in-a-package-was-called-from-the-package-fun-or-externally
+called_intern <- function() {
+  te <- topenv(parent.frame(1))
+  if(isNamespace(te) && getNamespaceName(te) == "simGWAS") {
+    return(1) # called internally
+  }
+  return(0)
 }

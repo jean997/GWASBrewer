@@ -13,18 +13,22 @@
 #'@examples
 #' # Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.
 #' N <- matrix(1000, nrow = 2, ncol =2)
-#' G <- matrix(0, nrow = 2, ncol = 2)
 #' R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
 #' # original data
-#' dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G, R_E = R_E)
+#' dat <- sim_mv(G = 2,
+#'               N = N,
+#'               J = 20000,
+#'               h2 = c(0.4, 0.3),
+#'               pi = 1000/20000,
+#'               R_E = R_E)
 #' # data for second GWAS
 #' # Since we didn't supply af or an LD pattern in the original GWAS,
 #' # we have standardized effects.
 #' dat_new <- gen_bhat_from_b(b_joint_std = dat$beta_joint, N = 40000,
 #'                            trait_corr = dat$trait_corr)
 #'@export
-gen_bhat_from_b <- function(b_joint_std, b_joint,
+gen_bhat_from_b <- function(b_joint_std,
+                            b_joint,
                             N,
                             trait_corr = NULL,
                             R_LD = NULL,
@@ -33,7 +37,16 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                             L_mat_joint_std = NULL,
                             theta_joint_std = NULL){
 
-  #type <- match.arg(type, type)
+  # determine if iv'e been called internally or externally
+  te <- topenv(parent.frame(1))
+  if(isNamespace(te) && getNamespaceName(te) == "simGWAS") {
+    intern <- TRUE # called internally
+  }else{
+    intern <- FALSE
+  }
+
+
+
   if(!missing(b_joint)){
     if(!missing(b_joint_std)){
       stop("Please provide only one of b_joint or b_joint_std")
@@ -55,7 +68,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
 
   ## Check for sample overlap
   if(all(nn$Nc - diag(M) == 0)){
-    if(!is.null(trait_corr)){
+    if(!is.null(trait_corr) & !intern){
       warning("trait_corr disregarded as there is no sample overlap.")
     }
     trait_corr <- diag(M)
@@ -100,7 +113,7 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
                 R=R,
                 beta_marg = Z*se_beta_hat,
                 snp_info = snp_info)
-                #true_h2 = true_h2)
+
 
     if(est_s){
       ret$s_estimate <- estimate_s(N = N, beta_hat = beta_hat,
@@ -113,6 +126,17 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     }
     if(!is.null(theta_joint_std)){
       ret$theta <- (1/sx)*theta_joint_std
+    }
+    if(!intern){
+      ret$beta_joint <- (t(t(Z)/sqrt(nn$N)))/sx
+      ret$trait_corr <- trait_corr
+      ret$Sigma_G <- compute_h2(b_joint_std = ret$beta_joint*sx,
+                                R_LD = R_LD,
+                                af = af,
+                                full_mat = TRUE)
+      ret$Sigma_E <- ret$trait_corr - ret$Sigma_G
+      if(is.null(af)) ret <- structure(ret, class= c("sim_mv", "sim_mv_std", "gen_bhat_from_b", "list"))
+        else ret <- structure(ret, class= c("sim_mv", "gen_bhat_from_b", "list"))
     }
     return(ret)
   }
@@ -206,7 +230,5 @@ gen_bhat_from_b <- function(b_joint_std, b_joint,
     theta <- theta/sx
     ret$theta <- theta
   }
-
   return(ret)
-
 }

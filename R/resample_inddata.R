@@ -1,49 +1,6 @@
-#'@export
-gen_genos_mvn <- function(n, J, R_LD, af){
 
-  if(is.null(R_LD)){
-    af <- check_af(af, J)
-    X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
-    if(J == 1) X <- t(X)
-    return(list(X = X, af = af))
-  }
-  # Checks happen in R_LD_to_haplodat
-  l <- check_R_LD(R_LD, "l")
-  #af <- check_af(af, sum(l), function_ok = FALSE)
-
-
-  hdat <- R_LD_to_haplodat(R_LD, af = af)
-  block_info <- assign_ld_blocks(l, J)
-  nb <- length(l)
-  if(!is.null(block_info$last_block_info)){
-    b <- block_info$last_block_info[1]
-    x <- block_info$last_block_info[2]
-    last_block <- hdat[[b]]$cor[seq(x), seq(x)]
-    last_af<- hdat[[b]]$freqs[seq(x)]
-    hdat_last <- R_LD_to_haplodat(R_LD = list(last_block), last_af)
-    hdat[[nb + 1]] <- hdat_last[[1]]
-    l <- c(l, x)
-    nb <- nb + 1
-  }
-
-  X <- purrr::map_dfr(block_info$block_index, function(bi){
-    xx <- hapsim_simple(n = 2*n, hap = hdat[[bi]])
-    a <- xx[seq(1, 2*n, by = 2), ] + xx[seq(2, 2*n, by = 2), ]
-    a <- data.frame(t(a))
-    names(a) <- paste0("S", 1:n)
-    return(a)
-  })
-
-  return(list(X = t(X), af = af[block_info$index]))
-
-
-}
-
-
-#'@title Generate GWAS data from standardized or non-standardized direct SNP effects and LD
-#'@param b_joint_std Matrix of standardized joint (causal) effects (dimension variants by traits)
-#'@param b_joint  Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
-#'\code{b_joint_std}.
+#'@title Sample individual level data with joint effects matching a sim_mv object
+#'@param sim_dat An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).
 #'@param N Sample size, scalar, vector, or special sample size format data frame, see details.
 #'@param V_E Vector with length equal to the number of traits giving the environmental variance of each trait.
 #'@param R_E Environmental correlation matrix, (traits by traits). If missing, R_E is assumed to be the identity.
@@ -63,29 +20,24 @@ gen_genos_mvn <- function(n, J, R_LD, af){
 #' dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
 #'                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
 #'# Now generate GWAS data
-#'gw_dat <- gen_gwas_from_b(b_joint = dat$beta_joint, N = Ndf, V_E = c(0.6, 0.7),
-#'                            R_E = R_E, af = dat$snp_info$AF, calc_sumstats = TRUE)
+#'gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE)
 #'@export
-gen_gwas_from_b <- function(b_joint_std, b_joint,
-                            N, V_E, R_E = NULL,
+resample_inddata <- function(sim_dat, N,
                             R_LD = NULL, af = NULL,
                             sim_func = gen_genos_mvn,
-                            calc_sumstats = TRUE){
+                            calc_sumstats = FALSE){
 
-
-  if(!missing(b_joint)){
-    if(!missing(b_joint_std)){
-      stop("Please provide only one of b_joint or b_joint_std")
-    }
-    b_joint <- check_matrix(b_joint, "b_joint")
-    M <- ncol(b_joint)
-    J <- nrow(b_joint)
-    b_type <- "non_std"
-  }else if(!missing(b_joint_std)){
-    b_joint_std <- check_matrix(b_joint_std, "b_joint_std")
+  if(any(is.na(sim_dat$snp_info))){
+    # sim_dat contains standardized effects
+    b_joint_std <- sim_dat$beta_joint
     M <- ncol(b_joint_std)
     J <- nrow(b_joint_std)
     b_type <- "std"
+  }else{
+    b_joint <- sim_dat$beta_joint
+    M <- ncol(b_joint)
+    J <- nrow(b_joint)
+    b_type <- "non_std"
   }
 
   message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
@@ -94,21 +46,13 @@ gen_gwas_from_b <- function(b_joint_std, b_joint,
   if(is.null(nn$Ndf)){
     nn$Ndf <- make_Ndf_indep(nn$N)
   }
-  V_E <- check_scalar_or_numeric(V_E, "V_E", M)
-  V_E <- check_01(V_E, "V_E")
-  if(is.null(R_E)){
-    R_E <- diag(M)
-  }
-  R_E <- check_matrix(R_E, "R_E", M, M)
-  R_E <- check_psd(R_E, "R_E")
-
-  V <- diag(sqrt(V_E), nrow = M) %*% R_E %*% diag(sqrt(V_E), nrow = M)
+  V <- sim_dat$Sigma_E
   eV <- eigen(V)
 
   ntotal <- sum(nn$Ndf$N)
   if(is.null(R_LD)){
     if(is.null(af)){
-      stop("Must supply one of af or R_LD.\n")
+      stop("Must supply allele frequencies (af).\n")
     }
     af <- check_af(af, J)
     X <- sim_func(ntotal, J, NULL, af)
@@ -189,4 +133,46 @@ fast_lm <- function(X, Y, check = TRUE){
     return(df)
   })
   return(sumstats)
+}
+
+
+#'@export
+gen_genos_mvn <- function(n, J, R_LD, af){
+
+  if(is.null(R_LD)){
+    af <- check_af(af, J)
+    X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
+    if(J == 1) X <- t(X)
+    return(list(X = X, af = af))
+  }
+  # Checks happen in R_LD_to_haplodat
+  l <- check_R_LD(R_LD, "l")
+  #af <- check_af(af, sum(l), function_ok = FALSE)
+
+
+  hdat <- R_LD_to_haplodat(R_LD, af = af)
+  block_info <- assign_ld_blocks(l, J)
+  nb <- length(l)
+  if(!is.null(block_info$last_block_info)){
+    b <- block_info$last_block_info[1]
+    x <- block_info$last_block_info[2]
+    last_block <- hdat[[b]]$cor[seq(x), seq(x)]
+    last_af<- hdat[[b]]$freqs[seq(x)]
+    hdat_last <- R_LD_to_haplodat(R_LD = list(last_block), last_af)
+    hdat[[nb + 1]] <- hdat_last[[1]]
+    l <- c(l, x)
+    nb <- nb + 1
+  }
+
+  X <- purrr::map_dfr(block_info$block_index, function(bi){
+    xx <- hapsim_simple(n = 2*n, hap = hdat[[bi]])
+    a <- xx[seq(1, 2*n, by = 2), ] + xx[seq(2, 2*n, by = 2), ]
+    a <- data.frame(t(a))
+    names(a) <- paste0("S", 1:n)
+    return(a)
+  })
+
+  return(list(X = t(X), af = af[block_info$index]))
+
+
 }
