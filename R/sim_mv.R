@@ -204,7 +204,8 @@ sim_mv <- function(N,
     R$L_mat_joint_std <- dat$L_mat_joint_std
     R$F_mat <- dat$F_mat
   }
-
+  if(is.null(af)) R <- structure(R, class = c("sim_mv", "sim_mv_std", "list"))
+    else R <- structure(R, class = c("sim_mv", "list"))
   return(R)
 }
 

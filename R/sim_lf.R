@@ -123,7 +123,7 @@ sim_lf <- function(F_mat,
 
   if(is.null(R_E) & is.null(R_obs)){
     if(!Matrix::isDiagonal(nn$Nc)){
-      message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for no environmental covariance.")
+      message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for independent direct environmental effects.")
     }
     R_E <- diag(M)
   }else if(!is.null(R_E)){
@@ -221,8 +221,9 @@ sim_lf <- function(F_mat,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,
                                  h2_exact = h2_exact,
+                                 snp_info = snp_info,
                                  R_LD = R_LD,
-                                 snp_info = snp_info)
+                                 af = af)
 
 
 
@@ -234,8 +235,9 @@ sim_lf <- function(F_mat,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,
                                  h2_exact = h2_exact,
+                                 snp_info = snp_info,
                                  R_LD = R_LD,
-                                 snp_info = snp_info)
+                                 af = af)
 
 
   # Compute standardized effects
@@ -291,6 +293,7 @@ sim_lf <- function(F_mat,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta)
 
+
   ret <- list(beta_hat =sum_stats$beta_hat,
               se_beta_hat = sum_stats$se_beta_hat,
               L_mat = sum_stats$L_mat,
@@ -309,5 +312,8 @@ sim_lf <- function(F_mat,
   if(est_s){
     ret$s_estimate <- sum_stats$s_estimate
   }
+  if(is.null(af)) ret <- structure(ret, class = c("sim_lf", "sim_lf_std", "list"))
+  else ret <- structure(ret, class = c("sim_lf", "list"))
+
   return(ret)
 }

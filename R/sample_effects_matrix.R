@@ -3,8 +3,9 @@ sample_effects_matrix <- function(J, M, pi,
                                   sporadic_pleiotropy,
                                   pi_exact,
                                   h2_exact,
-                                  R_LD = NULL,
-                                  snp_info = NULL){
+                                  snp_info,
+                                  R_LD = NULL,  # R_LD and af only needed if using h2_exact
+                                  af = NULL){
 
   # Skip most argument checks for internal function
   # We do check pi here
@@ -94,7 +95,7 @@ sample_effects_matrix <- function(J, M, pi,
   }
 
   if(h2_exact){
-    h2_eff <- compute_h2(b_joint_std = eff, R_LD = R_LD, af = snp_info$AF)
+    h2_eff <- compute_h2(b_joint_std = eff, R_LD = R_LD, af = af)
     scale <- sqrt((sigma^2)/h2_eff)
     eff <- t(t(eff)*scale)
   }
