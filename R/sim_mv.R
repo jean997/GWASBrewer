@@ -13,8 +13,9 @@
 #'@param est_s If TRUE, return estimates of se(`beta_hat`). If FALSE, the exact standard error of `beta_hat` is returned. Defaults to FALSE.
 #'@param R_obs Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
 #'See Details for default behavior.
-#'@param R_E Legacy option, specify the correlation of the environmental components only. Cannot be used with R_obs.
-#'This parameter will be phased out in the future.
+#'@param R_E Total correlation of the environmental components only. R_E and R_obs are alternative methods of specifying trait correlation.
+#'Use only one of these two options.
+#'R_E may be phased out in the future.
 #'@param R_LD Optional list of LD blocks. R_LD should have class \code{list}.
 #'Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
 #'All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite. See Details and vignettes.
@@ -89,10 +90,9 @@
 #' # Two traits with no causal relationship and some environmental correlation
 #' # specify completely overlapping GWAS
 #' N <- matrix(1000, nrow = 2, ncol =2)
-#' G <- matrix(0, nrow = 2, ncol = 2)
 #' R_obs <- matrix(c(1, 0.3, 0.3, 1), nrow = 2, ncol = 2)
-#' dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G, R_obs = R_obs)
+#' dat <- sim_mv(G = 2, N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
+#'                R_obs = R_obs)
 #'dat$R # This is the true correlation of the estimation error of beta_hat
 #'cor(dat$beta_hat - dat$beta_marg) # Should be similar to dat$R
 #'

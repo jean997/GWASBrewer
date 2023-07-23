@@ -122,8 +122,8 @@ sim_lf <- function(F_mat,
   nn <- check_N(N, M)
 
   if(is.null(R_E) & is.null(R_obs)){
-    if(!Matrix::isDiagonal(nn$Nc)){
-      message("R_E not provided but overlapping samples are specified. Using R_E = diag(ntrait) for independent direct environmental effects.")
+    if(nn$overlap){
+      message("Neither R_E nor R_obs was provided but there are overlapping samples.\nI will assume that environmental components not mediated by factors are independent.")
     }
     R_E <- diag(M)
   }else if(!is.null(R_E)){
@@ -147,7 +147,7 @@ sim_lf <- function(F_mat,
     h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
     h2_factor <- check_01(h2_factor)
   }else{
-    if(!Matrix::isDiagonal(nn$Nc)){
+    if(nn$overlap){
       warning("h2_factors is not supplied and there are overlapping samples. Using h2_factor = 1\n")
     }
     h2_factor <- rep(1, K)
@@ -172,7 +172,6 @@ sim_lf <- function(F_mat,
     l <- check_R_LD(R_LD, "l") # vector of LD block sizes
     AF <- check_af(af, sum(l), function_ok = FALSE)
     block_info <- assign_ld_blocks(l, J)
-    #AF <- AF[block_info$index]
 
     if(is.null(snp_info)){
       snp_info <- data.frame(SNP = 1:sum(l), AF = AF)
@@ -258,9 +257,8 @@ sim_lf <- function(F_mat,
   # sigma2_F is the variance of the environmental component of each factor
   varG_realized <- compute_h2(b_joint_std = L_mat, R_LD = R_LD, af = af, full_mat = FALSE)
   #cat(varG_realized, "\n")
-  sigma2_FE <- varG_realized*(1-h2_factor)/(h2_factor)
+  sigma2_FE <- varG_realized*(1-h2_factor)/(h2_factor) # Variance from environmental components of factors
   Sigma_FE <- F_mat %*% diag(sigma2_FE, nrow = K) %*% t(F_mat)
-  #Sigma_FE <- F_mat %*% diag(sigma_FE^2, nrow = K) %*% t(F_mat)
 
   if(any(diag(Sigma_G) + diag(Sigma_FE) > 1)){
     cat(diag(Sigma_G), "\n")
@@ -278,7 +276,6 @@ sim_lf <- function(F_mat,
   }else{
     sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
     Sigma_E <- diag(sigma_E, nrow = M) %*% R_E %*% diag(sigma_E, nrow = M)
-    #cat(diag(Sigma_E), "\n")
   }
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
