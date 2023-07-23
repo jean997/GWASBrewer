@@ -60,8 +60,8 @@ resample_sumstats <- function(sim_dat,
 
     }
   }else{
-    new_ss <- gen_bhat_from_b(b_joint = dat$beta_joint,
-                              trait_cor = dat$trait_cor,
+    new_ss <- gen_bhat_from_b(b_joint = sim_dat$beta_joint,
+                              trait_cor = sim_dat$trait_cor,
                               N = N,
                               R_LD = R_LD,
                               af = af,
