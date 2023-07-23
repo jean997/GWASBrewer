@@ -3,10 +3,10 @@ check_scalar_or_numeric <- function(x, string, n){
   if("matrix" %in% class(x) | "data.frame" %in% class(x)){
     if(ncol(x) > 1) stop(paste0(string, " must be a numeric vector or one column array."))
     x <- as.numeric(x[,1])
+  }else if(length(x) == 1 & ("numeric" %in% class(x) | all(is.na(x)))){
+    x <- rep(x, n)
   }else if(! "numeric" %in% class(x)){
     stop(paste0(string, " must be a numeric vector or one column array."))
-  }else if(length(x) == 1){
-    x <- rep(x, n)
   }
   if(length(x) != n) stop(paste0("Expected ", string, " to have length ", n, ", found ", length(x), "\n"))
 
@@ -45,28 +45,60 @@ check_pi <- function(pi, n, p){
 }
 
 check_N <- function(N, n, allow_mat = TRUE){
+  if("sample_size" %in% class(N)){
+    if(length(N$N) == n) return(N)
+    stop(paste0("Expected information for ", n, " traits but found ", length(N$N), "\n"))
+  }
+  if(any(is.na(N))){
+    stop("N cannot contain missing (NA) values. Use sample size 0 instead.\n")
+  }
   if("matrix" %in% class(N) | "data.frame" %in% class(N)){
-    if(ncol(N) ==1){
-      N <- check_scalar_or_numeric(N, "N", n)
-      Nc <- diag(n)
+    if(ncol(N) == 1){
+      type <- "vector"
+    }else if("data.frame" %in% class(N) & "trait_1" %in% names(N)){
+      type <- "df"
     }else{
-      if("data.frame" %in% class(N) & "trait_1" %in% names(N)){
-        nn <- check_Ndf(N, n)
-        return(nn)
-      }
       if(!allow_mat){
         stop("Matrix format for N is not allowed. Use scalar, vector, or data frame format.\n")
       }
-      N <- check_matrix(N, "N", n, n)
-      N <- check_psd(N, "N")
-      Nc <- cov2cor(N)
-      N <- diag(N)
+      type <- "matrix"
     }
   }else{
+    type <- "vector"
+  }
+  if(type == "df"){
+    nn <- check_Ndf(N, n)
+    return(nn)
+  }
+  if(type == "vector"){
     N <- check_scalar_or_numeric(N, "N", n)
     Nc <- diag(n)
+    if(any(N == 0)){
+      i <- which( N == 0)
+      diag(Nc)[i] <- 0
+    }
+  }else if(type == "matrix"){
+    N <- check_matrix(N, "N", n, n)
+    max_ix <- apply(N, 1, function(x){
+      if(all(x == 0)) return(NA)
+      which.max(x)
+    })
+    if(!all(max_ix == (1:n), na.rm=T) | !all(N >=0) | !Matrix::isSymmetric(N)){
+      stop("N is not a valid sample size matrix.\nCheck that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.\n")
+    }
+    if(any(diag(N) == 0)){
+      i <- which(diag(N) == 0)
+      Nc <- matrix(0, nrow = n, ncol = n)
+      Nci <- N[-i, -i] |> check_psd("N") |> cov2cor()
+      Nc[-i, -i] <- Nci
+    }else{
+      Nc <- check_psd(N, "N") |> cov2cor()
+    }
+    N <- diag(N)
   }
-  return(list("Nc"= Nc, "N" = N))
+  overlap <- !Matrix::isDiagonal(Nc)
+  ret <- list("Nc"= Nc, "N" = N, "overlap" = overlap) |> structure(class = c("sample_size", "list"))
+  return(ret)
 }
 
 make_Ndf_indep <- function(N){
@@ -91,17 +123,21 @@ check_Ndf <- function(N, M){
   if(!all(paste0("trait_", 1:M) %in% names(N))){
     stop(paste0("Did not find all of trait_1 ...trait_", M, " in data frame N\n"))
   }
+  if(!all(names(N) %in% c(paste0("trait_", 1:M), "N"))){
+    unused_cols <- setdiff(names(Ndf), c(paste0("trait_", 1:M), "N"))
+    warning(paste0("Sample size dataframe contains unused columns: ", paste0(unused_cols, collapse = ","), "\n"))
+  }
   N <- dplyr::select(N, all_of(c(paste0("trait_", 1:M), "N"))) %>%
         mutate_at(paste0("trait_", 1:M), as.logical)
   nr <- nrow(N)
   nd <- select(N, -N) %>% distinct() %>% nrow()
   if(nr != nd){
-    warning(paste0("Data frame N contains non-unique study combinations. Duplicated rows will be collapsed\n"))
+    warning(paste0("Sample size dataframe contains non-unique study combinations. Duplicated rows will be collapsed\n"))
     N <- N %>% group_by_at(paste0("trait_", 1:M)) %>% summarize(N = sum(N)) %>% ungroup()
   }
   trait_present <- N %>% select(-N) %>% apply(2, max)
   if(!all(trait_present)){
-    stop(paste0("Not all traits have sample size given in data frame N. Missing ", paste0(which(!trait_present), collapse = ","), "\n"))
+    warning(paste0("Not all traits have sample size given in data frame N. Missing ", paste0(which(!trait_present), collapse = ","), "\n"))
   }
 
 
@@ -116,9 +152,31 @@ check_Ndf <- function(N, M){
   Nmat2 <-reshape2::acast(Nmat_long, Var2 ~ Var1, value.var = "N", drop = FALSE, fill = 0)
   diag(Nmat2) <- 0
   Nmat <- Nmat + Nmat2
-  Nc <- cov2cor(Nmat)
-  return(list(Ndf = N, N = diag(Nmat), Nc = Nc))
+  ct <- diag(Nmat)
+  if(any(ct == 0)){
+    i <- which(ct == 0)
+    Nc <- matrix(0, nrow = M, ncol = M)
+    Nc[-i, -i] <- cov2cor(Nmat[-i, -i])
+  }else{
+    Nc <- cov2cor(Nmat)
+  }
+  overlap <- !Matrix::isDiagonal(Nc)
+  ret <- list("Ndf" = N, "Nc"= Nc, "N" = ct, "overlap" = overlap) |> structure(class = c("sample_size", "sample_size_df", "list"))
+  return(ret)
 }
+
+subset_N_nonzero <- function(N){
+  stopifnot("sample_size" %in% class(N))
+  i <- which(N$N > 0)
+  newN <- N
+  newN$N <- N$N[i]
+  newN$Nc <- N$Nc[i,i]
+  newN$zero_ix <- setdiff(1:length(N$N), i)
+  newN$nonzero_ix <- i
+  return(newN)
+}
+
+
 
 check_psd <- function(M, string){
   if(!Matrix::isSymmetric(M)){
@@ -130,6 +188,7 @@ check_psd <- function(M, string){
   }
   return(M)
 }
+
 
 check_G <- function(G, h2){
   if(! "matrix" %in% class(G)){
