@@ -3,7 +3,7 @@
 #'@param b_joint  Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
 #'\code{b_joint_std}.
 #'@param trait_corr Matrix of population trait correlation (traits by traits)
-#'@param N Sample size, scalar, vector, or matrix. See \code{?sim_mv} for more details.
+#'@param N Sample size, scalar, vector, matrix, or data.frame. See \code{?sim_mv} for more details.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
 #'@details This function can be used to generate new GWAS results with the same effect sizes by passing in the \code{beta_joint} table
@@ -65,9 +65,10 @@ gen_bhat_from_b <- function(b_joint_std,
   message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
 
   nn <- check_N(N, M)
+  nnz <- subset_N_nonzero(nn)
 
   ## Check for sample overlap
-  if(all(nn$Nc - diag(M) == 0)){
+  if(!nn$overlap){
     if(!is.null(trait_corr) & !intern){
       warning("trait_corr disregarded as there is no sample overlap.")
     }
@@ -80,47 +81,51 @@ gen_bhat_from_b <- function(b_joint_std,
   trait_corr <- check_matrix(trait_corr, "trait_corr", M, M)
   trait_corr <- check_psd(trait_corr, "trait_corr")
 
+  beta_hat <- se_beta_hat <- s_estimate <- Z <- E_Z <- matrix(nrow = J, ncol = M)
+  R <- matrix(0, nrow = M, ncol = M)
 
-  # Correlation due to sample overlap is here
-  R <- nn$Nc*trait_corr
+  Mz <- length(nnz$nonzero_ix)
+  # Correlation due to sample overlap
+  R[nnz$nonzero_ix, nnz$nonzero_ix] <- Rz <- nnz$Nc*trait_corr[nnz$nonzero_ix, nnz$nonzero_ix]
   # sampling error on z-score without LD
-  E_Z <- MASS::mvrnorm(n=J, mu = rep(0, M), Sigma = R)
+  if(length(nnz$nonzero_ix) > 0) E_Z[,nnz$nonzero_ix] <- MASS::mvrnorm(n=J, mu = rep(0, Mz), Sigma = R)
 
   if(is.null(R_LD)){
     # compute sqrt(var(genos))
     af <- check_af(af, J)
     if(is.null(af)){
       sx <- rep(1, J)
+      snp_info = data.frame(SNP = seq(J), AF = NA)
+      warning("Since no allele frequencies are provided, data will be on the standardized effect scale.\n")
     }else{
       sx <- sqrt(2*af*(1-af))
+      snp_info = data.frame(SNP = seq(J), AF = af)
     }
     # se(beta_hat)_{ij} \approx 1/(sqrt(N_j)*sd(x_i))
-    se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1))
-    if(b_type == "non_std"){
-      Z <- b_joint/se_beta_hat
-    }else{
-      Z <- t(t(b_joint_std)*sqrt(nn$N))
-    }
-    beta_hat <- (Z + E_Z)*se_beta_hat
-    if(!is.null(af)){
-      snp_info = data.frame(SNP = seq(J), AF = af)
-    }else{
-      snp_info = data.frame(SNP = seq(J), AF = NA)
+    if(b_type == "std") b_joint <- b_joint_std/sx
+
+    if(length(nnz$nonzero_ix) != 0){
+      se_beta_hat[,nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
+      Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
+      beta_hat[, nn$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
+      if(est_s){
+        s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz,
+                                     beta_hat = beta_hat[,nnz$nonzero_ix],
+                                     trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
+                                     af = af)
+      }
     }
     ret <- list(beta_hat =beta_hat,
                 se_beta_hat = se_beta_hat,
                 sx = sx,
                 R=R,
-                beta_marg = Z*se_beta_hat,
+                beta_marg = b_joint,
                 snp_info = snp_info)
 
 
     if(est_s){
-      ret$s_estimate <- estimate_s(N = N, beta_hat = beta_hat,
-                                   trait_corr = trait_corr,
-                                   af = af)
+      ret$s_estimate <- s_estimate
     }
-
     if(!is.null(L_mat_joint_std)){
       ret$L_mat <-(1/sx)*L_mat_joint_std
     }
@@ -128,7 +133,7 @@ gen_bhat_from_b <- function(b_joint_std,
       ret$theta <- (1/sx)*theta_joint_std
     }
     if(!intern){
-      ret$beta_joint <- (t(t(Z)/sqrt(nn$N)))/sx
+      ret$beta_joint <- b_joint
       ret$trait_corr <- trait_corr
       ret$Sigma_G <- compute_h2(b_joint_std = ret$beta_joint*sx,
                                 R_LD = R_LD,
@@ -150,8 +155,9 @@ gen_bhat_from_b <- function(b_joint_std,
   l <- check_R_LD(R_LD, "l")
 
   af <- check_af(af, sum(l), function_ok = FALSE)
-  nblock <- length(l)
 
+  ## LD bookkeeping
+  nblock <- length(l)
   block_info <- assign_ld_blocks(l, J)
   if(!is.null(block_info$last_block_info)){
     b <- block_info$last_block_info[1]
@@ -174,58 +180,64 @@ gen_bhat_from_b <- function(b_joint_std,
   end_ix <- start_ix + block_info$l-1
 
   sx <- with(snp_info_full, sqrt(2*AF*(1-AF)))
-  se_beta_hat <- kronecker(matrix(1/sx), matrix(1/sqrt(nn$N), nrow = 1)) # J by M
-
-
-  # E_LD_Z are error terms which should have distribution
-  # E_LD_Z ~ N(0, R)
-  # Achieved by transforming E_Z_trait ~ N(0, 1) by
-  # E_LD_Z = sqrt(R) E_Z with sqrt(R) = U D^{1/2}
-  E_LD_Z <- lapply(seq(nb), function(i){
-    tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], ]))
-  }) %>% do.call( rbind, .)
-
-
-  if(b_type == "non_std"){
-    Z <- b_joint/se_beta_hat
-  }else{
-    Z <- t(t(b_joint_std)*sqrt(nn$N))
+  if(b_type == "std"){
+    b_joint <- b_joint_std/sx
+  }else if(b_type == "non_std"){
+    b_joint_std <- b_joint*sx
   }
 
-  # E[Z_marg] = R Z_joint
-  Zm <- lapply(seq(nb), function(i){
-          tcrossprod(ld_mat[[block_info$block_index[i]]], t(Z[start_ix[i]:end_ix[i], ]))
+  # beta_marg_std = R beta_joint (S R S^{-1} = R since S is just diag(1/sqrt(N)))
+  beta_marg_std <- lapply(seq(nb), function(i){
+    tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint_std[start_ix[i]:end_ix[i], ]))
+  }) %>% do.call( rbind, .)
+
+  beta_marg <- beta_marg_std/sx
+
+
+  E_LD_Z <- Zm <- matrix(nrow = J, ncol = M)
+  if(length(nnz$nonzero_ix) > 0){
+    se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1)) # J by M
+    # E_LD_Z are error terms which should have distribution E_LD_Z ~ N(0, R)
+    # Achieved by transforming E_Z_trait ~ N(0, 1) by
+    # E_LD_Z = sqrt(R) E_Z with sqrt(R) = U D^{1/2}
+    E_LD_Z[,nnz$nonzero_ix] <- lapply(seq(nb), function(i){
+      tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], nnz$nonzero_ix ]))
     }) %>% do.call( rbind, .)
 
-  Z_hat <- Zm + E_LD_Z
-  beta_hat <- Z_hat*se_beta_hat
+    Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
+    Zm[,nnz$nonzero_ix] <- beta_marg[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
+    Z_hat <- Zm + E_LD_Z
+    beta_hat[,nnz$nonzero_ix] <- Z_hat[,nnz$nonzero_ix]*se_beta_hat[,nnz$nonzero_ix]
+    if(est_s){
+      s_estimate <- estimate_s(N = nnz, beta_hat = beta_hat[,nnz$nonzero_ix],
+                                   trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
+                                   R_LD = R_LD, af = af)
+    }
+  }
   ret <- list(beta_hat =beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
-              beta_marg = Zm*se_beta_hat,
+              beta_marg = beta_marg,
               snp_info = snp_info_full)
 
   if(est_s){
-    ret$s_estimate <- estimate_s(N = N, beta_hat = beta_hat,
-                                 trait_corr = trait_corr,
-                                 R_LD = R_LD, af = af)
+    ret$s_estimate <- s_estimate
   }
-
   if(!is.null(L_mat_joint_std)){
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
     L_mat <- lapply(seq(nb), function(i){
-                     tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
-                      }) %>%
-             do.call( rbind, .)
+          tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
+    }) %>%
+    do.call( rbind, .)
     L_mat <- L_mat/sx
     ret$L_mat <- L_mat
   }
   if(!is.null(theta_joint_std)){
     theta <- theta_joint_std*sx
     theta <- lapply(seq(nb), function(i){
-                      tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
-                    }) %>%
+        tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
+      }) %>%
       do.call( rbind, .)
     theta <- theta/sx
     ret$theta <- theta
