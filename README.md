@@ -4,7 +4,7 @@ The `simGWAS` package simulates GWAS summary statistics. The main function in th
 
 Briefly, `simGWAS` can simulate data with the following features.
 
-- Data an be produced for continuous traits with user supplied linear causal relationships.
+- Data can be produced for continuous traits with user supplied linear causal relationships.
 - GWAS for multiple traits may have overlapping samples. 
 - Data can be generated with or without LD. One realistic LD pattern is supplied as built-in data.
 - GWAS for the same trait can be replicated with different sample sizes, LD patterns, and allele frequencies (see the "Resampling and Re-Scaling.." vignette)
