@@ -198,7 +198,7 @@ gen_bhat_from_b <- function(b_joint,
       }
     }
   }
-  ret <- list(beta_hat =beta_hat,
+  ret <- list(beta_hat = beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
