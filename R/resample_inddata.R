@@ -1,6 +1,6 @@
 
 #'@title Sample individual level data with joint effects matching a sim_mv object
-#'@param sim_dat An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).
+#'@param dat An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).
 #'@param N Sample size, scalar, vector, or special sample size format data frame, see details.
 #'@param V_E Vector with length equal to the number of traits giving the environmental variance of each trait.
 #'@param R_E Environmental correlation matrix, (traits by traits). If missing, R_E is assumed to be the identity.
@@ -22,19 +22,19 @@
 #'# Now generate GWAS data
 #'gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE)
 #'@export
-resample_inddata <- function(sim_dat, N,
+resample_inddata <- function(dat, N,
                             R_LD = NULL, af = NULL,
                             sim_func = gen_genos_mvn,
                             calc_sumstats = FALSE){
 
-  if(any(is.na(sim_dat$snp_info))){
-    # sim_dat contains standardized effects
-    b_joint_std <- sim_dat$beta_joint
+  if(any(is.na(dat$snp_info))){
+    # dat contains standardized effects
+    b_joint_std <- dat$beta_joint
     M <- ncol(b_joint_std)
     J <- nrow(b_joint_std)
     b_type <- "std"
   }else{
-    b_joint <- sim_dat$beta_joint
+    b_joint <- dat$beta_joint
     M <- ncol(b_joint)
     J <- nrow(b_joint)
     b_type <- "non_std"
@@ -46,7 +46,7 @@ resample_inddata <- function(sim_dat, N,
   if(is.null(nn$Ndf)){
     nn$Ndf <- make_Ndf_indep(nn$N)
   }
-  V <- sim_dat$Sigma_E
+  V <- dat$Sigma_E
   eV <- eigen(V)
 
   ntotal <- sum(nn$Ndf$N)

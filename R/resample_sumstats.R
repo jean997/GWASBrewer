@@ -1,5 +1,5 @@
 #'@title Resample Summary Statistics for Existing Simulation Object
-#'@param sim_dat Object output by \code{sim_mv}
+#'@param dat Object output by \code{sim_mv}
 #'@param N Sample size, scalar, vector, matrix. See \code{?sim_mv} for more details.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
@@ -35,18 +35,18 @@
 #' # we have standardized effects.
 #' dat_new <- resample_sumstats(dat, N = 40000)
 #'@export
-resample_sumstats <- function(sim_dat,
+resample_sumstats <- function(dat,
                               N,
                               R_LD = NULL,
                               af = NULL,
                               est_s = FALSE){
-  if(!"sim_mv" %in% class(sim_dat)) stop("sim_dat must have class sim_mv (use the sim_mv function to produce sim_dat).\n")
+  if(!"sim_mv" %in% class(dat)) stop("dat must have class sim_mv (use the sim_mv function to produce dat).\n")
   if(!is.null(R_LD) & is.null(af)) stop("af is required if R_LD is provided.\n")
-  new_obj <- sim_dat
-  if( "sim_mv_std" %in% class(sim_dat)){
-    # sim_dat contains standardized effects
-    new_ss <- gen_bhat_from_b(b_joint_std = sim_dat$beta_joint,
-                              trait_cor = sim_dat$trait_cor,
+  new_obj <- dat
+  if( "sim_mv_std" %in% class(dat)){
+    # dat contains standardized effects
+    new_ss <- gen_bhat_from_b(b_joint_std = dat$beta_joint,
+                              trait_cor = dat$trait_cor,
                               N = N,
                               R_LD = R_LD,
                               af = af,
@@ -60,8 +60,8 @@ resample_sumstats <- function(sim_dat,
 
     }
   }else{
-    new_ss <- gen_bhat_from_b(b_joint = sim_dat$beta_joint,
-                              trait_cor = sim_dat$trait_cor,
+    new_ss <- gen_bhat_from_b(b_joint = dat$beta_joint,
+                              trait_cor = dat$trait_cor,
                               N = N,
                               R_LD = R_LD,
                               af = af,
@@ -69,7 +69,7 @@ resample_sumstats <- function(sim_dat,
     if(is.null(af)){
       warning("Origingal data were on the non-standardized scale but resampled data will be on the standardized scale because af was not provided (see help page for more information).")
       # convert all objects not in new_ss to standardized scale
-      sx_orig <- with(sim_dat$snp_info, sqrt(2*AF*(1-AF)))
+      sx_orig <- with(dat$snp_info, sqrt(2*AF*(1-AF)))
       new_obj$direct_SNP_effects_marg <- new_obj$direct_SNP_effects_marg*sx_orig
       new_obj$direct_SNP_effects_joint <- new_obj$direct_SNP_effects_joint*sx_orig
       new_obj$beta_joint <- new_obj$beta_joint*sx_orig
