@@ -13,15 +13,22 @@ LazyData: true
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
-IMPORTS:
-  dplyr
-  purrr
-  tidyr
+Imports:
+  dplyr,
+  purrr,
+  tidyr,
+  MASS,
+  Matrix,
+  reshape2,
+  utils,
+  stats
 VignetteBuilder:
   knitr
 Suggests: 
     knitr,
     rmarkdown,
-    hapsim,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    DiagrammeR,
+    ggplot2,
+    hapsim
 Config/testthat/edition: 3
