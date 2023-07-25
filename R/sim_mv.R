@@ -212,3 +212,10 @@ sim_mv <- function(N,
 }
 
 
+#' Print sim_mv
+#'
+#' @param x A sim_mv object
+#' @export
+print.sim_mv <- function(x) {
+  str(x)
+}
