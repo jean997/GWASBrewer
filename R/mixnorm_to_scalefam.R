@@ -19,7 +19,7 @@ mixnorm_to_scale_fam <- function(sigma, pi){
   f <- function(n, sd, ...){
     Vtarget <- sd^2
     a <- sqrt(Vtarget/Vbase)
-    rnormalmix(n = n, sd = a*sigma, pi = pi, mu = 0, return.Z = FALSE)
+    rnormalmix(n = n, sd = a*sigma/sqrt(n), pi = pi, mu = 0, return.Z = FALSE)
   }
   return(f)
 }
@@ -61,8 +61,7 @@ fixed_to_scale_fam <- function(b){
   f <- function(n, sd, ...){
     newb <- b[ ((0:(n-1)) %% length(b)) + 1]
     Vbase <- sum(newb^2)
-    Vtarget <- n*sd^2
-    a <- sqrt(Vtarget/Vbase)
+    a <- sd/sqrt(Vbase)
     return(a*newb)
   }
   return(f)

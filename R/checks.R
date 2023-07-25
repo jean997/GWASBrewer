@@ -382,20 +382,20 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
     return(snp_effect_function)
   }else if(snp_effect_function == "normal"){
     f <- function(n, sd, ...){
-      rnorm(n =n, mean = 0, sd = sd)
+      rnorm(n =n, mean = 0, sd = sd/sqrt(n))
     }
     return(f)
   }
 }
 
 
-calc_ld_score <- function(R_LD){
-  l2 <- lapply(R_LD, function(r){
-    r2 <- with(r, tcrossprod(vectors, tcrossprod(vectors, diag(values)))^2)
-    colSums(r2)
-  }) %>% unlist()
-  return(l2)
-}
+# calc_ld_score <- function(R_LD){
+#   l2 <- lapply(R_LD, function(r){
+#     r2 <- with(r, tcrossprod(vectors, tcrossprod(vectors, diag(values)))^2)
+#     colSums(r2)
+#   }) %>% unlist()
+#   return(l2)
+# }
 
 #https://stackoverflow.com/questions/27870542/r-check-if-function-in-a-package-was-called-from-the-package-fun-or-externally
 called_intern <- function() {
