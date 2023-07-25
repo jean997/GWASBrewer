@@ -88,7 +88,7 @@ gen_bhat_from_b <- function(b_joint_std,
   # Correlation due to sample overlap
   R[nnz$nonzero_ix, nnz$nonzero_ix] <- Rz <- nnz$Nc*trait_corr[nnz$nonzero_ix, nnz$nonzero_ix]
   # sampling error on z-score without LD
-  if(length(nnz$nonzero_ix) > 0) E_Z[,nnz$nonzero_ix] <- MASS::mvrnorm(n=J, mu = rep(0, Mz), Sigma = R)
+  if(length(nnz$nonzero_ix) > 0) E_Z[,nnz$nonzero_ix] <- MASS::mvrnorm(n=J, mu = rep(0, Mz), Sigma = Rz)
 
   if(is.null(R_LD)){
     # compute sqrt(var(genos))
@@ -105,7 +105,7 @@ gen_bhat_from_b <- function(b_joint_std,
     if(b_type == "std") b_joint <- b_joint_std/sx
 
     if(length(nnz$nonzero_ix) != 0){
-      se_beta_hat[,nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
+      se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
       Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
       beta_hat[, nn$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
       if(est_s){
@@ -209,7 +209,7 @@ gen_bhat_from_b <- function(b_joint_std,
     Z_hat <- Zm + E_LD_Z
     beta_hat[,nnz$nonzero_ix] <- Z_hat[,nnz$nonzero_ix]*se_beta_hat[,nnz$nonzero_ix]
     if(est_s){
-      s_estimate <- estimate_s(N = nnz, beta_hat = beta_hat[,nnz$nonzero_ix],
+      s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz, beta_hat = beta_hat[,nnz$nonzero_ix],
                                    trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
                                    R_LD = R_LD, af = af)
     }
