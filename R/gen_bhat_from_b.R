@@ -81,7 +81,7 @@ gen_bhat_from_b <- function(b_joint_std,
   trait_corr <- check_matrix(trait_corr, "trait_corr", M, M)
   trait_corr <- check_psd(trait_corr, "trait_corr")
 
-  beta_hat <- se_beta_hat <- s_estimate <- Z <- E_Z <- matrix(nrow = J, ncol = M)
+  beta_hat <- se_beta_hat <- s_estimate <- Z <- E_Z <- matrix(0, nrow = J, ncol = M)
   R <- matrix(0, nrow = M, ncol = M)
 
   Mz <- length(nnz$nonzero_ix)
@@ -107,7 +107,7 @@ gen_bhat_from_b <- function(b_joint_std,
     if(length(nnz$nonzero_ix) != 0){
       se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
       Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
-      beta_hat[, nn$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
+      beta_hat[, nnz$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
       if(est_s){
         s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz,
                                      beta_hat = beta_hat[,nnz$nonzero_ix],
