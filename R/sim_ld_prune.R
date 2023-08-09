@@ -126,7 +126,7 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
                 #proxy_index_block = proxy_index_block,
                 proxy_index = proxy_index_dat$ix_in_dat)
     if(return_mat){
-      if (length(proxy_index) == 0) {
+      if (length(ret$proxy_index) == 0) {
           print("no proxy SNPs found!")
           ret$Rproxy <- matrix(1, nrow = 1)
         }
