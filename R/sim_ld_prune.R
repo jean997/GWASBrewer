@@ -27,7 +27,7 @@
 #'prune_set_1 <- sim_ld_prune(dat, pvalue = 1, R_LD = ld_mat_list, pval_thresh = 1e-5)
 #'@export
 sim_ld_prune <- function(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1){
-  stopifnot("sim_mv" %in% class(dat))
+  #stopifnot("sim_mv" %in% class(dat)) ## removing the "class must be sim_mv" restriction to allow usage of outputs from gen_bhat_from_b
   if(missing(pvalue)){
     if(!pval_thresh == 1){stop("If providing pval_thresh, please also provide pvalue.\n")}
     message("pvalue omitted so variants will be prioritized randomly")
