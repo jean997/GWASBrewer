@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0086</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0102</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,10 +111,9 @@ and which mutually have squared correlation less than <code>r2_thresh</code>.</p
 <span class="r-in"><span><span class="va">pvals</span> <span class="op">&lt;-</span> <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">/</span><span class="va">dat</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 <span class="r-in"><span><span class="va">prune_set_1</span> <span class="op">&lt;-</span> <span class="fu">sim_ld_prune</span><span class="op">(</span><span class="va">dat</span>, pvalue <span class="op">=</span> <span class="va">pvals</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, pval_thresh <span class="op">=</span> <span class="fl">1e-5</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'pvals' not found</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 <span class="r-in"><span><span class="co"># Above is equivalent to</span></span></span>
 <span class="r-in"><span><span class="va">prune_set_1</span> <span class="op">&lt;-</span> <span class="fu">sim_ld_prune</span><span class="op">(</span><span class="va">dat</span>, pvalue <span class="op">=</span> <span class="fl">1</span>, R_LD <span class="op">=</span> <span class="va">ld_mat_list</span>, pval_thresh <span class="op">=</span> <span class="fl">1e-5</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Prioritizing variants based on p-value for trait 1</span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 </code></pre></div>
     </div>

@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0086</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0102</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,19 +107,22 @@ it contains non-standardized effects. Use the appropriate argument, either <code
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.</span></span></span>
 <span class="r-in"><span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">1000</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span><span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">G</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">R_E</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.8</span>, <span class="fl">0.8</span>, <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># original data</span></span></span>
-<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_mv.html">sim_mv</a></span><span class="op">(</span>N <span class="op">=</span> <span class="va">N</span>, J <span class="op">=</span> <span class="fl">20000</span>, h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>, pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
-<span class="r-in"><span>               G <span class="op">=</span> <span class="va">G</span>, R_E <span class="op">=</span> <span class="va">R_E</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 2 traits.</span>
+<span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="fl">2</span>,</span></span>
+<span class="r-in"><span>              N <span class="op">=</span> <span class="va">N</span>,</span></span>
+<span class="r-in"><span>              J <span class="op">=</span> <span class="fl">20000</span>,</span></span>
+<span class="r-in"><span>              h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>              pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
+<span class="r-in"><span>              R_E <span class="op">=</span> <span class="va">R_E</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in check_N(N, M):</span> N is not a valid sample size matrix.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Check that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.</span>
 <span class="r-in"><span><span class="co"># data for second GWAS</span></span></span>
 <span class="r-in"><span><span class="co"># Since we didn't supply af or an LD pattern in the original GWAS,</span></span></span>
 <span class="r-in"><span><span class="co"># we have standardized effects.</span></span></span>
 <span class="r-in"><span><span class="va">dat_new</span> <span class="op">&lt;-</span> <span class="fu">gen_bhat_from_b</span><span class="op">(</span>b_joint_std <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">beta_joint</span>, N <span class="op">=</span> <span class="fl">40000</span>,</span></span>
 <span class="r-in"><span>                           trait_corr <span class="op">=</span> <span class="va">dat</span><span class="op">$</span><span class="va">trait_corr</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 2 traits.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>trait_corr disregarded as there is no sample overlap.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

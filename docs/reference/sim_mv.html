@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">simGWAS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0086</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.0102</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -236,20 +236,18 @@ definite correlation matrix.</p>
 <span class="r-in"><span><span class="va">R_obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.3</span>, <span class="fl">0.3</span>, <span class="fl">1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">sim_mv</span><span class="op">(</span>N <span class="op">=</span> <span class="va">N</span>, J <span class="op">=</span> <span class="fl">20000</span>, h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>, pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
 <span class="r-in"><span>               G <span class="op">=</span> <span class="va">G</span>, R_obs <span class="op">=</span> <span class="va">R_obs</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 2 traits.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in check_N(N, M):</span> N is not a valid sample size matrix.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Check that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.</span>
 <span class="r-in"><span><span class="va">dat</span><span class="op">$</span><span class="va">R</span> <span class="co"># This is the true correlation of the estimation error of beta_hat</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      [,1] [,2]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,]  1.0  0.3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,]  0.3  1.0</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">beta_hat</span> <span class="op">-</span> <span class="va">dat</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">)</span> <span class="co"># Should be similar to dat$R</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          [,1]     [,2]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1,] 1.000000 0.293699</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [2,] 0.293699 1.000000</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'dat' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The af argument can be a scalar, vector, or function.</span></span></span>
 <span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">sim_mv</span><span class="op">(</span>N <span class="op">=</span> <span class="va">N</span>, J <span class="op">=</span> <span class="fl">20000</span>, h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>, pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
 <span class="r-in"><span>               G <span class="op">=</span> <span class="va">G</span>, R_obs <span class="op">=</span> <span class="va">R_obs</span>, af <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">n</span>, <span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 2 traits.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in check_N(N, M):</span> N is not a valid sample size matrix.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Check that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A very simple example with LD</span></span></span>
 <span class="r-in"><span><span class="co"># Use a pattern of two small blocks of LD</span></span></span>
@@ -261,7 +259,8 @@ definite correlation matrix.</p>
 <span class="r-in"><span><span class="va">af</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">16</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">sim_mv</span><span class="op">(</span>N <span class="op">=</span> <span class="va">N</span>, J <span class="op">=</span> <span class="fl">20000</span>, h2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.3</span><span class="op">)</span>, pi <span class="op">=</span> <span class="fl">1000</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
 <span class="r-in"><span>               G <span class="op">=</span> <span class="va">G</span>, R_obs <span class="op">=</span> <span class="va">R_obs</span>, R_LD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">A1</span>, <span class="va">A2</span><span class="op">)</span>, af <span class="op">=</span> <span class="va">af</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 2 traits.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in check_N(N, M):</span> N is not a valid sample size matrix.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> Check that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Use xyz_to_G to generate G from xyz specification</span></span></span>
 <span class="r-in"><span><span class="va">myG</span> <span class="op">&lt;-</span> <span class="fu"><a href="xyz_to_G.html">xyz_to_G</a></span><span class="op">(</span>tau_xz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="op">-</span><span class="fl">0.3</span><span class="op">)</span>, tau_yz <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.25</span><span class="op">)</span>,</span></span>
@@ -271,7 +270,7 @@ definite correlation matrix.</p>
 <span class="r-in"><span>              pi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">500</span>, <span class="fl">500</span>, <span class="fl">1000</span>, <span class="fl">1000</span><span class="op">)</span><span class="op">/</span><span class="fl">20000</span>,</span></span>
 <span class="r-in"><span>              G <span class="op">=</span> <span class="va">myG</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20000 SNPs and 4 traits.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>trait_corr disregarded as there is no sample overlap.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Since no allele frequencies are provided, data will be on the standardized effect scale.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span>, <span class="va">dat</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">dat</span><span class="op">$</span><span class="va">total_trait_effects</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="sim_mv-1.png" alt="" width="700" height="433"></span>

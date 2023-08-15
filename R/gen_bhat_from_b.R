@@ -81,7 +81,7 @@ gen_bhat_from_b <- function(b_joint_std,
   trait_corr <- check_matrix(trait_corr, "trait_corr", M, M)
   trait_corr <- check_psd(trait_corr, "trait_corr")
 
-  beta_hat <- se_beta_hat <- s_estimate <- Z <- E_Z <- matrix(0, nrow = J, ncol = M)
+  beta_hat <- se_beta_hat <- s_estimate <- Z <- E_Z <- matrix( nrow = J, ncol = M)
   R <- matrix(0, nrow = M, ncol = M)
 
   Mz <- length(nnz$nonzero_ix)
