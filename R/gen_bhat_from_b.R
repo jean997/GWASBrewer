@@ -188,7 +188,7 @@ gen_bhat_from_b <- function(b_joint_std,
 
   # beta_marg_std = R beta_joint (S R S^{-1} = R since S is just diag(1/sqrt(N)))
   beta_marg_std <- lapply(seq(nb), function(i){
-    tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint_std[start_ix[i]:end_ix[i], ]))
+    tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint_std[start_ix[i]:end_ix[i], ,drop =F]))
   }) %>% do.call( rbind, .)
 
   beta_marg <- beta_marg_std/sx
@@ -201,7 +201,7 @@ gen_bhat_from_b <- function(b_joint_std,
     # Achieved by transforming E_Z_trait ~ N(0, 1) by
     # E_LD_Z = sqrt(R) E_Z with sqrt(R) = U D^{1/2}
     E_LD_Z[,nnz$nonzero_ix] <- lapply(seq(nb), function(i){
-      tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], nnz$nonzero_ix ]))
+      tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], nnz$nonzero_ix,drop = F ]))
     }) %>% do.call( rbind, .)
 
     Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
@@ -227,7 +227,7 @@ gen_bhat_from_b <- function(b_joint_std,
   if(!is.null(L_mat_joint_std)){
     L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
     L_mat <- lapply(seq(nb), function(i){
-          tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ]))
+          tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ,drop = F]))
     }) %>%
     do.call( rbind, .)
     L_mat <- L_mat/sx
@@ -236,7 +236,7 @@ gen_bhat_from_b <- function(b_joint_std,
   if(!is.null(theta_joint_std)){
     theta <- theta_joint_std*sx
     theta <- lapply(seq(nb), function(i){
-        tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ]))
+        tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ,drop = F]))
       }) %>%
       do.call( rbind, .)
     theta <- theta/sx
