@@ -79,11 +79,8 @@ check_N <- function(N, n, allow_mat = TRUE){
     }
   }else if(type == "matrix"){
     N <- check_matrix(N, "N", n, n)
-    max_ix <- apply(N, 1, function(x){
-      if(all(x == 0)) return(NA)
-      which.max(x)
-    })
-    if(!all(max_ix == (1:n), na.rm=T) | !all(N >=0) | !Matrix::isSymmetric(N)){
+    max_val <- apply(N, 1, max)
+    if(!all(max_val == diag(N)) | !all(N >=0) | !Matrix::isSymmetric(N)){
       stop("N is not a valid sample size matrix.\nCheck that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.\n")
     }
     if(any(diag(N) == 0)){
