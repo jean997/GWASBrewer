@@ -7,7 +7,7 @@
 #'The new summary statistics will have the same true causal effects as the original. However, you can use a new
 #'sample size and new LD if desired. This function is primarily a wrapper for \code{gen_bhat_from_b}. This function
 #'differs from \code{gen_bhat_from_b} in its arguments. It can accept the original simulated data directly rather than
-#'requiring the  user to extract and supply the joint effects. It will also preserver the direct and total trait effects objects in
+#'requiring the  user to extract and supply the joint effects. It will also preserve the direct and total trait effects objects in
 #'the original data.
 #'
 #'Note about effect scalings: If the original simulation object was generated with no allele frequencies, then
