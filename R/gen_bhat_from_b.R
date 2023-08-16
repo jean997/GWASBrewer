@@ -10,6 +10,8 @@
 #'from a data set simulated using `sim_mv`. If the
 #'original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
 #'it contains non-standardized effects. Use the appropriate argument, either \code{b_joint_std} or \code{b_joint}.
+#'
+#'Future version: only accepts standardized effects. Returns effects in units of either per allele or per genotype sd. Phenotype unit is always 1.
 #'@examples
 #' # Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.
 #' N <- matrix(1000, nrow = 2, ncol =2)
@@ -27,41 +29,21 @@
 #' dat_new <- gen_bhat_from_b(b_joint_std = dat$beta_joint, N = 40000,
 #'                            trait_corr = dat$trait_corr)
 #'@export
-gen_bhat_from_b <- function(b_joint_std,
-                            b_joint,
+gen_bhat_from_b <- function(b_joint,
+                            #b_type = c("per_allele", "per_geno_sd"),
+                            #pheno_sd = 1,
                             N,
                             trait_corr = NULL,
                             R_LD = NULL,
                             af = NULL,
                             est_s = FALSE,
                             L_mat_joint_std = NULL,
-                            theta_joint_std = NULL){
+                            theta_joint_std = NULL,
+                            return_geno_unit = c("allele", "sd")){
 
-  # determine if iv'e been called internally or externally
-  te <- topenv(parent.frame(1))
-  if(isNamespace(te) && getNamespaceName(te) == "simGWAS") {
-    intern <- TRUE # called internally
-  }else{
-    intern <- FALSE
-  }
-
-
-
-  if(!missing(b_joint)){
-    if(!missing(b_joint_std)){
-      stop("Please provide only one of b_joint or b_joint_std")
-    }
-    b_joint <- check_matrix(b_joint, "b_joint")
-    M <- ncol(b_joint)
-    J <- nrow(b_joint)
-    b_type <- "non_std"
-  }else if(!missing(b_joint_std)){
-    b_joint_std <- check_matrix(b_joint_std, "b_joint_std")
-    M <- ncol(b_joint_std)
-    J <- nrow(b_joint_std)
-    b_type <- "std"
-  }
-
+  return_geno_unit <- match.arg(return_geno_unit)
+  M <- ncol(b_joint)
+  J <- nrow(b_joint)
   message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
 
   nn <- check_N(N, M)
@@ -69,9 +51,6 @@ gen_bhat_from_b <- function(b_joint_std,
 
   ## Check for sample overlap
   if(!nn$overlap){
-    if(!is.null(trait_corr) & !intern){
-      warning("trait_corr disregarded as there is no sample overlap.")
-    }
     trait_corr <- diag(M)
   }else{
     if(is.null(trait_corr)){
@@ -93,55 +72,59 @@ gen_bhat_from_b <- function(b_joint_std,
   if(is.null(R_LD)){
     # compute sqrt(var(genos))
     af <- check_af(af, J)
-    if(is.null(af)){
+    if(return_geno_unit == "sd"){ ## af is ignored if no LD and return unit is sd
+      if(!is.null(af)){
+        warning("af ignored if return_geno_unit = sd and there is no LD.\n")
+      }
       sx <- rep(1, J)
-      snp_info = data.frame(SNP = seq(J), AF = NA)
-      warning("Since no allele frequencies are provided, data will be on the standardized effect scale.\n")
+      snp_info  <- data.frame(SNP = seq(J), AF = NA)
     }else{
       sx <- sqrt(2*af*(1-af))
       snp_info = data.frame(SNP = seq(J), AF = af)
     }
-    # se(beta_hat)_{ij} \approx 1/(sqrt(N_j)*sd(x_i))
-    if(b_type == "std") b_joint <- b_joint_std/sx
-
+    beta_joint <- b_joint/sx
+    # se(beta_hat)_{ij} \approx sd(y_j)/(sqrt(N_j)*sd(x_i))
     if(length(nnz$nonzero_ix) != 0){
       se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
-      Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
+      Z[,nnz$nonzero_ix] <- beta_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
       beta_hat[, nnz$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
       if(est_s){
+        my_af <- NULL
+        if(return_geno_unit == "allele") my_af <- af
         s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz,
                                      beta_hat = beta_hat[,nnz$nonzero_ix],
                                      trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
-                                     af = af)
+                                     af = my_af)
+
       }
     }
     ret <- list(beta_hat =beta_hat,
                 se_beta_hat = se_beta_hat,
-                sx = sx,
                 R=R,
-                beta_marg = b_joint,
-                snp_info = snp_info)
+                sx = sx,
+                beta_joint = beta_joint,
+                beta_marg = beta_joint,
+                snp_info = snp_info,
+                geno_scale = return_geno_unit,
+                pheno_sd = rep(1, M))
 
 
     if(est_s){
       ret$s_estimate <- s_estimate
     }
     if(!is.null(L_mat_joint_std)){
-      ret$L_mat <-(1/sx)*L_mat_joint_std
+      if(return_geno_unit == "allele"){
+        ret$L_mat <-(1/sx)*L_mat_joint_std
+      }else{
+        ret$L_mat <- L_mat_joint_std
+      }
     }
     if(!is.null(theta_joint_std)){
-      ret$theta <- (1/sx)*theta_joint_std
-    }
-    if(!intern){
-      ret$beta_joint <- b_joint
-      ret$trait_corr <- trait_corr
-      ret$Sigma_G <- compute_h2(b_joint_std = ret$beta_joint*sx,
-                                R_LD = R_LD,
-                                af = af,
-                                full_mat = TRUE)
-      ret$Sigma_E <- ret$trait_corr - ret$Sigma_G
-      if(is.null(af)) ret <- structure(ret, class= c("sim_mv", "sim_mv_std", "gen_bhat_from_b", "list"))
-        else ret <- structure(ret, class= c("sim_mv", "gen_bhat_from_b", "list"))
+      if(return_geno_unit == "allele"){
+        ret$theta <- (1/sx)*theta_joint_std
+      }else{
+        ret$theta <- theta_joint_std
+      }
     }
     return(ret)
   }
@@ -179,20 +162,16 @@ gen_bhat_from_b <- function(b_joint_std,
   start_ix <- cumsum(c(1, block_info$l[-nb]))
   end_ix <- start_ix + block_info$l-1
 
-  sx <- with(snp_info_full, sqrt(2*AF*(1-AF)))
-  if(b_type == "std"){
-    b_joint <- b_joint_std/sx
-  }else if(b_type == "non_std"){
-    b_joint_std <- b_joint*sx
-  }
+  sx <- case_when(return_geno_unit== "allele" ~ with(snp_info_full, sqrt(2*AF*(1-AF))),
+                  TRUE ~ rep(1, J))
 
   # beta_marg_std = R beta_joint (S R S^{-1} = R since S is just diag(1/sqrt(N)))
-  beta_marg_std <- lapply(seq(nb), function(i){
-    tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint_std[start_ix[i]:end_ix[i], ,drop =F]))
+  b_marg <- lapply(seq(nb), function(i){
+    tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint[start_ix[i]:end_ix[i], ,drop =F]))
   }) %>% do.call( rbind, .)
 
-  beta_marg <- beta_marg_std/sx
-
+  beta_marg <- b_marg/sx
+  beta_joint <- b_joint/sx
 
   E_LD_Z <- Zm <- matrix(nrow = J, ncol = M)
   if(length(nnz$nonzero_ix) > 0){
@@ -204,7 +183,7 @@ gen_bhat_from_b <- function(b_joint_std,
       tcrossprod(ld_sqrt[[block_info$block_index[i]]], t(E_Z[start_ix[i]:end_ix[i], nnz$nonzero_ix,drop = F ]))
     }) %>% do.call( rbind, .)
 
-    Z[,nnz$nonzero_ix] <- b_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
+    Z[,nnz$nonzero_ix] <- beta_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
     Zm[,nnz$nonzero_ix] <- beta_marg[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
     Z_hat <- Zm + E_LD_Z
     beta_hat[,nnz$nonzero_ix] <- Z_hat[,nnz$nonzero_ix]*se_beta_hat[,nnz$nonzero_ix]
@@ -212,14 +191,20 @@ gen_bhat_from_b <- function(b_joint_std,
       s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz, beta_hat = beta_hat[,nnz$nonzero_ix],
                                    trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
                                    R_LD = R_LD, af = af)
+      if(return_geno_unit == "sd"){
+        s_estimate <- s_estimate*with(snp_info, sqrt(2*AF*(1-AF)))
+      }
     }
   }
   ret <- list(beta_hat =beta_hat,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
-              beta_marg = beta_marg,
-              snp_info = snp_info_full)
+              beta_joint = b_joint/sx,
+              beta_marg = b_marg/sx,
+              snp_info = snp_info_full,
+              geno_scale = return_geno_unit,
+              pheno_sd = rep(1, M))
 
   if(est_s){
     ret$s_estimate <- s_estimate

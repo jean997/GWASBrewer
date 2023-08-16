@@ -247,7 +247,9 @@ sim_lf <- function(F_mat,
   # genetic trait covariance
   #Sigma_G <- F_mat %*% t(F_mat) + diag((1-omega)*h2_trait, nrow = M)
   # Now using true genetic covariance
-  Sigma_G <- compute_h2(b_joint_std = beta_std,
+  Sigma_G <- compute_h2(b_joint = beta_std,
+                        geno_scale = "sd",
+                        pheno_sd = 1,
                         R_LD = R_LD,
                         af = af,
                         full_mat = TRUE)
@@ -255,7 +257,12 @@ sim_lf <- function(F_mat,
 
   # trait covariance due to non-genetic factor component
   # sigma2_F is the variance of the environmental component of each factor
-  varG_realized <- compute_h2(b_joint_std = L_mat, R_LD = R_LD, af = af, full_mat = FALSE)
+  varG_realized <- compute_h2(b_joint = L_mat,
+                              geno_scale = "sd",
+                              pheno_sd = 1,
+                              R_LD = R_LD,
+                              af = af,
+                              full_mat = FALSE)
   #cat(varG_realized, "\n")
   sigma2_FE <- varG_realized*(1-h2_factor)/(h2_factor) # Variance from environmental components of factors
   Sigma_FE <- F_mat %*% diag(sigma2_FE, nrow = K) %*% t(F_mat)
@@ -281,36 +288,24 @@ sim_lf <- function(F_mat,
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
 
-  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std,
+  sum_stats <- gen_bhat_from_b(b_joint = beta_std,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
                                af = AF,
                                est_s = est_s,
                                L_mat_joint_std = L_mat,
-                               theta_joint_std = theta)
+                               theta_joint_std = theta,
+                               return_geno_unit = case_when(is.null(af) ~ "sd",
+                                                            TRUE ~ "allele"))
+  sum_stats$F_mat <- F_mat
+  sum_stats$Sigma_G <- Sigma_G
+  sum_stats$Sigma_E <- Sigma_FE + Sigma_E
+  sum_stats$trait_corr <- trait_corr
+  sum_stats$snp_info <- snp_info
+  sum_stats$L_mat_joint <- L_mat/sum_stats$sx
+  sum_stats$theta_joint <- theta/sum_stats$sx
+  sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
-
-  ret <- list(beta_hat =sum_stats$beta_hat,
-              se_beta_hat = sum_stats$se_beta_hat,
-              L_mat = sum_stats$L_mat,
-              F_mat = F_mat,
-              theta = sum_stats$theta,
-              L_mat_joint = L_mat/sum_stats$sx,
-              theta_joint = theta/sum_stats$sx,
-              beta_joint = beta_std/sum_stats$sx,
-              beta_marg =  sum_stats$beta_marg,
-              Sigma_G = Sigma_G,
-              Sigma_E = Sigma_FE + Sigma_E,
-              trait_corr = trait_corr,
-              R=sum_stats$R,
-              snp_info = snp_info)
-              #snp_info = sum_stats$snp_info)
-  if(est_s){
-    ret$s_estimate <- sum_stats$s_estimate
-  }
-  if(is.null(af)) ret <- structure(ret, class = c("sim_lf", "sim_lf_std", "list"))
-  else ret <- structure(ret, class = c("sim_lf", "list"))
-
-  return(ret)
+  return(sum_stats)
 }

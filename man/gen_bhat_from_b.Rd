@@ -5,7 +5,6 @@
 \title{Generate beta hats from standardized or non-standardized direct SNP effects and LD}
 \usage{
 gen_bhat_from_b(
-  b_joint_std,
   b_joint,
   N,
   trait_corr = NULL,
@@ -13,22 +12,23 @@ gen_bhat_from_b(
   af = NULL,
   est_s = FALSE,
   L_mat_joint_std = NULL,
-  theta_joint_std = NULL
+  theta_joint_std = NULL,
+  return_geno_unit = c("allele", "sd")
 )
 }
 \arguments{
-\item{b_joint_std}{Matrix of standardized joint (causal) effects (dimension variants by traits)}
-
 \item{b_joint}{Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
 \code{b_joint_std}.}
 
-\item{N}{Sample size, scalar, vector, or matrix. See \code{?sim_mv} for more details.}
+\item{N}{Sample size, scalar, vector, matrix, or data.frame. See \code{?sim_mv} for more details.}
 
 \item{trait_corr}{Matrix of population trait correlation (traits by traits)}
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
+
+\item{b_joint_std}{Matrix of standardized joint (causal) effects (dimension variants by traits)}
 }
 \description{
 Generate beta hats from standardized or non-standardized direct SNP effects and LD
@@ -38,6 +38,8 @@ This function can be used to generate new GWAS results with the same effect size
 from a data set simulated using `sim_mv`. If the
 original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
 it contains non-standardized effects. Use the appropriate argument, either \code{b_joint_std} or \code{b_joint}.
+
+Future version: only accepts standardized effects. Returns effects in units of either per allele or per genotype sd. Phenotype unit is always 1.
 }
 \examples{
 # Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.

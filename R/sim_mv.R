@@ -195,7 +195,9 @@ sim_mv <- function(N,
             R = dat$R,
             Sigma_G = dat$Sigma_G,
             Sigma_E = dat$Sigma_E,
-            snp_info = dat$snp_info)
+            snp_info = dat$snp_info,
+            geno_scale = dat$geno_scale,
+            pheno_sd = dat$pheno_sd)
   if(est_s){
     R$s_estimate <- dat$s_estimate
   }
@@ -204,8 +206,7 @@ sim_mv <- function(N,
     R$L_mat_joint_std <- dat$L_mat_joint_std
     R$F_mat <- dat$F_mat
   }
-  if(is.null(af)) R <- structure(R, class = c("sim_mv", "sim_mv_std", "list"))
-    else R <- structure(R, class = c("sim_mv", "list"))
+  R <- structure(R, class = c("sim_mv", "list"))
   return(R)
 }
 

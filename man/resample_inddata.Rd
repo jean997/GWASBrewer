@@ -5,7 +5,7 @@
 \title{Sample individual level data with joint effects matching a sim_mv object}
 \usage{
 resample_inddata(
-  sim_dat,
+  dat,
   N,
   R_LD = NULL,
   af = NULL,
@@ -14,7 +14,7 @@ resample_inddata(
 )
 }
 \arguments{
-\item{sim_dat}{An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).}
+\item{dat}{An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).}
 
 \item{N}{Sample size, scalar, vector, or special sample size format data frame, see details.}
 

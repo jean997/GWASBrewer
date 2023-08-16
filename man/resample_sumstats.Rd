@@ -4,10 +4,10 @@
 \alias{resample_sumstats}
 \title{Resample Summary Statistics for Existing Simulation Object}
 \usage{
-resample_sumstats(sim_dat, N, R_LD = NULL, af = NULL, est_s = FALSE)
+resample_sumstats(dat, N, R_LD = NULL, af = NULL, est_s = FALSE)
 }
 \arguments{
-\item{sim_dat}{Object output by \code{sim_mv}}
+\item{dat}{Object output by \code{sim_mv}}
 
 \item{N}{Sample size, scalar, vector, matrix. See \code{?sim_mv} for more details.}
 
@@ -23,7 +23,7 @@ This function can be used to generate new summary statistics for an existing sim
 The new summary statistics will have the same true causal effects as the original. However, you can use a new
 sample size and new LD if desired. This function is primarily a wrapper for \code{gen_bhat_from_b}. This function
 differs from \code{gen_bhat_from_b} in its arguments. It can accept the original simulated data directly rather than
-requiring the  user to extract and supply the joint effects. It will also preserver the direct and total trait effects objects in
+requiring the  user to extract and supply the joint effects. It will also preserve the direct and total trait effects objects in
 the original data.
 
 Note about effect scalings: If the original simulation object was generated with no allele frequencies, then

@@ -4,16 +4,23 @@
 \alias{compute_h2}
 \title{Compute hertiability from standardized or non-standardized effects}
 \usage{
-compute_h2(b_joint_std, b_joint, R_LD = NULL, af = NULL, full_mat = FALSE)
+compute_h2(
+  b_joint,
+  geno_scale = c("allele", "sd"),
+  pheno_sd = 1,
+  R_LD = NULL,
+  af = NULL,
+  full_mat = FALSE
+)
 }
 \arguments{
-\item{b_joint_std, b_joint}{matrix of standardized or non-standardized effects. Provide only one of these options.}
-
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
 
 \item{full_mat}{If TRUE, return the full genetic variance-covariance matrix}
+
+\item{b_joint_std, b_joint}{matrix of standardized or non-standardized effects. Provide only one of these options.}
 }
 \description{
 Compute hertiability from standardized or non-standardized effects
