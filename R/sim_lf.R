@@ -287,7 +287,6 @@ sim_lf <- function(F_mat,
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
-
   sum_stats <- gen_bhat_from_b(b_joint = beta_std,
                                trait_corr = trait_corr,
                                N = N,
