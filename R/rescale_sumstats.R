@@ -2,17 +2,19 @@
 rescale_sumstats <- function(dat,
                              output_geno_scale = c("allele", "sd"),
                              output_pheno_sd = 1,
-                             af = NULL){
+                             af = NULL,
+                             verbose = TRUE){
 
   M <- ncol(dat$beta_hat)
   output_pheno_sd <- check_scalar_or_numeric(output_pheno_sd, "out_pheon_sd", M)
+  output_geno_scale <- match.arg(output_geno_scale)
   if(! all(output_pheno_sd > 0)){
     stop("Phenotype SD must be greater than or equal to 0.\n")
   }
   J <- nrow(dat$beta_hat)
   if(dat$geno_scale != output_geno_scale){
     if(dat$geno_scale == "allele"){
-      message("Converting effects from per-allele to per-genotype SD.\n")
+      if(verbose) message("Converting effects from per-allele to per-genotype SD.\n")
       if(any(is.na(dat$snp_info$AF))){
         stop("Something is wrong. dat$geno_scale is allele but AF is missing from dat$snp_info.\n")
       }
@@ -36,7 +38,7 @@ rescale_sumstats <- function(dat,
       if(is.null(af)){
         stop("Please provide af to convert to per-allele effect scale.\n")
       }
-      message("Converting effects from per-genotype SD to per-allele.\n")
+      if(verbose) message("Converting effects from per-genotype SD to per-allele.\n")
       af <- check_af(af, J)
       sx <- sqrt(2*af*(1-af))
       dat$snp_info$AF <- af
@@ -57,7 +59,7 @@ rescale_sumstats <- function(dat,
     }
   }
   if(! identical(dat$pheno_sd, output_pheno_sd)){
-    message("Converting effects to change scale of phenotypes.\n")
+    if(verbose) message("Converting effects to change scale of phenotypes.\n")
     pheno_scale <- output_pheno_sd/dat$pheno_sd
     dat$beta_hat <- row_times(dat$beta_hat, pheno_scale)
     dat$se_beta_hat <- row_times(dat$se_beta_hat, pheno_scale)
@@ -74,6 +76,12 @@ rescale_sumstats <- function(dat,
 
 
     dat$pheno_sd <- output_pheno_sd
+
+    # Convert genetic and environmental variance - covariance matrices
+    A <- kronecker(pheno_scale, pheno_scale) |> matrix(nrow = M)
+    dat$Sigma_G <- A*dat$Sigma_G
+    dat$Sigma_E <- A*dat$Sigma_E
+
   }
   return(dat)
 
