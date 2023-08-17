@@ -52,7 +52,7 @@ compute_h2 <- function(b_joint,
   af <- af_ld[block_info$index]
   sx <- sqrt(2*af*(1-af))
   if(geno_scale == "allele"){
-    b_joint_std <- b_joint*sx
+    b_joint_std <- col_times(b_joint, sx)
   }else{
     b_joint_std <- b_joint
   }
@@ -62,7 +62,7 @@ compute_h2 <- function(b_joint,
 
   if(!full_mat){
     true_h2 <- lapply(seq(nb), function(i){
-      # quad.diag(R, b_joint_std)
+      # emulator::quad.diag(R, b_joint_std)
       colSums(crossprod(ld_mat[[block_info$block_index[i]]], b_joint_std[start_ix[i]:end_ix[i], ])*b_joint_std[start_ix[i]:end_ix[i], ])
     }) %>% Reduce("+", .)
 
