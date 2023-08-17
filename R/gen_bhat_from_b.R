@@ -28,10 +28,7 @@
 #' # we have standardized effects.
 #' dat_new <- gen_bhat_from_b(b_joint_std = dat$beta_joint, N = 40000,
 #'                            trait_corr = dat$trait_corr)
-#'@export
 gen_bhat_from_b <- function(b_joint,
-                            #b_type = c("per_allele", "per_geno_sd"),
-                            #pheno_sd = 1,
                             N,
                             trait_corr = NULL,
                             R_LD = NULL,
@@ -39,7 +36,8 @@ gen_bhat_from_b <- function(b_joint,
                             est_s = FALSE,
                             L_mat_joint_std = NULL,
                             theta_joint_std = NULL,
-                            return_geno_unit = c("allele", "sd")){
+                            return_geno_unit = c("allele", "sd"),
+                            return_pheno_sd = 1){
 
   return_geno_unit <- match.arg(return_geno_unit)
   M <- ncol(b_joint)
@@ -125,6 +123,10 @@ gen_bhat_from_b <- function(b_joint,
       }else{
         ret$theta <- theta_joint_std
       }
+    }
+    return_pheno_sd <- check_scalar_or_numeric(return_pheno_sd, "return_pheno_sd", M)
+    if(!all(return_pheno_sd == 1)){
+      ret <- rescale_sumstats(ret,  output_geno_scale = return_geno_unit, output_pheno_sd = return_pheno_sd)
     }
     return(ret)
   }
@@ -226,6 +228,10 @@ gen_bhat_from_b <- function(b_joint,
       do.call( rbind, .)
     theta <- theta/sx
     ret$theta <- theta
+  }
+  return_pheno_sd <- check_scalar_or_numeric(return_pheno_sd, "return_pheno_sd", M)
+  if(!all(return_pheno_sd ==1)){
+    ret <- rescale_sumstats(ret,  output_geno_scale = return_geno_unit, output_pheno_sd = return_pheno_sd)
   }
   return(ret)
 }

@@ -296,7 +296,8 @@ sim_lf <- function(F_mat,
                                L_mat_joint_std = L_mat,
                                theta_joint_std = theta,
                                return_geno_unit = case_when(is.null(af) ~ "sd",
-                                                            TRUE ~ "allele"))
+                                                            TRUE ~ "allele"),
+                               return_pheno_sd = 1)
   sum_stats$F_mat <- F_mat
   sum_stats$Sigma_G <- Sigma_G
   sum_stats$Sigma_E <- Sigma_FE + Sigma_E
