@@ -39,59 +39,87 @@ resample_sumstats <- function(dat,
                               N,
                               R_LD = NULL,
                               af = NULL,
-                              est_s = FALSE){
+                              est_s = FALSE,
+                              geno_scale = c("allele", "sd"),
+                              new_h2 = NULL,
+                              new_trait_corr = NULL){
   if(!"sim_mv" %in% class(dat)) stop("dat must have class sim_mv (use the sim_mv function to produce dat).\n")
   if(!is.null(R_LD) & is.null(af)) stop("af is required if R_LD is provided.\n")
-  new_obj <- dat
-  if( "sim_mv_std" %in% class(dat)){
-    # dat contains standardized effects
-    new_ss <- gen_bhat_from_b(b_joint_std = dat$beta_joint,
-                              trait_cor = dat$trait_cor,
-                              N = N,
-                              R_LD = R_LD,
-                              af = af,
-                              est_s = est_s)
-    if(!is.null(af)){
-      warning("Original data were on standardized scale but resampled data will be on the non-standardized scale (see help page for more information).")
-      # convert all objects not in new_ss to non-standardized scale
-      new_obj$direct_SNP_effects_marg <- new_obj$direct_SNP_effects_marg/new_ss$sx
-      new_obj$direct_SNP_effects_joint <- new_obj$direct_SNP_effects_joint/new_ss$sx
-      new_obj$beta_joint <- new_obj$beta_joint/new_ss$sx
 
-    }
+  M <- ncol(dat$beta_hat)
+
+  new_dat <- dat
+
+  # compute variance explained by genetics in new population
+  # not heritability despite using compute_h2 function
+  new_dat$Sigma_G <- compute_h2(b_joint = dat$beta_joint,
+                        geno_scale = dat$geno_scale,
+                        pheno_sd = 1,
+                        R_LD = R_LD,
+                        af = af)
+  v_G <- diag(new_dat$Sigma_G)
+  if(!all.equal(new_dat$Sigma_G, dat$Sigma_G)){
+    message("Genetic variance in the new population differs from the geneti variance in the old population.\n")
+  }
+  if(is.null(new_h2)){
+    message("Since new_h2 is not provided, I will assume that the environmental variance is the same in the old and new population.\n")
+    v_E <- diag(dat$Sigma_E)
   }else{
-    new_ss <- gen_bhat_from_b(b_joint = dat$beta_joint,
-                              trait_cor = dat$trait_cor,
-                              N = N,
-                              R_LD = R_LD,
-                              af = af,
-                              est_s = est_s)
-    if(is.null(af)){
-      warning("Origingal data were on the non-standardized scale but resampled data will be on the standardized scale because af was not provided (see help page for more information).")
-      # convert all objects not in new_ss to standardized scale
-      sx_orig <- with(dat$snp_info, sqrt(2*AF*(1-AF)))
-      new_obj$direct_SNP_effects_marg <- new_obj$direct_SNP_effects_marg*sx_orig
-      new_obj$direct_SNP_effects_joint <- new_obj$direct_SNP_effects_joint*sx_orig
-      new_obj$beta_joint <- new_obj$beta_joint*sx_orig
+    new_h2 <- check_scalar_or_numeric(new_h2, "new_h2", M)
+    v_E <- v_G*(1-new_h2)/new_h2
+  }
+  new_dat$pheno_sd <- sqrt(v_G + v_E)
+  if(is.null(new_trait_corr)){
+    message("Since new_trait_corr is not provided, I will assume that environmental correlation is the same in the old and new population.
+            Note that this could result in different overall trait correlations.\n")
+    R_E <- cov2cor(dat$Sigma_E)
+    new_dat$Sigma_E <- diag(sqrt(v_E)) %*% R_E %*% diag(sqrt(v_E))
+    new_dat$trait_corr <- new_dat$Sigma_G + new_dat$Sigma_E
+  }else{
+    new_trait_corr <- check_matrix(new_trait_corr, "new_trait_corr", M, M)
+    new_trait_corr <- check_psd(new_trait_corr)
+    if(!all(diag(new_trait_corr) == 1)) stop("new_trait_corr should be a correlation matrix. Found diagonal entries not equal to 1.\n")
+    new_dat$trait_corr <- new_trait_corr
+    Sigma_tot <- diag(new_dat$pheno_sd) %*% new_trait_corr %*% diag(new_dat$pheno_sd)
+    new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
+  }
+  if(!all(out_pheno_sd == dat$pheno_sd)){
+    message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.\n")
+    message("I will keep the phenotype on same scale as the original data, so effect sizes in the old and new object ar comparable.
+            If you would like to rescale the phenotype to have variance 1, use rescale_sumstats.\n")
+  }
+
+  if(!is.null(R_LD) & is.null(af)){
+    stop("Please provide af to go with R_LD.\n")
+  }
+  if(!is.null(af)){
+    return_unit <- "allele"
+  }else{
+    return_unit <- "sd"
+  }
+
+  if( dat$geno_scale == "sd"){
+    message("Original data have effects on the per-genotype sd scale. I will assume that per-genotype sd effects are the same in the new and old populations.\n
+            You may want to consider if converting to per-allele scaling using rescale_sumstats is more appropriate for your application.\n")
+    if(!is.null(af)){
+      new_dat <- rescale_sumstats(new_dat, output_geno_scale = "allele", output_pheno_sd = new_dat$pheno_sd, af = af)
     }
   }
-  new_obj$beta_hat <- new_ss$beta_hat
-  new_obj$se_beta_hat <- new_ss$se_beta_hat
-  new_obj$beta_marg <- new_ss$beta_marg
-  if(est_s) new_obj$s_estimate <- new_ss$s_estimate
-  new_obj$R <- new_ss$R
-  new_obj$snp_info <- new_ss$snp_info
-  if(is.null(af)){
-    new_obj <- structure(new_obj, class = c("sim_mv", "sim_mv_std", "list"))
-    new_obj$Sigma_G <- compute_h2(b_joint_std = new_obj$beta_joint,
-                                  full_mat = TRUE)
-  }else{
-    new_obj <- structure(new_obj, class = c("sim_mv", "list"))
-    new_obj$Sigma_G <- compute_h2(b_joint = new_obj$beta_joint,
-                                  R_LD = R_LD, af = af,
-                                  full_mat = TRUE)
-  }
-  # recaclucate heritability/genetic covariance matrix with (possibly) new LD and AF
-  new_obj$Sigma_E <- new_obj$trait_cor - new_obj$Sigma_G
-  return(new_obj)
+
+  ## Get standardized effecst for gen_bhat_from_b
+  new_dat_std <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = 1, verbose = FALSE)
+  new_ss <- gen_bhat_from_b(b_joint = new_dat_std$beta_hat, N = N, trait_corr = new_dat$trait_corr,
+                            R_LD = R_LD, af = af, est_s = est_s, return_geno_unit = return_unit,
+                            return_pheno_sd = new_dat$pheno_sd)
+
+
+  new_dat$beta_hat <- new_ss$beta_hat
+  new_dat$se_beta_hat <- new_ss$se_beta_hat
+  new_dat$beta_marg <- new_ss$beta_marg # this will be different if LD changed
+  if(est_s) new_dat$s_estimate <- new_ss$s_estimate
+  new_dat$R <- new_ss$R
+  new_dat$snp_info <- new_ss$snp_info
+
+  new_dat <- structure(new_dat, class = c("sim_mv", "list"))
+  return(new_dat)
 }
