@@ -86,7 +86,7 @@ check_N <- function(N, n, allow_mat = TRUE){
     if(any(diag(N) == 0)){
       i <- which(diag(N) == 0)
       Nc <- matrix(0, nrow = n, ncol = n)
-      Nci <- N[-i, -i] |> check_psd("N") |> cov2cor()
+      Nci <- N[-i, -i, drop = FALSE] |> check_psd("N") |> cov2cor()
       Nc[-i, -i] <- Nci
     }else{
       Nc <- check_psd(N, "N") |> cov2cor()
