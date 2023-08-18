@@ -1,3 +1,5 @@
+## scaling: requires that beta_hat is allele, pheno_sd = 1 if af supplied
+## otherwise beta_hat should be sd, pheno_sd = 1
 estimate_s <- function(N, beta_hat,
                        trait_corr,
                        R_LD = NULL,
@@ -9,9 +11,6 @@ estimate_s <- function(N, beta_hat,
   nn <- check_N(N, M)
   trait_corr <- check_matrix(trait_corr, "trait_corr", M, M)
   trait_corr <- check_psd(trait_corr, "trait_corr")
-
-  # Currently ignore trait correlation
-  #s2_num <- rchisq(n = M, df = nn$N - 2)/(nn$N-2)
 
   # s2_num_s <- 2/nn$N
   # s2_num_cor <- nn$Nc*trait_corr^2
