@@ -195,6 +195,7 @@ sim_mv <- function(N,
             R = dat$R,
             Sigma_G = dat$Sigma_G,
             Sigma_E = dat$Sigma_E,
+            h2 = dat$h2,
             snp_info = dat$snp_info,
             geno_scale = dat$geno_scale,
             pheno_sd = dat$pheno_sd)
