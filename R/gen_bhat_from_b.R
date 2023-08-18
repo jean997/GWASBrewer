@@ -34,15 +34,30 @@ gen_bhat_from_b <- function(b_joint,
                             R_LD = NULL,
                             af = NULL,
                             est_s = FALSE,
-                            L_mat_joint_std = NULL,
-                            theta_joint_std = NULL,
-                            return_geno_unit = c("allele", "sd"),
-                            return_pheno_sd = 1){
+                            input_geno_scale = c("allele", "sd"),
+                            input_pheno_sd = 1,
+                            output_geno_scale = c("allele", "sd"),
+                            output_pheno_sd = 1,
+                            L_mat = NULL,
+                            theta = NULL){
 
-  return_geno_unit <- match.arg(return_geno_unit)
+  input_geno_scale <- match.arg(input_geno_scale)
+  output_geno_scale <- match.arg(output_geno_scale)
+
+  if(!is.null(L_mat) | !is.null(theta)){
+    if(!input_geno_scale == "sd" | is.null(theta) | is.null(L_mat) | !input_pheno_sd == 1){
+      stop("something is amiss")
+    }
+  }
+  if((input_geno_scale == "allele" | output_geno_scale == "allele") & is.null(af)){
+    stop("af is required if input or output geno scales are allele.")
+  }
   M <- ncol(b_joint)
   J <- nrow(b_joint)
   message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
+
+  input_pheno_sd <- check_scalar_or_numeric(input_pheno_sd, "input_pheno_sd", M)
+  output_pheno_sd <- check_scalar_or_numeric(output_pheno_sd, "output_pheno_sd", M)
 
   nn <- check_N(N, M)
   nnz <- subset_N_nonzero(nn)
@@ -70,30 +85,37 @@ gen_bhat_from_b <- function(b_joint,
   if(is.null(R_LD)){
     # compute sqrt(var(genos))
     af <- check_af(af, J)
-    if(return_geno_unit == "sd"){ ## af is ignored if no LD and return unit is sd
-      if(!is.null(af)){
-        warning("af ignored if return_geno_unit = sd and there is no LD.\n")
-      }
-      sx <- rep(1, J)
-      snp_info  <- data.frame(SNP = seq(J), AF = NA)
-    }else{
-      sx <- sqrt(2*af*(1-af))
+
+    A <- get_convert_matrix(input_geno_scale = input_geno_scale,
+                            output_geno_scale = output_geno_scale,
+                            input_pheno_sd = input_pheno_sd,
+                            output_pheno_sd = output_pheno_sd,
+                            J = J,
+                            af = af)
+
+    beta_joint <- A*b_joint
+
+    if(output_geno_scale=="allele"){
       snp_info = data.frame(SNP = seq(J), AF = af)
+      sx <- sqrt(2*af*(1-af))
+    }else{
+      snp_info  <- data.frame(SNP = seq(J), AF = NA)
+      sx <- rep(1, J)
     }
-    beta_joint <- b_joint/sx
+
     # se(beta_hat)_{ij} \approx sd(y_j)/(sqrt(N_j)*sd(x_i))
     if(length(nnz$nonzero_ix) != 0){
-      se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1))
+      se_beta_hat[,nnz$nonzero_ix] <- kronecker(1/sx, output_pheno_sd[nnz$nonzero_ix]/sqrt(nnz$N)) |> matrix(nrow = J, byrow = T)
       Z[,nnz$nonzero_ix] <- beta_joint[,nnz$nonzero_ix]/se_beta_hat[,nnz$nonzero_ix]
       beta_hat[, nnz$nonzero_ix] <- (Z[,nnz$nonzero_ix] + E_Z[,nnz$nonzero_ix])*se_beta_hat[,nnz$nonzero_ix]
       if(est_s){
         my_af <- NULL
-        if(return_geno_unit == "allele") my_af <- af
+        if(output_geno_scale == "allele") my_af <- af
         s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz,
-                                     beta_hat = beta_hat[,nnz$nonzero_ix],
+                                     beta_hat = row_times(beta_hat[,nnz$nonzero_ix], 1/output_pheno_sd[nnz$nonzero_ix]), # convert beta_hat to pheno_sd = 1 scale for estimate_s
                                      trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
                                      af = my_af)
-
+        s_estimate <- row_times(s_estimate, output_pheno_sd)
       }
     }
     ret <- list(beta_hat =beta_hat,
@@ -103,30 +125,17 @@ gen_bhat_from_b <- function(b_joint,
                 beta_joint = beta_joint,
                 beta_marg = beta_joint,
                 snp_info = snp_info,
-                geno_scale = return_geno_unit,
-                pheno_sd = rep(1, M))
+                geno_scale = output_geno_scale,
+                pheno_sd = output_pheno_sd)
 
 
     if(est_s){
       ret$s_estimate <- s_estimate
     }
-    if(!is.null(L_mat_joint_std)){
-      if(return_geno_unit == "allele"){
-        ret$L_mat <-(1/sx)*L_mat_joint_std
-      }else{
-        ret$L_mat <- L_mat_joint_std
-      }
-    }
-    if(!is.null(theta_joint_std)){
-      if(return_geno_unit == "allele"){
-        ret$theta <- (1/sx)*theta_joint_std
-      }else{
-        ret$theta <- theta_joint_std
-      }
-    }
-    return_pheno_sd <- check_scalar_or_numeric(return_pheno_sd, "return_pheno_sd", M)
-    if(!all(return_pheno_sd == 1)){
-      ret <- rescale_sumstats(ret,  output_geno_scale = return_geno_unit, output_pheno_sd = return_pheno_sd)
+    if(!is.null(L_mat) ){
+      # this only happens when input geno scale is sd and input pheno_sd is 1
+      ret$L_mat <- L_mat/sx
+      ret$theta <- theta/sx
     }
     return(ret)
   }
@@ -156,28 +165,46 @@ gen_bhat_from_b <- function(b_joint,
   snp_info <- data.frame(SNP = 1:sum(l), AF = af)
   snp_info$block <- rep(seq(length(l)), l)
   snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)}) %>% unlist()
-  snp_info_full <- snp_info[block_info$index,]
-  snp_info_full$rep <- rep(block_info$rep, block_info$l)
-  snp_info_full$SNP <- with(snp_info_full, paste0(SNP, ".", rep))
+  snp_info <- snp_info[block_info$index,]
+  snp_info$rep <- rep(block_info$rep, block_info$l)
+  snp_info$SNP <- with(snp_info, paste0(SNP, ".", rep))
 
   nb <- length(block_info$l)
   start_ix <- cumsum(c(1, block_info$l[-nb]))
   end_ix <- start_ix + block_info$l-1
 
-  sx <- case_when(return_geno_unit== "allele" ~ with(snp_info_full, sqrt(2*AF*(1-AF))),
-                  TRUE ~ rep(1, J))
+  # convert b_joint to the sd/pheno_sd = 1 scale
+  Astd <- get_convert_matrix(input_geno_scale = input_geno_scale,
+                          output_geno_scale = "sd",
+                          input_pheno_sd = input_pheno_sd,
+                          output_pheno_sd = 1,
+                          J = J,
+                          af = snp_info$AF)
+  b_joint <- Astd*b_joint
 
   # beta_marg_std = R beta_joint (S R S^{-1} = R since S is just diag(1/sqrt(N)))
   b_marg <- lapply(seq(nb), function(i){
     tcrossprod(ld_mat[[block_info$block_index[i]]], t(b_joint[start_ix[i]:end_ix[i], ,drop =F]))
   }) %>% do.call( rbind, .)
 
-  beta_marg <- b_marg/sx
-  beta_joint <- b_joint/sx
+  # convert to final scale
+  Aunstd <- get_convert_matrix(input_geno_scale = "sd",
+                               output_geno_scale = output_geno_scale,
+                               input_pheno_sd = 1,
+                               output_pheno_sd = output_pheno_sd,
+                               J = J,
+                               af = snp_info$AF)
 
+  beta_marg <- Aunstd*b_marg
+  beta_joint <- Aunstd*b_joint
+  if(output_geno_scale == "allele"){
+    sx <- with(snp_info, sqrt(2*AF*(1-AF)))
+  }else{
+    sx <- rep(1, J)
+  }
   E_LD_Z <- Zm <- matrix(nrow = J, ncol = M)
   if(length(nnz$nonzero_ix) > 0){
-    se_beta_hat[,nnz$nonzero_ix] <- kronecker(matrix(1/sx), matrix(1/sqrt(nnz$N), nrow = 1)) # J by M
+    se_beta_hat[,nnz$nonzero_ix] <- kronecker(1/sx, output_pheno_sd[nnz$nonzero_ix]/sqrt(nnz$N)) |> matrix(nrow = J, byrow = T)
     # E_LD_Z are error terms which should have distribution E_LD_Z ~ N(0, R)
     # Achieved by transforming E_Z_trait ~ N(0, 1) by
     # E_LD_Z = sqrt(R) E_Z with sqrt(R) = U D^{1/2}
@@ -190,10 +217,13 @@ gen_bhat_from_b <- function(b_joint,
     Z_hat <- Zm + E_LD_Z
     beta_hat[,nnz$nonzero_ix] <- Z_hat[,nnz$nonzero_ix]*se_beta_hat[,nnz$nonzero_ix]
     if(est_s){
-      s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz, beta_hat = beta_hat[,nnz$nonzero_ix],
-                                   trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
-                                   R_LD = R_LD, af = af)
-      if(return_geno_unit == "sd"){
+      s_estimate[,nnz$nonzero_ix] <- estimate_s(N = nnz,
+                                                beta_hat = row_times(beta_hat[,nnz$nonzero_ix], 1/output_pheno_sd[nnz$nonzero_ix]), # convert beta_hat to pheno_sd = 1 scale for estimate_s
+                                                trait_corr = trait_corr[nnz$nonzero_ix,nnz$nonzero_ix],
+                                                R_LD = R_LD,
+                                                af = af)
+      s_estimate <- row_times(s_estimate, output_pheno_sd)
+      if(output_geno_scale == "sd"){
         s_estimate <- s_estimate*with(snp_info, sqrt(2*AF*(1-AF)))
       }
     }
@@ -202,36 +232,67 @@ gen_bhat_from_b <- function(b_joint,
               se_beta_hat = se_beta_hat,
               sx = sx,
               R=R,
-              beta_joint = b_joint/sx,
-              beta_marg = b_marg/sx,
-              snp_info = snp_info_full,
-              geno_scale = return_geno_unit,
-              pheno_sd = rep(1, M))
+              beta_joint = beta_joint,
+              beta_marg = beta_marg,
+              snp_info = snp_info,
+              geno_scale = output_geno_scale,
+              pheno_sd = output_pheno_sd)
 
   if(est_s){
     ret$s_estimate <- s_estimate
   }
-  if(!is.null(L_mat_joint_std)){
-    L_mat <- L_mat_joint_std*sx# S^-inv L (the N will cancel)
+  if(!is.null(L_mat)){
+    # this only happens when input geno scale is sd and input pheno_sd is 1
+    #L_mat <- L_mat*sx#
+    # R L_std
     L_mat <- lapply(seq(nb), function(i){
-          tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ,drop = F]))
+      tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ,drop = F]))
     }) %>%
     do.call( rbind, .)
+    # convert to per-allele scale
     L_mat <- L_mat/sx
     ret$L_mat <- L_mat
-  }
-  if(!is.null(theta_joint_std)){
-    theta <- theta_joint_std*sx
+
+    #theta <- theta*sx
     theta <- lapply(seq(nb), function(i){
-        tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ,drop = F]))
-      }) %>%
-      do.call( rbind, .)
+      tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ,drop = F]))
+    }) %>%
+    do.call( rbind, .)
     theta <- theta/sx
     ret$theta <- theta
   }
-  return_pheno_sd <- check_scalar_or_numeric(return_pheno_sd, "return_pheno_sd", M)
-  if(!all(return_pheno_sd ==1)){
-    ret <- rescale_sumstats(ret,  output_geno_scale = return_geno_unit, output_pheno_sd = return_pheno_sd)
-  }
   return(ret)
+}
+
+compute_R_times_mat <- function(R_LD, af, J, X){
+  ld_mat <- check_R_LD(R_LD, "matrix")
+  l <- check_R_LD(R_LD, "l")
+
+  af <- check_af(af, sum(l), function_ok = FALSE)
+
+  ## LD bookkeeping
+  nblock <- length(l)
+  block_info <- assign_ld_blocks(l, J)
+  if(!is.null(block_info$last_block_info)){
+    b <- block_info$last_block_info[1]
+    x <- block_info$last_block_info[2]
+    last_block <- ld_mat[[b]][seq(x), seq(x)]
+    ld_mat[[nblock + 1]] <- last_block
+  }
+
+  snp_info <- data.frame(SNP = 1:sum(l), AF = af)
+  snp_info$block <- rep(seq(length(l)), l)
+  snp_info$ix_in_block <- sapply(l, function(nl){seq(nl)}) %>% unlist()
+  snp_info <- snp_info[block_info$index,]
+  snp_info$rep <- rep(block_info$rep, block_info$l)
+  snp_info$SNP <- with(snp_info, paste0(SNP, ".", rep))
+
+  nb <- length(block_info$l)
+  start_ix <- cumsum(c(1, block_info$l[-nb]))
+  end_ix <- start_ix + block_info$l-1
+
+  X_marg <- lapply(seq(nb), function(i){
+    tcrossprod(ld_mat[[block_info$block_index[i]]], t(X[start_ix[i]:end_ix[i], ,drop =F]))
+  }) %>% do.call( rbind, .)
+  return(X_marg)
 }
