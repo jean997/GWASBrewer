@@ -41,12 +41,18 @@ resample_sumstats <- function(dat,
                               af = NULL,
                               est_s = FALSE,
                               geno_scale = c("allele", "sd"),
-                              new_h2 = NULL,
-                              new_trait_corr = NULL){
+                              new_env_var = NULL,
+                              new_R_E = NULL,
+                              new_R_obs = NULL){
   if(!"sim_mv" %in% class(dat)) stop("dat must have class sim_mv (use the sim_mv function to produce dat).\n")
   if(!is.null(R_LD) & is.null(af)) stop("af is required if R_LD is provided.\n")
-
+  if(!is.null(new_R_obs) & !is.null(new_R_E)) stop("Provide only one of new_R_obs and new_R_E.\n")
+  geno_scale <- match.arg(geno_scale)
+  if(geno_scale == "allele" & is.null(af)){
+    stop("If geno_scale = allele, af must be supplied.\n")
+  }
   M <- ncol(dat$beta_hat)
+  J <- nrow(dat$beta_hat)
 
   new_dat <- dat
 
@@ -56,61 +62,75 @@ resample_sumstats <- function(dat,
                         geno_scale = dat$geno_scale,
                         pheno_sd = 1,
                         R_LD = R_LD,
-                        af = af)
+                        af = af,
+                        full_mat = TRUE)
   v_G <- diag(new_dat$Sigma_G)
-  if(!all.equal(new_dat$Sigma_G, dat$Sigma_G)){
-    message("Genetic variance in the new population differs from the geneti variance in the old population.\n")
+  if(!identical(new_dat$Sigma_G, dat$Sigma_G)){
+    message("Genetic variance in the new population differs from the geneti variance in the old population.")
   }
-  if(is.null(new_h2)){
-    message("Since new_h2 is not provided, I will assume that the environmental variance is the same in the old and new population.\n")
+  if(is.null(new_env_var)){
+    message("I will assume that the environmental variance is the same in the old and new population.")
     v_E <- diag(dat$Sigma_E)
   }else{
-    new_h2 <- check_scalar_or_numeric(new_h2, "new_h2", M)
-    v_E <- v_G*(1-new_h2)/new_h2
+    v_E <- check_scalar_or_numeric(new_env_var, "new_env_var", M)
   }
   new_dat$pheno_sd <- sqrt(v_G + v_E)
-  if(is.null(new_trait_corr)){
-    message("Since new_trait_corr is not provided, I will assume that environmental correlation is the same in the old and new population.
-            Note that this could result in different overall trait correlations.\n")
+  new_dat$h2 <- v_G/(v_G + v_E)
+  if(is.null(new_R_obs) & is.null(new_R_E)){
+    message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
     R_E <- cov2cor(dat$Sigma_E)
-    new_dat$Sigma_E <- diag(sqrt(v_E)) %*% R_E %*% diag(sqrt(v_E))
-    new_dat$trait_corr <- new_dat$Sigma_G + new_dat$Sigma_E
-  }else{
-    new_trait_corr <- check_matrix(new_trait_corr, "new_trait_corr", M, M)
-    new_trait_corr <- check_psd(new_trait_corr)
-    if(!all(diag(new_trait_corr) == 1)) stop("new_trait_corr should be a correlation matrix. Found diagonal entries not equal to 1.\n")
-    new_dat$trait_corr <- new_trait_corr
-    Sigma_tot <- diag(new_dat$pheno_sd) %*% new_trait_corr %*% diag(new_dat$pheno_sd)
+    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$trait_corr <- cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
+  }else if(!is.null(new_R_obs)){
+    new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
+    new_R_obs <- check_psd(new_R_obs, "new_R_obs")
+    if(!all(diag(new_R_obs) == 1)) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
+    new_dat$trait_corr <- new_R_obs
+    Sigma_tot <- diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
     new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
+    new_dat$Sigma_E <- tryCatch(check_psd(new_dat$Sigma_E, "Sigma_E"), error = function(e){
+      stop("new_R_obs is incompatible with trait relationships and heritability.")
+    })
+  }else if(!is.null(new_R_E)){
+    new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
+    new_R_E <- check_psd(new_R_E, "new_R_E")
+    if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
+    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$trait_corr <- cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
   }
-  if(!all(out_pheno_sd == dat$pheno_sd)){
-    message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.\n")
-    message("I will keep the phenotype on same scale as the original data, so effect sizes in the old and new object ar comparable.
-            If you would like to rescale the phenotype to have variance 1, use rescale_sumstats.\n")
+  if(!all(new_dat$pheno_sd == dat$pheno_sd)){
+    message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.")
+    message("I will keep the phenotype on the same scale as the original data, so effect sizes in the old and new object are comparable. If you would like to rescale the phenotype to have variance 1, use rescale_sumstats.")
   }
 
   if(!is.null(R_LD) & is.null(af)){
     stop("Please provide af to go with R_LD.\n")
   }
-  if(!is.null(af)){
-    return_unit <- "allele"
-  }else{
-    return_unit <- "sd"
-  }
-
   if( dat$geno_scale == "sd"){
-    message("Original data have effects on the per-genotype sd scale. I will assume that per-genotype sd effects are the same in the new and old populations.\n
-            You may want to consider if converting to per-allele scaling using rescale_sumstats is more appropriate for your application.\n")
-    if(!is.null(af)){
-      new_dat <- rescale_sumstats(new_dat, output_geno_scale = "allele", output_pheno_sd = new_dat$pheno_sd, af = af)
+    message("Original data have effects on the per-genotype sd scale. I will assume that per-genotype sd effects are the same in the new and old populations.")
+    if(geno_scale == "allele"){
+      message("New data will be converted to the per-allele scale.")
+      nr <- ceiling(J/length(af))
+      new_dat <- rescale_sumstats(new_dat, output_geno_scale = "allele", output_pheno_sd = new_dat$pheno_sd, af = rep(af, nr)[1:J])
     }
+  }else if(geno_scale == "sd"){
+    message("New data will be converted to the per-genotype sd scale.")
+    new_dat <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = new_dat$pheno_sd)
   }
 
-  ## Get standardized effecst for gen_bhat_from_b
-  new_dat_std <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = 1, verbose = FALSE)
-  new_ss <- gen_bhat_from_b(b_joint = new_dat_std$beta_hat, N = N, trait_corr = new_dat$trait_corr,
-                            R_LD = R_LD, af = af, est_s = est_s, return_geno_unit = return_unit,
-                            return_pheno_sd = new_dat$pheno_sd)
+  #new_dat_std <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = 1)
+  ## Get standardized effects for gen_bhat_from_b
+  new_ss <- gen_bhat_from_b(b_joint = new_dat$beta_joint,
+                            N = N,
+                            trait_corr = new_dat$trait_corr,
+                            R_LD = R_LD,
+                            af = af,
+                            est_s = est_s,
+                            input_geno_scale = new_dat$geno_scale,
+                            input_pheno_sd = new_dat$pheno_sd,
+                            output_geno_scale = geno_scale,
+                            output_pheno_sd = new_dat$pheno_sd)
+
 
 
   new_dat$beta_hat <- new_ss$beta_hat
@@ -119,7 +139,12 @@ resample_sumstats <- function(dat,
   if(est_s) new_dat$s_estimate <- new_ss$s_estimate
   new_dat$R <- new_ss$R
   new_dat$snp_info <- new_ss$snp_info
+  new_dat$geno_scale <- geno_scale
 
-  new_dat <- structure(new_dat, class = c("sim_mv", "list"))
+  if(!is.null(R_LD)){
+    direct_marg <- compute_R_times_mat(R_LD = R_LD, af = af, J = J, X = new_dat$direct_SNP_effects_joint*new_ss$sx)
+    new_dat$direct_SNP_effects_marg <- direct_marg/new_ss$sx
+    new_dat <- structure(new_dat, class = c("sim_mv", "list"))
+  }
   return(new_dat)
 }
