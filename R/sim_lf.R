@@ -278,7 +278,7 @@ sim_lf <- function(F_mat,
   if(!is.null(R_obs)){
     Sigma_E <- R_obs - Sigma_G - Sigma_FE
     Sigma_E <- tryCatch(check_psd(Sigma_E, "Sigma_E"), error = function(e){
-      stop("R_obs is incompatible with F_mat and heritability.")
+      stop("R_obs is incompatible with trait relationships and heritability.")
     })
   }else{
     sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
@@ -293,18 +293,26 @@ sim_lf <- function(F_mat,
                                R_LD = R_LD,
                                af = AF,
                                est_s = est_s,
-                               L_mat_joint_std = L_mat,
-                               theta_joint_std = theta,
-                               return_geno_unit = case_when(is.null(af) ~ "sd",
+                               input_geno_scale = "sd",
+                               output_geno_scale = case_when(is.null(af) ~ "sd",
                                                             TRUE ~ "allele"),
-                               return_pheno_sd = 1)
+                               input_pheno_sd = 1,
+                               output_pheno_sd = 1,
+                               L_mat = L_mat,
+                               theta = theta)
+
+
   sum_stats$F_mat <- F_mat
   sum_stats$Sigma_G <- Sigma_G
   sum_stats$Sigma_E <- Sigma_FE + Sigma_E
+  sum_stats$h2 <- diag(Sigma_G)
   sum_stats$trait_corr <- trait_corr
   sum_stats$snp_info <- snp_info
-  sum_stats$L_mat_joint <- L_mat/sum_stats$sx
-  sum_stats$theta_joint <- theta/sum_stats$sx
+
+  sum_stats$L_mat_joint <- case_when(!is.null(af) ~ L_mat/sum_stats$sx,
+                                     TRUE ~ L_mat)
+  sum_stats$theta_joint <- case_when(!is.null(af) ~ theta/sum_stats$sx,
+                                     TRUE ~ theta)
   sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
   return(sum_stats)
