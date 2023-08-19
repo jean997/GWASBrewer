@@ -66,7 +66,7 @@ resample_sumstats <- function(dat,
                         full_mat = TRUE)
   v_G <- diag(new_dat$Sigma_G)
   if(!identical(new_dat$Sigma_G, dat$Sigma_G)){
-    message("Genetic variance in the new population differs from the geneti variance in the old population.")
+    message("Genetic variance in the new population differs from the genetic variance in the old population.")
   }
   if(is.null(new_env_var)){
     message("I will assume that the environmental variance is the same in the old and new population.")
