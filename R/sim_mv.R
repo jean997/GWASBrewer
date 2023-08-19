@@ -135,8 +135,7 @@ sim_mv <- function(N,
                    snp_info = NULL,
                    sporadic_pleiotropy = TRUE,
                    pi_exact = FALSE,
-                   h2_exact = FALSE,
-                   return_dat  = FALSE){
+                   h2_exact = FALSE){
 
   G <- check_G(G, h2)
   h2 <- G$h2
@@ -202,11 +201,11 @@ sim_mv <- function(N,
   if(est_s){
     R$s_estimate <- dat$s_estimate
   }
-  if(return_dat){
-    R$L_mat <- dat$L_mat
-    R$L_mat_joint_std <- dat$L_mat_joint_std
-    R$F_mat <- dat$F_mat
-  }
+  # if(return_dat){
+  #   R$L_mat <- dat$L_mat
+  #   R$L_mat_joint_std <- dat$L_mat_joint_std
+  #   R$F_mat <- dat$F_mat
+  # }
   R <- structure(R, class = c("sim_mv", "list"))
   return(R)
 }
