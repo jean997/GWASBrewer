@@ -22,57 +22,148 @@
 #'# Now generate GWAS data
 #'gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE)
 #'@export
-resample_inddata <- function(dat, N,
-                            R_LD = NULL, af = NULL,
-                            sim_func = gen_genos_mvn,
-                            calc_sumstats = FALSE){
+resample_inddata <- function(N,
+                             dat = NULL,
+                             genos = NULL,
+                             J = NULL,
+                             R_LD = NULL,
+                             af = NULL,
+                             sim_func = gen_genos_mvn,
+                             new_env_var = NULL,
+                             new_R_E = NULL,
+                             new_R_obs = NULL,
+                             calc_sumstats = FALSE){
 
-  if(any(is.na(dat$snp_info))){
-    # dat contains standardized effects
-    b_joint_std <- dat$beta_joint
-    M <- ncol(b_joint_std)
-    J <- nrow(b_joint_std)
-    b_type <- "std"
-  }else{
-    b_joint <- dat$beta_joint
-    M <- ncol(b_joint)
-    J <- nrow(b_joint)
-    b_type <- "non_std"
+  if(is.null(af)){
+    stop("af is required to generate individual level data.\n")
   }
 
-  message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
+  # Option 1: generate genotypes and phenotypes provide dat, omit genos and J
+  # Option 2: generate genotype data only. dat is missing, provide N, J, af, and possibly R_LD
+  # Option 3: Generate phenotypes for existing genotypes. Provide genos, and dat. omit J
 
+  if(is.null(dat)){
+    message("Generating genotype matrix only.")
+    if(! "numeric" %in% class(N)| "integer" %in% class(N) | length(N) > 1 | ! N == round(N) | N <= 0){
+      stop("If dat is missing, N should be a positive integer.")
+    }
+    M <- 1
+    if(!is.null(new_env_var) | !is.null(new_R_E) | !is.null(new_R_obs) | calc_sumstats){
+      stop("If dat is omitted, new_env_var, new_R_E, new_R_obs should be omitted and calc_sumstats should be FALSE. See help page for more details.\n")
+    }
+    if(!is.null(genos)){
+      stop("genos were provided so I have nothing to do.\n")
+    }
+    if(is.null(J)){
+      stop("Provide J if dat is missing.\n")
+    }
+  }else{
+    if(!"sim_mv" %in% class(dat)) stop("dat should have class sim_mv.")
+    if(!is.null(J)){
+      stop("If dat is provided, don't provide J.")
+    }
+    M <- ncol(dat$beta_hat)
+    J <- nrow(dat$beta_hat)
+    if(!is.null(genos)){
+      message("Generating phenotypes only.")
+    }else{
+      message("Generating both genotypes and phenotypes.")
+    }
+  }
+
+
+
+  ## check sample size and generate genotype data
   nn <- check_N(N, M, allow_mat = FALSE)
   if(is.null(nn$Ndf)){
     nn$Ndf <- make_Ndf_indep(nn$N)
   }
-  V <- dat$Sigma_E
-  eV <- eigen(V)
-
   ntotal <- sum(nn$Ndf$N)
-  if(is.null(R_LD)){
-    if(is.null(af)){
-      stop("Must supply allele frequencies (af).\n")
+
+  ## simulate genotypes
+  if(is.null(genos)){
+    if(is.null(R_LD)){
+      af <- check_af(af, J)
+      X <- sim_func(ntotal, J, NULL, af)
+    }else{
+      l <- check_R_LD(R_LD, "l")
+      af <- check_af(af, sum(l), function_ok = FALSE)
+      X <- sim_func(ntotal, J, R_LD, af)
     }
-    af <- check_af(af, J)
-    X <- sim_func(ntotal, J, NULL, af)
+    my_af <- check_af(X$af, J, function_ok = FALSE)
+    X <- check_matrix(X$X, "genos", ntotal, J)
+    if(is.null(dat)){
+      R <- list(X = X,af = my_af)
+      return(R)
+    }
   }else{
-    if(is.null(af)){
-      stop("Please provide af with R_LD.\n")
+    X <- check_matrix(genos, "genos", ntotal, J)
+    if(! all(X %in% 0:2)){
+      stop("All elements of genos should be 0, 1, or 2.")
     }
-    l <- check_R_LD(R_LD, "l")
-    af <- check_af(af, sum(l), function_ok = FALSE)
-    X <- sim_func(ntotal, J, R_LD, af)
   }
-  af <- check_af(X$af, J, function_ok = FALSE)
-  X <- check_matrix(X$X, "genos", ntotal, J)
 
+  message(paste0("SNP effects provided for ", J, " SNPs and ", M, " traits."))
 
-  if(b_type == "std"){
+  if( dat$geno_scale == "sd"){
+    message("Original data have effects on the per-genotype sd scale. I will assume that per-genotype sd effects are the same in the new and old populations.")
     # Compute non-standardized effects
-    sx <- sqrt(2*af*(1-af))
-    b_joint <- b_joint_std/sx
+    nr <- ceiling(J/length(af))
+    dat <- rescale_sumstats(dat = dat, output_geno_scale = "allele", af = rep(af, nr)[1:J],
+                            output_pheno_sd = dat$pheno_sd)
+
   }
+  # compute variance explained by genetics in new population
+  # not heritability despite using compute_h2 function
+  Sigma_G <- compute_h2(b_joint = dat$beta_joint,
+                        geno_scale = dat$geno_scale,
+                        pheno_sd = 1,
+                        R_LD = R_LD,
+                        af = af,
+                        full_mat = TRUE)
+
+  v_G <- diag(Sigma_G)
+  if(!all(Sigma_G == dat$Sigma_G)){
+    message("Genetic variance in the new population differs from the genetic variance in the old population.")
+  }
+
+  ## Environmental variance
+  if(is.null(new_env_var)){
+    message("I will assume that the environmental variance is the same in the old and new population.")
+    v_E <- diag(dat$Sigma_E)
+  }else{
+    v_E <- check_scalar_or_numeric(new_env_var, "new_env_var", M)
+  }
+  pheno_sd <- sqrt(v_G + v_E)
+  h2 <- v_G/(v_G + v_E)
+  if(is.null(new_R_obs) & is.null(new_R_E)){
+    message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
+    R_E <- cov2cor(dat$Sigma_E)
+    Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
+    trait_corr <- cov2cor(Sigma_G + Sigma_E)
+  }else if(!is.null(new_R_obs)){
+    new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
+    new_R_obs <- check_psd(new_R_obs, "new_R_obs")
+    if(!all(diag(new_R_obs) == 1)) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
+    trait_corr <- new_R_obs
+    Sigma_tot <- diag(pheno_sd, nrow  = M) %*% new_R_obs %*% diag(pheno_sd, nrow = M)
+    Sigma_E <- Sigma_tot - Sigma_G
+    Sigma_E <- tryCatch(check_psd(Sigma_E, "Sigma_E"), error = function(e){
+      stop("new_R_obs is incompatible with trait relationships and heritability.")
+    })
+  }else if(!is.null(new_R_E)){
+    new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
+    new_R_E <- check_psd(new_R_E, "new_R_E")
+    if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
+    Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
+    trait_corr <- cov2cor(Sigma_G + Sigma_E)
+  }
+  if(!all(pheno_sd == dat$pheno_sd)){
+    message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.")
+    message("I will keep the phenotype on the same scale as the original data, so effect sizes in the old and new object are comparable.")
+  }
+
+  eV <- eigen(Sigma_E)
 
   study_id <- rep(1:nrow(nn$Ndf), nn$Ndf$N)
   study_ix <- lapply(1:M, function(m){
@@ -80,11 +171,26 @@ resample_inddata <- function(dat, N,
     which(study_id %in% ix)
   })
 
+  # environmental component of phenotype
   y_E <- matrix(rnorm(n = M*ntotal), nrow = ntotal)
   y_E <- y_E %*% diag(sqrt(eV$values), M) %*% t(eV$vectors)
 
+  # YG <- purrr::map_dfc(1:M, function(m){
+  #   b <- dat$beta_joint[,m]
+  #   y_gen <- t(t(X[study_ix[[m]],])*b) %>% rowSums()
+  #   my_y <- data.frame(y = rep(NA, ntotal))
+  #   names(my_y)[1] <- paste0("y_", m)
+  #   my_y[study_ix[[m]],1] <- y_gen
+  #   return(my_y)
+  # })
+  # YE <- purrr::map_dfc(1:M, function(m){
+  #   my_y <- data.frame(y = rep(NA, ntotal))
+  #   names(my_y)[1] <- paste0("y_", m)
+  #   my_y[study_ix[[m]],1] <- y_E[study_ix[[m]], m]
+  #   return(my_y)
+  # })
   Y <- purrr::map_dfc(1:M, function(m){
-    b <- b_joint[,m]
+    b <- dat$beta_joint[,m]
     y_gen <- t(t(X[study_ix[[m]],])*b) %>% rowSums()
     y <- y_gen + y_E[study_ix[[m]], m]
     my_y <- data.frame(y = rep(NA, ntotal))
@@ -94,7 +200,18 @@ resample_inddata <- function(dat, N,
   })
 
 
-  R <- list(X = X, Y= Y, af = af)
+  R <- list(X = X,
+            Y= Y,
+            # YG = YG,
+            # YE = YE,
+            af = af,
+            Sigma_G = Sigma_G,
+            Sigma_E = Sigma_E,
+            pheno_sd = pheno_sd,
+            h2 = h2,
+            trait_corr = trait_corr,
+            beta_joint = dat$beta_joint)
+  if(!is.null(genos)) R$X <- NULL
   if(!calc_sumstats) return(R)
 
   ## Calculate GWAS estimates fast
