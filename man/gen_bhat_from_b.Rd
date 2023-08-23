@@ -11,9 +11,10 @@ gen_bhat_from_b(
   R_LD = NULL,
   af = NULL,
   est_s = FALSE,
-  L_mat_joint_std = NULL,
-  theta_joint_std = NULL,
-  return_geno_unit = c("allele", "sd")
+  input_geno_scale = c("allele", "sd"),
+  input_pheno_sd = 1,
+  output_geno_scale = c("allele", "sd"),
+  output_pheno_sd = 1
 )
 }
 \arguments{

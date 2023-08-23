@@ -19,8 +19,7 @@ sim_mv(
   snp_info = NULL,
   sporadic_pleiotropy = TRUE,
   pi_exact = FALSE,
-  h2_exact = FALSE,
-  return_dat = FALSE
+  h2_exact = FALSE
 )
 }
 \arguments{

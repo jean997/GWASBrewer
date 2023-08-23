@@ -3,7 +3,6 @@
 export(compute_h2)
 export(fast_lm)
 export(fixed_to_scale_fam)
-export(gen_bhat_from_b)
 export(gen_genos_mvn)
 export(generate_F2)
 export(generate_F_simple)
