@@ -126,8 +126,13 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
                 #proxy_index_block = proxy_index_block,
                 proxy_index = proxy_index_dat$ix_in_dat)
     if(return_mat){
-      ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
-      rownames(ret$Rproxy) <- colnames(ret$Rproxy) <-  c(i,proxy_index_dat$ix_in_dat)
+      if(length(ret$proxy_index) == 0){
+        ret$Rproxy <- matrix(1, nrow = 1, ncol = 1)
+        rownames(ret$Rproxy) <- colnames(ret$Rproxy) <- c(i)
+      }else{
+        ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
+        rownames(ret$Rproxy) <- colnames(ret$Rproxy) <-  c(i,proxy_index_dat$ix_in_dat)
+      }
     }
     return(ret)
   })
