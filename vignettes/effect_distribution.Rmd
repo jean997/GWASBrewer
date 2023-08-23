@@ -30,42 +30,57 @@ random values demonstrated in this vigentte.
 ## Default Behavior
 
 
-The default behavior of `sim_mv` is to sample effect variants randomly by first generating
-a $J$-vector $Z_m \sim Binom(1, \pi_m)$ for each trait, $m$. $Z_{m,j}$ is 1 if variant $j$
-has a direct effect on trait $m$ and 0 otherwise. We then sample standardized direct effects for 
-variants with $Z_{m,j} = 1$ from a mean-zero normal  distribution with variance, $\sigma^2_m$,
-determined by the SEM and the target expected heritability. This procedure results 
-in effect variants spread evenly throughout the genome and effect sizes that 
-are inversely proportional to $\sqrt{2 f_j (1-f_j)}$
+The default behavior of `sim_mv` is to sample effect variants randomly by first randomly 
+selecting direct effect variants and then choosing the standardized effect size of these variants from 
+a normal distribution with mean zero appropriately chosen variance.
+Standardized effects are effects with units of change in outcome on SDs per unit increase in genotype SD.
+This procedure results 
+in  effect variants spread evenly throughout the genome and per-allele effect sizes that 
+are inversely proportional to $\sqrt{2 f_j (1-f_j)}$.
 
-We demonstrate this by simulating data for only one trait.
+We demonstrate this by simulating data for only one trait. We will set $N = 0$ since we don't need 
+the summary statistics for this demonstration.
 ```{r}
 set.seed(1)
 sim_dat1 <- sim_mv(G = 1,
                    J = 50000,
-                   N = 60000,  
+                   N = 0,  
                    h2 = 0.3, 
                    pi = 1000/50000, 
                    af = function(n){rbeta(n, 1, 5)})
 ```
 
-```{r}
-plot(sim_dat1$direct_SNP_effects_joint)
-plot(sim_dat1$snp_info$AF, sim_dat1$direct_SNP_effects_joint)
+In this specification, we expect to have about 1000 effect variants. 
+Below, we plot the distribution of the standardized and per-allele effects.
+Note that in this simulation, `direct_SNP_effects_joint` and `beta_joint` are
+the same because there is only one trait.
 
-std_effects <- with(sim_dat1, 
-                    direct_SNP_effects_joint*sqrt(2*snp_info$AF*(1-snp_info$AF)))
-hist(std_effects[!std_effects == 0], breaks = 30, freq = F, 
+
+```{r}
+sum(sim_dat1$direct_SNP_effects_joint != 0)
+
+ix <- which(sim_dat1$direct_SNP_effects_joint != 0)
+per_allele_effects <- sim_dat1$direct_SNP_effects_joint[ix]
+effect_afs <- sim_dat1$snp_info$AF[ix]
+std_effects <- per_allele_effects*sqrt(2*effect_afs*(1-effect_afs))
+
+## first plot per-allele effects
+hist(per_allele_effects, breaks = 30, freq = F, 
+     main = "Per-Allele Direct Effects")
+
+## next show that standardized effects are normal
+hist(std_effects, breaks = 30, freq = F, 
      main = "Standardized Direct Effects")
 curve(dnorm(x, sd = sqrt(0.3/1000)), add = T)
 ```
 
 
-## Controlling Direct Effect Variants
+## Controlling which Variants are Effect Variants
 
-To control which variants have direct effects, the `pi` argument
-can be supplied as a `J \times M` matrix rather than as a vector of length `M`
-or a scalar. If `pi` has matrix format then  `pi[j,m]` gives the probability than
+The `pi` argument to `sim_mv` gives the probability that each variant is an effect variant. 
+This can be a scalar in which calse the probability is the same for all variants and all traits,
+a vector giving a different probability for each trait or $J \times M$ matrix. 
+If `pi` has matrix format then  `pi[j,m]` gives the probability than
 variant `j` has a direct effect on trait `m`. To make the set of 
 direct effect variants fully deterministic, set the values of `pi` to be either 0
 or 1. Using `pi` in matrix format is incompatible with options `pi_exact = TRUE`
@@ -73,7 +88,8 @@ and `sporadic_pleiotropy = FALSE`.
 
 Below, we use the matrix format to force all effect variants to be in the 
 first half of the genome. This strategy could be used to designate
-regions with high concentrations of effect variants.
+regions with high concentrations of effect variants or assign different
+probabilities to variants with different features.
 
 ```{r}
 pi_mat <- matrix(0, nrow = 50000, ncol = 1)
@@ -104,7 +120,7 @@ sim_dat3 <- sim_mv(G = 1,
                    N = 60000,  
                    h2 = 0.3, 
                    pi = pi_mat, 
-                   af = function(n){rbeta(n, 1, 5)})
+                   af = af)
 ```
 To verify that we observe the desired effect, we plot the proportion of effect
 variants by bins of minor allele frequency.
@@ -130,18 +146,28 @@ with(snp_dat, plot(maf_min, eff_prob))
 
 To sample standardized effects from a distribution other
 than the normal distribution, we use the `snp_effect_function` 
-argument in `sim_mv`. This argument can accept a function
-that accepts three arguments, `n` for number of variants, 
-`sd` for total variance, and `snp_info` for a data frame of SNP information (more on this below). 
-The function should return a vector of standardized effect sizes $\tilde{\gamma}_1, \dots, \tilde{\gamma}_n$
-such that $\frac{1}{n}\sum_{j = 1}^n E[\tilde{\gamma}_j^2] = \sigma^2$ where $\sigma^2$ is 
-equal to `sd^2`$. 
-Below are a few examples using this argument.
+argument in `sim_mv`. This argument can accept a function 
+for randomly sampling from any scale family distribution.
+The function given to `snp_effect_function`
+must accept three arguments, `n`, 
+`sd`, and `snp_info`.
+The function will be called internally by `sim_mv`. 
+It should return a length `n` vector of real numbers such that
+the square root sum of squares has expectation `sd`. That is, if
+`f` is our function, and `x <- f(n, sd, snp_info)` then `x` should be 
+length `n` and the expected value of `sqrt(sum(x^2))` should be `sd`.
+Currently, `simGWAS` will not check that your function scales effects correctly so you 
+should verify this for yourself or use one of the built-in helper functions.
+
+The `snp_info` argument allows the function to recieve variant information such as allele frequency. 
+The simplest effect size functions will not use this argument at all, though all functions should 
+be able to accept it.
+We will discuss ths argument in greater detail below.
 
 ### Drawing Effects from a Mixture of Normals
 
 Frequently, we observe a pattern that many effect variants have a small "background" effect
-and some have a larger "foreground" effect. This pattern is consistent with an omni-genic
+and some have a larger "foreground" effect. This pattern is consistent with an omnigenic
 model for genetic architecture. To simulate this, we can draw standardized
 effects from a mixture of normals rather than from a single normal distribution.
 There is a helper function `mixnorm_to_scale_fam` which generates functions 
@@ -165,7 +191,7 @@ myf <- mixnorm_to_scale_fam(sigma = c(10, 10*sqrt(10)), pi = c(0.9, 0.1))
 set.seed(2)
 sim_dat4 <- sim_mv(G = 1,
                    J = 50000,
-                   N = 60000,  
+                   N = 0,  
                    h2 = 0.3, 
                    pi = 5000/50000, 
                    snp_effect_function = myf,
@@ -182,16 +208,13 @@ hist(std_effects[!std_effects == 0], breaks = 30, freq = F,
      main = "Standardized Direct Effects")
 ```
 
-Note that even if your function does not use the `snp_info` argument, it must be able to 
-accept it. An easy way to allow this is to give `...` 
-as one of the arguments to your function. Rather than use the built-in helper function, 
-we could have gotten the same result using
+Rather than use the built-in helper function, we could have gotten the same result using
 
 ```{r, eval = FALSE}
 myf <- function(n, sd, ...){
-  Vtarget <- sd^2 # Target variance
-  Vbase <- 1 + 10 
-  a <- sqrt(Vtarget/Vbase) #Scale factor
+  Vtarget <- sd^2 # Target sum of squares
+  Vbase <- sum(0.9*1 + 0.1*10)*n # base sum of squares
+  a <- sqrt(Vtarget/Vbase)  # scale factor
   mix_sds <- a*c(1, sqrt(10))
   # choose which variants are from which component
   Z <- rbinom(n =n, size = 1, prob = 0.1)
@@ -200,16 +223,20 @@ myf <- function(n, sd, ...){
   x[Z == 1] <- rnorm(n = sum(Z == 1), sd = mix_sds[2])
   return(x)
 }
+
+## double check that we got the scaling right
+x <- myf(1e5, sd = sqrt(0.2))
+sum(x^2) # should be about 0.2
 ```
 
 
 
-## Providing a fixed list of relative effect sizes
+### Providing a fixed list of relative effect sizes
 
-If you want to provide a specific fixed list of relative variant effects, you can do this using the helper function `fixed_to_scalefam`.  Effects will still be scaled to give the desired heritability, however the relative sizes of effects will be given by a fixed list, repeated as many times as necessary to give the desired number of variants. For example, the function below provides 10 variants in a row that all have the same effect followed by 10 that have an effect twice as big as the first 10. 
+If you want to provide a specific fixed list of relative variant effects, you can do this using the helper function `fixed_to_scalefam`.  Effects will still be scaled to give the desired heritability, however the relative sizes of effects will be given by a fixed list, repeated as many times as necessary to give the desired number of variants. For example, the function below provides two effect sizes one twice as big as the other. 
 
 ```{r}
-myf <- fixed_to_scale_fam(rep(c(1, 2), each = 10))
+myf <- fixed_to_scale_fam(c(1, 2))
 ```
 
 
@@ -217,32 +244,60 @@ myf <- fixed_to_scale_fam(rep(c(1, 2), each = 10))
 set.seed(2)
 sim_dat5 <- sim_mv(G = 1,
                    J = 50000,
-                   N = 60000,  
+                   N = 0,  
                    h2 = 0.3, 
                    pi = 5000/50000, 
                    snp_effect_function = myf,
                    af = function(n){rbeta(n, 1, 5)})
 ```
 
+This gives us effects that alternate between two values.
+
 ```{r}
 std_effects <- with(sim_dat5, 
                     direct_SNP_effects_joint*sqrt(2*snp_info$AF*(1-snp_info$AF)))
-hist(std_effects[!std_effects == 0], breaks = 30, freq = F, 
-     main = "Standardized Direct Effects")
+std_effects[!std_effects == 0][1:10]
+```
+
+### Providing an Exact Set of Direct Effects
+
+The function `sim_mv_determined` is a wrapper function for `sim_mv` that allows you to directly specify direct effects for all traits and variants. 
+The only differences between `sim_mv_determined` and `sim_mv` are that `sim_mv_determined` accepts the matrix of direct effects plus parameters `geno_scale` and `pheno_sd` to indicate the scale of the provided effects corresponding scaling and `sim_mv_determined` does not accept parameters related to the distribution of effect sizes. Note that for `sim_mv_determined`, the `G` matrix must be on the same phenotype scale as the effect sizes, indicated with the `pheno_sd` argument. In `sim_mv` the `G` matrix should always be on the scale of traits standardized to have unit variance. Data will always be output on the unit variance scale but can be rescaled using `rescale_sumstats` if desired.
+
+
+Below is a very simple example using this function for ten variants and two traits. We will put the desired direct effects in the `my_effects` matrix and then pass these to `sim_mv_determined`. Here we use effects on the per-genotype SD scale, so we set `geno_scale=sd`. 
+
+```{r}
+G <- matrix(c(0, 0.5, 0, 0), nrow = 2, byrow =T)
+my_effects <- matrix(0, nrow = 10, ncol = 2)
+my_effects[c(1, 5),1] <- c(-0.008, 0.01)
+my_effects[c(3, 6, 9), 2] <- c(-0.02, 0.06, 0.009)
+my_effects
+
+# for fun, lets include some sample overlap
+N <- matrix(c(40000, 10000, 10000, 20000), nrow = 2)
+sim_dat6 <- sim_mv_determined(N = N,
+                              direct_SNP_effects_joint = my_effects,
+                              geno_scale = "sd",
+                              pheno_sd = 1,
+                              G=G,
+                              est_s = TRUE)
+
+sim_dat6$direct_SNP_effects_joint
+sim_dat6$beta_joint
+sim_dat6$Sigma_G
 ```
 
 
-If you combine a SNP effect function of this type with an argument to `pi` containing only 0's and 1's and a vector input to `af`, you can exactly specify the effect size of every variant. However, if you know the exact desired effect size and don't need the scaling features, you may find that `gen_bhat_from_b` is a simpler way to get the results you are looking for.
 
+### Different effect distributions for different traits
 
-
-## Different effect distributions for different traits
-
-The `snp_effect_function` parameter can accept a list with length equal to the number of traits. In this case, the direct effect variants for each trait will be drawn from the corresponding element of `snp_effect_function`. If `snp_effect_function` is a list, each element should either be an acceptable function or the string `normal`. The code below generates data for two independent traits. The effects for the first trait are normally distributed. The effects for the second trait follow the specification in the previous section. 
+The `snp_effect_function` parameter can accept a list with length equal to the number of traits. In this case, the direct effect variants for each trait will be drawn from the corresponding element of `snp_effect_function`. If `snp_effect_function` is a list, each element should either be an acceptable function or the string `normal`. The code below generates data for two independent traits. The effects for the first trait are normally distributed. The effects for the second trait take on one of two values as in the previous section. 
 
 
 ```{r}
-sim_dat6 <- sim_mv(G = 2,
+myf <- fixed_to_scale_fam(c(1, 2))
+sim_dat7 <- sim_mv(G = 2,
                    J = 50000,
                    N = 60000,  
                    h2 = 0.3, 
@@ -255,18 +310,20 @@ sim_dat6 <- sim_mv(G = 2,
 
 
 ```{r}
-std_effects1 <- with(sim_dat6, 
+std_effects1 <- with(sim_dat7, 
                      direct_SNP_effects_joint[,1]*sqrt(2*snp_info$AF*(1-snp_info$AF)))
 hist(std_effects1[!std_effects1 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 1")
 ```
 
 ```{r}
-std_effects2 <- with(sim_dat6, 
+std_effects2 <- with(sim_dat7, 
                      direct_SNP_effects_joint[,2]*sqrt(2*snp_info$AF*(1-snp_info$AF)))
 hist(std_effects2[!std_effects2 == 0], breaks = 30, freq = F, main = "Standardized Direct Effects Trait 2")
 ```
 
-Below is some code that combines some of the effect size specification options to simulate GWAS data for one LD block and two traits. The first trait will have two effect variants that have equal standardized effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes across traits. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4 for one trait and 1e-3 for the other. 
+### Example Using Fixed Effects
+
+Below is some code that combines some of the effect size specification options we have seent to simulate GWAS data for one LD block and two traits. The first trait will have two effect variants that have equal standardized effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes across traits. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4 for one trait and 1e-3 for the other. 
 
 ```{r}
 data("ld_mat_list")
@@ -285,7 +342,7 @@ as.matrix(ld_block) %>%
 ```
 
 ```{r}
-## Set causal variants
+## Set causal variants exactly
 pi_mat <- matrix(0, nrow = J, ncol = 2)
 pi_mat[c(75, 150), 1] <- 1
 pi_mat[c(75, 130), 2] <- 1
@@ -310,7 +367,7 @@ plot(sim_dat7$direct_SNP_effects_joint[,2], main = "Trait 2 Joint Effects", ylab
 abline(v = c(75, 130))
 ```
 
-Note that the effects for the first trait are not the same because we specified standardized effects but have plotted non-standardized effects. The standardized effects, equal to the non-standardized effects scaled these by $\sqrt{2f_j (1-f_j)}$,  are equal (see "Standardized vs Non-Standardized Effects" in the Simulating Data vignette). 
+Note that the effects for the first trait are not the same because we specified standardized effects but have plotted per-allele effects.
 Below we plot the marginal associations and observed $z$-scores for this data.
 
 ```{r}
@@ -331,7 +388,7 @@ abline(v = c(75, 130), h = 0)
 ```
 
 
-## Effect Distributions that Depend on Allele Frequency and Other Features
+### Effect Distributions that Depend on Allele Frequency and Other Features
 
 As mentioned above, the SNP effect function will be given three parameters: number of variants (`n`), 
 standard deviation (square root of total variance explained) (`sd`), and SNP information (`snp_info`). 
@@ -340,7 +397,7 @@ allele frequency or other features.
 
 The default model used by `simGWAS` is a sparse version of the GCTA model in which
 all causal variants have the same expected heritability explained. We might, instead
-want to use a heritability model like the (LDAK)[https://dougspeed.com/] model
+want to use a heritability model like the [LDAK](https://dougspeed.com/) model
 or we might want to allow the expected heritability explained depend on an annotation. 
 
 For this example, we assume that we would like to use the heritability model
@@ -351,11 +408,11 @@ where $x$ is a scalar that depends on the total heritability and $A_{1,j}$ and $
 are the values of two annotations for variant $j$. 
 This is a simplified version of the
 LDAK model. 
-To use this model, we would need a data frame containing the annotations which we will pass to the `sim_mv` function to the `snp_info` argument. 
+To use this model, we need a data frame containing the annotations which we will pass to the `sim_mv` function via the `snp_info` argument. 
 If you are using LD, the `snp_info` data frame should have number of rows equal to the size of the LD pattern. 
-Otherwise, it should have number of rows equal to `J`. 
+Otherwise, it should have number of rows equal to the number of variants. 
 For this example, we will generate the two annotations from exponential distributions
-and use no LD. To really simulate from the LDAK model, it would be better to generate data with LD.
+and use no LD. To really simulate from the LDAK model, it would be better to generate data with LD and realistic annotations.
 
 ```{r}
 my_snp_info <- data.frame(A1 = rexp(n = 50000, rate = 1), 
@@ -364,7 +421,7 @@ my_snp_info <- data.frame(A1 = rexp(n = 50000, rate = 1),
 
 Next we write a function to generate effect sizes. The `snp_info` data frame
 passed to this function will include the information given to the `snp_info` argument  of 
-`sim_mv` plus columns called `SNP` for SNP name (usually not useful) and `AF` for allele frequency.
+`sim_mv` **plus** columns called `SNP` for SNP name (usually not useful) and `AF` for allele frequency.
 
 
 ```{r}
@@ -384,21 +441,38 @@ myf <- function(n, sd, snp_info){
 
 Now we generate data, 
 
-```{r, eval = FALSE}
+```{r}
 set.seed(10)
-sim_dat7 <- sim_mv(G = 1,
-                      J = 50000, 
-                      N = 60000, 
-                      h2 = 0.3, 
-                      pi = 1, 
-                      af = function(n){rbeta(n, 1, 5)},
-                      snp_info = my_snp_info)
+sim_dat8 <- sim_mv(G = 1,
+                    J = 50000, 
+                    N = 0, 
+                    h2 = 0.3, 
+                    pi = 1, 
+                    snp_effect_function = myf,
+                    af = function(n){rbeta(n, 1, 5)},
+                    snp_info = my_snp_info)
 ```
 
 The annotations will be included in the `snp_info` data frame included in the output.
 
-```{r, eval = FALSE}
-head(sim_dat7$snp_info)
+```{r}
+head(sim_dat8$snp_info)
 ```
+Let's verify that our function did what we thought it would by plotting the average heritability explained by bins of $(f_j (1-f_j))^{0.75}(0.1 A_{1,j} + 0.13 A_{2,j} + 0.9)$.
 
+```{r}
+my_snp_info <- sim_dat8$snp_info
+my_snp_info$beta_joint <- sim_dat8$beta_joint[,1]
+my_snp_info <- mutate(my_snp_info, 
+                      exp_h2_factor = ((AF*(1-AF))^0.75) *( 0.1*A1 + 0.13*A2 + 0.9),
+                      h2_explained = 2*AF*(1-AF)*(beta_joint^2))
+my_snp_info$exp_h2_bin <- cut(my_snp_info$exp_h2_factor, breaks = 500)
+my_snp_info %>% 
+       group_by(exp_h2_bin) %>%
+       summarize(mean_h2 = mean(h2_explained),
+                 mean_exp_h2 = mean(exp_h2_factor))%>%
+  ggplot() + geom_point(aes(x = mean_exp_h2, y = mean_h2)) + 
+  xlab("Average Expected h2 (up to scale factor)") + 
+  ylab("Average observed h2")
 
+```
