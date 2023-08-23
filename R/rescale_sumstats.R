@@ -45,7 +45,7 @@ rescale_sumstats <- function(dat,
   dat$s_estimate <- mat_times(dat$s_estimate, A)
 
   dat$direct_SNP_effects_joint <- mat_times(dat$direct_SNP_effects_joint, A)
-  dat$direct_SNP_effects_joint <- mat_times(dat$direct_SNP_effects_joint, A)
+  dat$direct_SNP_effects_marg <- mat_times(dat$direct_SNP_effects_marg, A)
 
   dat$geno_scale <- output_geno_scale
   if(is.null(af)){
@@ -61,6 +61,9 @@ rescale_sumstats <- function(dat,
     B <- kronecker(pheno_scale, pheno_scale) |> matrix(nrow = M)
     dat$Sigma_G <- B*dat$Sigma_G
     dat$Sigma_E <- B*dat$Sigma_E
+    C <- kronecker(pheno_scale, 1/pheno_scale) |> matrix(nrow = M)
+    dat$direct_trait_effects <- C*dat$direct_trait_effects
+    dat$total_trait_effects <- C*dat$total_trait_effects
     dat$pheno_sd <- output_pheno_sd
   }
   return(dat)
