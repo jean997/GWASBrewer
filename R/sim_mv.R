@@ -179,12 +179,12 @@ sim_mv <- function(N,
                 snp_effect_function_L = snp_effect_function,
                 snp_info = snp_info)
 
-  direct_SNP_effects <- t(t(dat$L_mat)*diag(dat$F_mat))
+  direct_SNP_effects_marg <- t(t(dat$L_mat_marg)*diag(dat$F_mat))
 
   direct_SNP_effects_joint <- t(t(dat$L_mat_joint)*diag(dat$F_mat))
   R <- list(beta_hat = dat$beta_hat,
             se_beta_hat = dat$se_beta_hat,
-            direct_SNP_effects_marg = direct_SNP_effects,
+            direct_SNP_effects_marg = direct_SNP_effects_marg,
             direct_SNP_effects_joint = direct_SNP_effects_joint,
             direct_trait_effects = G$G_dir,
             total_trait_effects = G$G_tot,

@@ -138,7 +138,7 @@ sim_lf <- function(F_mat,
   }else if(!is.null(R_obs)){
     R_obs <- check_matrix(R_obs, "R_obs", M, M)
     R_obs <- check_psd(R_obs, "R_obs")
-    if(!all.equal(diag(R_obs), rep(1, M))){
+    if(!all(diag(R_obs) == 1)){
       stop("R_obs should be a correlation matrix. All diagonal entries should be 1.")
     }
   }
@@ -156,29 +156,29 @@ sim_lf <- function(F_mat,
   #af and snp_info, these go into effect size function and we will need them
   # later for LD
   if(is.null(R_LD)){
-    AF <-  check_af(af, J)
+    af <-  check_af(af, J)
     if(is.null(snp_info) & is.null(af)){
       snp_info <- data.frame(SNP = 1:J, AF = NA)
     }else if(is.null(snp_info)){
-      snp_info <- data.frame(SNP = 1:J, AF = AF)
+      snp_info <- data.frame(SNP = 1:J, AF = af)
     }else{
       snp_info <- check_snpinfo(snp_info, J)
       snp_info$SNP <- 1:J
       if(is.null(af)) snp_info$AF <- NA
-        else snp_info$AF <- AF
+        else snp_info$AF <- af
     }
   }else{
     if(is.null(af)) stop("Please provide af to go with R_LD.")
     l <- check_R_LD(R_LD, "l") # vector of LD block sizes
-    AF <- check_af(af, sum(l), function_ok = FALSE)
+    af <- check_af(af, sum(l), function_ok = FALSE)
     block_info <- assign_ld_blocks(l, J)
 
     if(is.null(snp_info)){
-      snp_info <- data.frame(SNP = 1:sum(l), AF = AF)
+      snp_info <- data.frame(SNP = 1:sum(l), AF = af)
     }else{
       snp_info <- check_snpinfo(snp_info, sum(l))
       snp_info$SNP <- 1:sum(l)
-      snp_info$AF <- AF
+      snp_info$AF <- af
     }
 
     snp_info$block <- rep(seq(length(l)), l)
@@ -291,15 +291,13 @@ sim_lf <- function(F_mat,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
-                               af = AF,
+                               af = af,
                                est_s = est_s,
                                input_geno_scale = "sd",
                                output_geno_scale = case_when(is.null(af) ~ "sd",
                                                             TRUE ~ "allele"),
                                input_pheno_sd = 1,
-                               output_pheno_sd = 1,
-                               L_mat = L_mat,
-                               theta = theta)
+                               output_pheno_sd = 1)
 
 
   sum_stats$F_mat <- F_mat
@@ -309,10 +307,22 @@ sim_lf <- function(F_mat,
   sum_stats$trait_corr <- trait_corr
   sum_stats$snp_info <- snp_info
 
-  sum_stats$L_mat_joint <- case_when(!is.null(af) ~ L_mat/sum_stats$sx,
-                                     TRUE ~ L_mat)
-  sum_stats$theta_joint <- case_when(!is.null(af) ~ theta/sum_stats$sx,
-                                     TRUE ~ theta)
+  if(is.null(af)){
+    sum_stats$L_mat_joint <-  L_mat
+    sum_stats$theta_joint <- theta
+  }else{
+    sum_stats$L_mat_joint <- L_mat/sum_stats$sx
+    sum_stats$theta_joint <- theta/sum_stats$sx
+  }
+  if(is.null(R_LD)){
+    sum_stats$L_mat_marg <- sum_stats$L_mat_joint
+    sum_stats$theta_marg <- sum_stats$theta_joint
+  }else{
+    sum_stats$L_mat_marg <- compute_R_times_mat(R_LD, af, J, L_mat)
+    sum_stats$L_mat_marg <- sum_stats$L_mat_marg/sum_stats$sx
+    sum_stats$theta_marg <- compute_R_times_mat(R_LD, af, J, theta)
+    sum_stats$theta_marg <- sum_stats$theta/sum_stats$sx
+  }
   sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
   return(sum_stats)

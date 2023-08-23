@@ -37,18 +37,11 @@ gen_bhat_from_b <- function(b_joint,
                             input_geno_scale = c("allele", "sd"),
                             input_pheno_sd = 1,
                             output_geno_scale = c("allele", "sd"),
-                            output_pheno_sd = 1,
-                            L_mat = NULL,
-                            theta = NULL){
+                            output_pheno_sd = 1){
 
   input_geno_scale <- match.arg(input_geno_scale)
   output_geno_scale <- match.arg(output_geno_scale)
 
-  if(!is.null(L_mat) | !is.null(theta)){
-    if(!input_geno_scale == "sd" | is.null(theta) | is.null(L_mat) | !input_pheno_sd == 1){
-      stop("something is amiss")
-    }
-  }
   if((input_geno_scale == "allele" | output_geno_scale == "allele") & is.null(af)){
     stop("af is required if input or output geno scales are allele.")
   }
@@ -131,11 +124,6 @@ gen_bhat_from_b <- function(b_joint,
 
     if(est_s){
       ret$s_estimate <- s_estimate
-    }
-    if(!is.null(L_mat) ){
-      # this only happens when input geno scale is sd and input pheno_sd is 1
-      ret$L_mat <- L_mat/sx
-      ret$theta <- theta/sx
     }
     return(ret)
   }
@@ -240,26 +228,6 @@ gen_bhat_from_b <- function(b_joint,
 
   if(est_s){
     ret$s_estimate <- s_estimate
-  }
-  if(!is.null(L_mat)){
-    # this only happens when input geno scale is sd and input pheno_sd is 1
-    #L_mat <- L_mat*sx#
-    # R L_std
-    L_mat <- lapply(seq(nb), function(i){
-      tcrossprod(ld_mat[[block_info$block_index[i]]], t(L_mat[start_ix[i]:end_ix[i], ,drop = F]))
-    }) %>%
-    do.call( rbind, .)
-    # convert to per-allele scale
-    L_mat <- L_mat/sx
-    ret$L_mat <- L_mat
-
-    #theta <- theta*sx
-    theta <- lapply(seq(nb), function(i){
-      tcrossprod(ld_mat[[block_info$block_index[i]]], t(theta[start_ix[i]:end_ix[i], ,drop = F]))
-    }) %>%
-    do.call( rbind, .)
-    theta <- theta/sx
-    ret$theta <- theta
   }
   return(ret)
 }
