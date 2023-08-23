@@ -67,14 +67,14 @@ sim_mv_determined <- function(N,
     if(is.null(R_LD)){
       af <- full_af <- check_scalar_or_numeric(af, "af", J)
     }else{
-      my_af <- rep(af, ceiling(J/length(af)))[1:J]
-      my_af <- check_scalar_or_numeric(my_af, "af", J)
+      full_af <- rep(af, ceiling(J/length(af)))[1:J]
+      full_af <- check_scalar_or_numeric(full_af, "af", J)
     }
     if(is.null(af)){
       stop("af must be provided if using per-allele scale effects")
     }
   }else{
-    my_af <- NULL
+    full_af <- NULL
   }
   pheno_sd <- check_scalar_or_numeric(pheno_sd, "pheno_sd", M)
   if(!all(pheno_sd == 1) | geno_scale == "allele"){
@@ -85,9 +85,9 @@ sim_mv_determined <- function(N,
                             input_pheno_sd = pheno_sd,
                             output_pheno_sd = 1,
                             J = J,
-                            af = my_af)
+                            af = full_af)
     direct_SNP_effects_joint <- A*direct_SNP_effects_joint
-    pheno_scale <- 1/output_pheno_sd
+    pheno_scale <- 1/pheno_sd
     C <- kronecker(pheno_scale, 1/pheno_scale) |> matrix(nrow = M)
     G <- C*G
   }
