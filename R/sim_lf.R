@@ -138,7 +138,7 @@ sim_lf <- function(F_mat,
   }else if(!is.null(R_obs)){
     R_obs <- check_matrix(R_obs, "R_obs", M, M)
     R_obs <- check_psd(R_obs, "R_obs")
-    if(!all.equal(diag(R_obs), rep(1, M))){
+    if(!all(diag(R_obs) == 1)){
       stop("R_obs should be a correlation matrix. All diagonal entries should be 1.")
     }
   }
@@ -156,29 +156,29 @@ sim_lf <- function(F_mat,
   #af and snp_info, these go into effect size function and we will need them
   # later for LD
   if(is.null(R_LD)){
-    AF <-  check_af(af, J)
+    af <-  check_af(af, J)
     if(is.null(snp_info) & is.null(af)){
       snp_info <- data.frame(SNP = 1:J, AF = NA)
     }else if(is.null(snp_info)){
-      snp_info <- data.frame(SNP = 1:J, AF = AF)
+      snp_info <- data.frame(SNP = 1:J, AF = af)
     }else{
       snp_info <- check_snpinfo(snp_info, J)
       snp_info$SNP <- 1:J
       if(is.null(af)) snp_info$AF <- NA
-        else snp_info$AF <- AF
+        else snp_info$AF <- af
     }
   }else{
     if(is.null(af)) stop("Please provide af to go with R_LD.")
     l <- check_R_LD(R_LD, "l") # vector of LD block sizes
-    AF <- check_af(af, sum(l), function_ok = FALSE)
+    af <- check_af(af, sum(l), function_ok = FALSE)
     block_info <- assign_ld_blocks(l, J)
 
     if(is.null(snp_info)){
-      snp_info <- data.frame(SNP = 1:sum(l), AF = AF)
+      snp_info <- data.frame(SNP = 1:sum(l), AF = af)
     }else{
       snp_info <- check_snpinfo(snp_info, sum(l))
       snp_info$SNP <- 1:sum(l)
-      snp_info$AF <- AF
+      snp_info$AF <- af
     }
 
     snp_info$block <- rep(seq(length(l)), l)
@@ -247,7 +247,9 @@ sim_lf <- function(F_mat,
   # genetic trait covariance
   #Sigma_G <- F_mat %*% t(F_mat) + diag((1-omega)*h2_trait, nrow = M)
   # Now using true genetic covariance
-  Sigma_G <- compute_h2(b_joint_std = beta_std,
+  Sigma_G <- compute_h2(b_joint = beta_std,
+                        geno_scale = "sd",
+                        pheno_sd = 1,
                         R_LD = R_LD,
                         af = af,
                         full_mat = TRUE)
@@ -255,7 +257,12 @@ sim_lf <- function(F_mat,
 
   # trait covariance due to non-genetic factor component
   # sigma2_F is the variance of the environmental component of each factor
-  varG_realized <- compute_h2(b_joint_std = L_mat, R_LD = R_LD, af = af, full_mat = FALSE)
+  varG_realized <- compute_h2(b_joint = L_mat,
+                              geno_scale = "sd",
+                              pheno_sd = 1,
+                              R_LD = R_LD,
+                              af = af,
+                              full_mat = FALSE)
   #cat(varG_realized, "\n")
   sigma2_FE <- varG_realized*(1-h2_factor)/(h2_factor) # Variance from environmental components of factors
   Sigma_FE <- F_mat %*% diag(sigma2_FE, nrow = K) %*% t(F_mat)
@@ -271,7 +278,7 @@ sim_lf <- function(F_mat,
   if(!is.null(R_obs)){
     Sigma_E <- R_obs - Sigma_G - Sigma_FE
     Sigma_E <- tryCatch(check_psd(Sigma_E, "Sigma_E"), error = function(e){
-      stop("R_obs is incompatible with F_mat and heritability.")
+      stop("R_obs is incompatible with trait relationships and heritability.")
     })
   }else{
     sigma_E <- sqrt(1 - diag(Sigma_G) - diag(Sigma_FE))
@@ -280,37 +287,43 @@ sim_lf <- function(F_mat,
   # Trait correlation
   trait_corr <- Sigma_G + Sigma_FE + Sigma_E
 
-
-  sum_stats <- gen_bhat_from_b(b_joint_std = beta_std,
+  sum_stats <- gen_bhat_from_b(b_joint = beta_std,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
-                               af = AF,
+                               af = af,
                                est_s = est_s,
-                               L_mat_joint_std = L_mat,
-                               theta_joint_std = theta)
+                               input_geno_scale = "sd",
+                               output_geno_scale = case_when(is.null(af) ~ "sd",
+                                                            TRUE ~ "allele"),
+                               input_pheno_sd = 1,
+                               output_pheno_sd = 1)
 
 
-  ret <- list(beta_hat =sum_stats$beta_hat,
-              se_beta_hat = sum_stats$se_beta_hat,
-              L_mat = sum_stats$L_mat,
-              F_mat = F_mat,
-              theta = sum_stats$theta,
-              L_mat_joint = L_mat/sum_stats$sx,
-              theta_joint = theta/sum_stats$sx,
-              beta_joint = beta_std/sum_stats$sx,
-              beta_marg =  sum_stats$beta_marg,
-              Sigma_G = Sigma_G,
-              Sigma_E = Sigma_FE + Sigma_E,
-              trait_corr = trait_corr,
-              R=sum_stats$R,
-              snp_info = snp_info)
-              #snp_info = sum_stats$snp_info)
-  if(est_s){
-    ret$s_estimate <- sum_stats$s_estimate
+  sum_stats$F_mat <- F_mat
+  sum_stats$Sigma_G <- Sigma_G
+  sum_stats$Sigma_E <- Sigma_FE + Sigma_E
+  sum_stats$h2 <- diag(Sigma_G)
+  sum_stats$trait_corr <- trait_corr
+  sum_stats$snp_info <- snp_info
+
+  if(is.null(af)){
+    sum_stats$L_mat_joint <-  L_mat
+    sum_stats$theta_joint <- theta
+  }else{
+    sum_stats$L_mat_joint <- L_mat/sum_stats$sx
+    sum_stats$theta_joint <- theta/sum_stats$sx
   }
-  if(is.null(af)) ret <- structure(ret, class = c("sim_lf", "sim_lf_std", "list"))
-  else ret <- structure(ret, class = c("sim_lf", "list"))
+  if(is.null(R_LD)){
+    sum_stats$L_mat_marg <- sum_stats$L_mat_joint
+    sum_stats$theta_marg <- sum_stats$theta_joint
+  }else{
+    sum_stats$L_mat_marg <- compute_R_times_mat(R_LD, af, J, L_mat)
+    sum_stats$L_mat_marg <- sum_stats$L_mat_marg/sum_stats$sx
+    sum_stats$theta_marg <- compute_R_times_mat(R_LD, af, J, theta)
+    sum_stats$theta_marg <- sum_stats$theta/sum_stats$sx
+  }
+  sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
-  return(ret)
+  return(sum_stats)
 }

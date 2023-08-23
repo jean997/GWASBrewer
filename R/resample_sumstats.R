@@ -2,26 +2,18 @@
 #'@param dat Object output by \code{sim_mv}
 #'@param N Sample size, scalar, vector, matrix. See \code{?sim_mv} for more details.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
-#'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
+#'@param af Allele frequencies. See \code{?sim_mv} for more details.
+#'@param est_s Logical, should estimates of se(beta_hat) be produced.
+#'@param geno_scale Either "allele" or "sd". Specifies the scale of the effect sizes in the output data.
+#'@param new_env_var Optional. The environmental variance in the new population.
+#'If missing the function will assume the environmental variance is the same as in the old population.
+#'@param new_h2 Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.
+#'@param new_R_E Optional, specify environmental correlation in the new population.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
+#'@param new_R_obs Optional, specify overall trait correlation in the new population. Specify at most one of \code{new_R_E} or \code{new_R_obs}.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
 #'@details This function can be used to generate new summary statistics for an existing simulation object.
-#'The new summary statistics will have the same true causal effects as the original. However, you can use a new
-#'sample size and new LD if desired. This function is primarily a wrapper for \code{gen_bhat_from_b}. This function
-#'differs from \code{gen_bhat_from_b} in its arguments. It can accept the original simulated data directly rather than
-#'requiring the  user to extract and supply the joint effects. It will also preserve the direct and total trait effects objects in
-#'the original data.
-#'
-#'Note about effect scalings: If the original simulation object was generated with no allele frequencies, then
-#'all effect size and effect estimate related outputs will all be on the standardized scale (in units of SD change in Y per sd change in genotype).
-#'If you use this object in \code{resample_sumstats} but add allele frequencies, the resulting object will be converted
-#'to non-standardized effects (effects in units of SD change in Y per alternate allele).
-#'
-#'If the original simulation was generated with allele frequencies, then the original object will be on the non-standardized scale.
-#'\code{resample_sumstats} will sample summary statistics assuming the same non-standardized effects. This means that if you use
-#'different allele frequencies with \code{resample_sumstats} than used with the original, the effects in the two objects will differ
-#'on the standardized scale. The rationale for this behavior is that the non-standardized effects are the "biological" effects.
-#'
-#'Note that changing the allele frequency and/or LD will lead to a change in hertiability and genetic covariance (\code{Sigma_G}).
-#'
+#' For a discussion of this function and \code{resample_inddata}, see the "Resampling" vignette.
 #'@examples
 #' # Use resample_sumstats to generate new GWAS results with the same effect sizes.
 #' N <- matrix(1000, nrow = 2, ncol =2)
@@ -31,67 +23,128 @@
 #' dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
 #'                G = G, R_E = R_E)
 #' # data for second GWAS
-#' # Since we didn't supply af or an LD pattern in the original GWAS,
-#' # we have standardized effects.
-#' dat_new <- resample_sumstats(dat, N = 40000)
+#' dat_new <- resample_sumstats(dat,
+#'                              N = 40000)
 #'@export
 resample_sumstats <- function(dat,
                               N,
                               R_LD = NULL,
                               af = NULL,
-                              est_s = FALSE){
+                              est_s = FALSE,
+                              geno_scale = NULL,
+                              new_env_var = NULL,
+                              new_h2 = NULL,
+                              new_R_E = NULL,
+                              new_R_obs = NULL){
   if(!"sim_mv" %in% class(dat)) stop("dat must have class sim_mv (use the sim_mv function to produce dat).\n")
   if(!is.null(R_LD) & is.null(af)) stop("af is required if R_LD is provided.\n")
-  new_obj <- dat
-  if( "sim_mv_std" %in% class(dat)){
-    # dat contains standardized effects
-    new_ss <- gen_bhat_from_b(b_joint_std = dat$beta_joint,
-                              trait_cor = dat$trait_cor,
-                              N = N,
-                              R_LD = R_LD,
-                              af = af,
-                              est_s = est_s)
-    if(!is.null(af)){
-      warning("Original data were on standardized scale but resampled data will be on the non-standardized scale (see help page for more information).")
-      # convert all objects not in new_ss to non-standardized scale
-      new_obj$direct_SNP_effects_marg <- new_obj$direct_SNP_effects_marg/new_ss$sx
-      new_obj$direct_SNP_effects_joint <- new_obj$direct_SNP_effects_joint/new_ss$sx
-      new_obj$beta_joint <- new_obj$beta_joint/new_ss$sx
+  if(!is.null(new_R_obs) & !is.null(new_R_E)) stop("Provide only one of new_R_obs and new_R_E.\n")
+  if(!is.null(new_h2) & !is.null(new_env_var)) stop("Provide only one of new_h2 and new_env_var.\n")
+  if(is.null(geno_scale)){
+    geno_scale <- dat$geno_scale
+  }else{
+    geno_scale <- match.arg(geno_scale, choices = c("allele", "sd"))
+  }
+  if(geno_scale == "allele" & is.null(af)){
+    stop("If geno_scale = allele, af must be supplied.\n")
+  }
+  M <- ncol(dat$beta_hat)
+  J <- nrow(dat$beta_hat)
 
-    }
-  }else{
-    new_ss <- gen_bhat_from_b(b_joint = dat$beta_joint,
-                              trait_cor = dat$trait_cor,
-                              N = N,
-                              R_LD = R_LD,
-                              af = af,
-                              est_s = est_s)
-    if(is.null(af)){
-      warning("Origingal data were on the non-standardized scale but resampled data will be on the standardized scale because af was not provided (see help page for more information).")
-      # convert all objects not in new_ss to standardized scale
-      sx_orig <- with(dat$snp_info, sqrt(2*AF*(1-AF)))
-      new_obj$direct_SNP_effects_marg <- new_obj$direct_SNP_effects_marg*sx_orig
-      new_obj$direct_SNP_effects_joint <- new_obj$direct_SNP_effects_joint*sx_orig
-      new_obj$beta_joint <- new_obj$beta_joint*sx_orig
-    }
+  new_dat <- dat
+
+  # compute variance explained by genetics in new population
+  # not heritability despite using compute_h2 function
+  new_dat$Sigma_G <- compute_h2(b_joint = dat$beta_joint,
+                        geno_scale = dat$geno_scale,
+                        pheno_sd = 1,
+                        R_LD = R_LD,
+                        af = af,
+                        full_mat = TRUE)
+  v_G <- diag(new_dat$Sigma_G)
+  if(!all(new_dat$Sigma_G == dat$Sigma_G)){
+    message("Genetic variance in the new population differs from the genetic variance in the old population.")
   }
-  new_obj$beta_hat <- new_ss$beta_hat
-  new_obj$se_beta_hat <- new_ss$se_beta_hat
-  new_obj$beta_marg <- new_ss$beta_marg
-  if(est_s) new_obj$s_estimate <- new_ss$s_estimate
-  new_obj$R <- new_ss$R
-  new_obj$snp_info <- new_ss$snp_info
-  if(is.null(af)){
-    new_obj <- structure(new_obj, class = c("sim_mv", "sim_mv_std", "list"))
-    new_obj$Sigma_G <- compute_h2(b_joint_std = new_obj$beta_joint,
-                                  full_mat = TRUE)
+  if(is.null(new_env_var) & is.null(new_h2)){
+    message("I will assume that the environmental variance is the same in the old and new population.")
+    v_E <- diag(dat$Sigma_E)
+  }else if(!is.null(new_env_var)){
+    v_E <- check_scalar_or_numeric(new_env_var, "new_env_var", M)
   }else{
-    new_obj <- structure(new_obj, class = c("sim_mv", "list"))
-    new_obj$Sigma_G <- compute_h2(b_joint = new_obj$beta_joint,
-                                  R_LD = R_LD, af = af,
-                                  full_mat = TRUE)
+    new_h2 <- check_scalar_or_numeric(new_h2, "new_h2", M)
+    v_E <- v_G*(1-new_h2)/new_h2
   }
-  # recaclucate heritability/genetic covariance matrix with (possibly) new LD and AF
-  new_obj$Sigma_E <- new_obj$trait_cor - new_obj$Sigma_G
-  return(new_obj)
+  new_dat$pheno_sd <- sqrt(v_G + v_E)
+  new_dat$h2 <- v_G/(v_G + v_E)
+  if(is.null(new_R_obs) & is.null(new_R_E)){
+    message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
+    R_E <- cov2cor(dat$Sigma_E)
+    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$trait_corr <- cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
+  }else if(!is.null(new_R_obs)){
+    new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
+    new_R_obs <- check_psd(new_R_obs, "new_R_obs")
+    if(!all(diag(new_R_obs) == 1)) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
+    new_dat$trait_corr <- new_R_obs
+    Sigma_tot <- diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
+    new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
+    new_dat$Sigma_E <- tryCatch(check_psd(new_dat$Sigma_E, "Sigma_E"), error = function(e){
+      stop("new_R_obs is incompatible with trait relationships and heritability.")
+    })
+  }else if(!is.null(new_R_E)){
+    new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
+    new_R_E <- check_psd(new_R_E, "new_R_E")
+    if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
+    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$trait_corr <- cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
+  }
+  if(!all(new_dat$pheno_sd == dat$pheno_sd)){
+    message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.")
+    message("I will keep the phenotype on the same scale as the original data, so effect sizes in the old and new object are comparable. If you would like to rescale the phenotype to have variance 1, use rescale_sumstats.")
+  }
+
+  if(!is.null(R_LD) & is.null(af)){
+    stop("Please provide af to go with R_LD.\n")
+  }
+  if( dat$geno_scale == "sd"){
+    message("Original data have effects on the per-genotype sd scale. I will assume that per-genotype sd effects are the same in the new and old populations.")
+    if(geno_scale == "allele"){
+      message("New data will be converted to the per-allele scale.")
+      nr <- ceiling(J/length(af))
+      new_dat <- rescale_sumstats(new_dat, output_geno_scale = "allele", output_pheno_sd = new_dat$pheno_sd, af = rep(af, nr)[1:J])
+    }
+  }else if(geno_scale == "sd"){
+    message("New data will be converted to the per-genotype sd scale.")
+    new_dat <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = new_dat$pheno_sd)
+  }
+
+  #new_dat_std <- rescale_sumstats(new_dat, output_geno_scale = "sd", output_pheno_sd = 1)
+  ## Get standardized effects for gen_bhat_from_b
+  new_ss <- gen_bhat_from_b(b_joint = new_dat$beta_joint,
+                            N = N,
+                            trait_corr = new_dat$trait_corr,
+                            R_LD = R_LD,
+                            af = af,
+                            est_s = est_s,
+                            input_geno_scale = new_dat$geno_scale,
+                            input_pheno_sd = new_dat$pheno_sd,
+                            output_geno_scale = geno_scale,
+                            output_pheno_sd = new_dat$pheno_sd)
+
+
+
+  new_dat$beta_hat <- new_ss$beta_hat
+  new_dat$se_beta_hat <- new_ss$se_beta_hat
+  new_dat$beta_marg <- new_ss$beta_marg # this will be different if LD changed
+  if(est_s) new_dat$s_estimate <- new_ss$s_estimate
+  new_dat$R <- new_ss$R
+  new_dat$snp_info <- new_ss$snp_info
+  new_dat$geno_scale <- geno_scale
+
+  if(!is.null(R_LD)){
+    direct_marg <- compute_R_times_mat(R_LD = R_LD, af = af, J = J, X = new_dat$direct_SNP_effects_joint*new_ss$sx)
+    new_dat$direct_SNP_effects_marg <- direct_marg/new_ss$sx
+    new_dat <- structure(new_dat, class = c("sim_mv", "list"))
+  }
+  return(new_dat)
 }

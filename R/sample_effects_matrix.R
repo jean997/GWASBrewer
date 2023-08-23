@@ -95,7 +95,10 @@ sample_effects_matrix <- function(J, M, pi,
   }
 
   if(h2_exact){
-    h2_eff <- compute_h2(b_joint_std = eff, R_LD = R_LD, af = af)
+    h2_eff <- compute_h2(b_joint = eff,
+                         geno_scale = "sd",
+                         pheno_sd = 1,
+                         R_LD = R_LD, af = af)
     scale <- sqrt((sigma^2)/h2_eff)
     eff <- t(t(eff)*scale)
   }

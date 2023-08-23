@@ -12,13 +12,13 @@
 #'@return A vector of indices corresponding to the LD-pruned variant set.
 #'@examples
 #' data("ld_mat_list")
-#' data("snpdata")
+#' data("AF")
 #'
 #' # Two traits with no causal relationship, non-overlapping GWAS
 #' set.seed(1)
 #' G <- matrix(0, nrow = 2, ncol = 2)
-#' dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G,  R_LD = ld_mat_list, snp_info = snpdata)
+#' dat <- sim_mv(N = 10000, J = 1000, h2 = c(0.04, 0.03), pi = 0.1,
+#'                G = G,  R_LD = ld_mat_list, af = AF)
 #'
 #'# prune on p-value for first trait
 #'pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
@@ -126,8 +126,13 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
                 #proxy_index_block = proxy_index_block,
                 proxy_index = proxy_index_dat$ix_in_dat)
     if(return_mat){
-      ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
-      rownames(ret$Rproxy) <- colnames(ret$Rproxy) <-  c(i,proxy_index_dat$ix_in_dat)
+      if(length(ret$proxy_index) == 0){
+        ret$Rproxy <- matrix(1, nrow = 1, ncol = 1)
+        rownames(ret$Rproxy) <- colnames(ret$Rproxy) <- c(i)
+      }else{
+        ret$Rproxy <- R_LD[[b]][c(id,proxy_index_dat$ix_in_block), c(id,proxy_index_dat$ix_in_block)]
+        rownames(ret$Rproxy) <- colnames(ret$Rproxy) <-  c(i,proxy_index_dat$ix_in_dat)
+      }
     }
     return(ret)
   })
@@ -142,19 +147,17 @@ sim_ld_proxy <- function(dat, index, R_LD, r2_thresh = 0.64, return_mat = FALSE)
 #'@return An LD matrix. SNP order matches original index order
 #'@examples
 #' data("ld_mat_list")
-#' data("snpdata")
+#' data("AF")
 #' # Two traits with no causal relationship, non-overlapping GWAS
+#' # Set N = 0 so no summary statistics are produced
 #' set.seed(1)
 #' G <- matrix(0, nrow = 2, ncol = 2)
-#' dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G,  R_LD = ld_mat_list, snp_info = snpdata)
+#' dat <- sim_mv(N = 0, J = 1000, h2 = c(0.04, 0.03), pi = 0.1,
+#'                G = G,  R_LD = ld_mat_list, af = AF)
 #'
 #'# extract ld matrix for all variants with p-value for trait 1 less than 1e-5
-#'pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
-#'index <- which(pvals[,1] < 1e-5)
+#'index <- c(1:20, 500:515)
 #'ld_mat <- sim_extract_ld(dat, index, ld_mat_list)
-#'dim(ld_mat)
-#'length(index)
 #'@export
 sim_extract_ld <- function(dat, index, R_LD){
   if(!length(index) == length(unique(index))){

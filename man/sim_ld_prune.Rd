@@ -32,13 +32,13 @@ and which mutually have squared correlation less than \code{r2_thresh}.
 }
 \examples{
 data("ld_mat_list")
-data("snpdata")
+data("AF")
 
 # Two traits with no causal relationship, non-overlapping GWAS
 set.seed(1)
 G <- matrix(0, nrow = 2, ncol = 2)
-dat <- sim_mv(N = 10000, J = 50000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G,  R_LD = ld_mat_list, snp_info = snpdata)
+dat <- sim_mv(N = 10000, J = 1000, h2 = c(0.04, 0.03), pi = 0.1,
+               G = G,  R_LD = ld_mat_list, af = AF)
 
 # prune on p-value for first trait
 pvals <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))

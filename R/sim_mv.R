@@ -98,7 +98,7 @@
 #'
 #'# The af argument can be a scalar, vector, or function.
 #'dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G, R_obs = R_obs, af = function(n){rbeta(n = n, 1, 5)})
+#'                G = 2, R_obs = R_obs, af = function(n){rbeta(n = n, 1, 5)})
 #'
 #'# A very simple example with LD
 #'# Use a pattern of two small blocks of LD
@@ -109,7 +109,7 @@
 #'# If using LD, af should have the same size as the LD pattern
 #'af <- runif(n = 16)
 #'dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-#'                G = G, R_obs = R_obs, R_LD = list(A1, A2), af = af)
+#'                G = 2, R_obs = R_obs, R_LD = list(A1, A2), af = af)
 #'
 #' # Use xyz_to_G to generate G from xyz specification
 #' myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),
@@ -135,8 +135,7 @@ sim_mv <- function(N,
                    snp_info = NULL,
                    sporadic_pleiotropy = TRUE,
                    pi_exact = FALSE,
-                   h2_exact = FALSE,
-                   return_dat  = FALSE){
+                   h2_exact = FALSE){
 
   G <- check_G(G, h2)
   h2 <- G$h2
@@ -180,12 +179,12 @@ sim_mv <- function(N,
                 snp_effect_function_L = snp_effect_function,
                 snp_info = snp_info)
 
-  direct_SNP_effects <- t(t(dat$L_mat)*diag(dat$F_mat))
+  direct_SNP_effects_marg <- row_times(dat$L_mat_marg, diag(dat$F_mat))
 
-  direct_SNP_effects_joint <- t(t(dat$L_mat_joint)*diag(dat$F_mat))
+  direct_SNP_effects_joint <- row_times(dat$L_mat_joint, diag(dat$F_mat))
   R <- list(beta_hat = dat$beta_hat,
             se_beta_hat = dat$se_beta_hat,
-            direct_SNP_effects_marg = direct_SNP_effects,
+            direct_SNP_effects_marg = direct_SNP_effects_marg,
             direct_SNP_effects_joint = direct_SNP_effects_joint,
             direct_trait_effects = G$G_dir,
             total_trait_effects = G$G_tot,
@@ -195,17 +194,19 @@ sim_mv <- function(N,
             R = dat$R,
             Sigma_G = dat$Sigma_G,
             Sigma_E = dat$Sigma_E,
-            snp_info = dat$snp_info)
+            h2 = dat$h2,
+            snp_info = dat$snp_info,
+            geno_scale = dat$geno_scale,
+            pheno_sd = dat$pheno_sd)
   if(est_s){
     R$s_estimate <- dat$s_estimate
   }
-  if(return_dat){
-    R$L_mat <- dat$L_mat
-    R$L_mat_joint_std <- dat$L_mat_joint_std
-    R$F_mat <- dat$F_mat
-  }
-  if(is.null(af)) R <- structure(R, class = c("sim_mv", "sim_mv_std", "list"))
-    else R <- structure(R, class = c("sim_mv", "list"))
+  # if(return_dat){
+  #   R$L_mat <- dat$L_mat
+  #   R$L_mat_joint_std <- dat$L_mat_joint_std
+  #   R$F_mat <- dat$F_mat
+  # }
+  R <- structure(R, class = c("sim_mv", "list"))
   return(R)
 }
 
