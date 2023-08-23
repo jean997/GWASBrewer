@@ -1,16 +1,37 @@
 
 #'@title Sample individual level data with joint effects matching a sim_mv object
-#'@param dat An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).
 #'@param N Sample size, scalar, vector, or special sample size format data frame, see details.
-#'@param V_E Vector with length equal to the number of traits giving the environmental variance of each trait.
-#'@param R_E Environmental correlation matrix, (traits by traits). If missing, R_E is assumed to be the identity.
+#'@param dat An object of class \code{sim_mv} (produced by \code{sim_mv}). If `dat` is omitted,
+#'the function will generate a matrix of genotypes only. If `dat` is provided, phenotypes for the traits
+#'in `dat` will also be included.
+#'@param genos Optional matrix of pre-generated genotypes. If \code{genos} is supplied, \code{resample_inddata} will only generate phenotypes.
+#'@param J Optional number of variants. \code{J} is only required if \code{dat} is missing.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
-#'@param af Allele frequencies. This can be a scalar, vector or a function. For this function, af must always be
-#'supplied.
-#'@details This function can be used to generate individual level GWAS data by passing in the \code{beta_joint} table
-#'from a data set simulated using `sim_mv`. If the
-#'original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
-#'it contains non-standardized effects. Use the appropriate argument, either \code{b_joint_std} or \code{b_joint}.
+#'@param af Allele frequencies. \code{af} is required unless unless \code{genos} is supplied.
+#'@param new_env_var Optional. The environmental variance in the new population.
+#'If missing the function will assume the environmental variance is the same as in the old population.
+#'@param new_R_E Optional, specify environmental correlation in the new population.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
+#'@param new_R_obs Optional, specify overall trait correlation in the new population. Specify at most one of \code{new_R_E} or \code{new_R_obs}.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
+#'@param calc_sumstats If \code{TRUE}, associations between genotypes and phenotypes will be calculated and returned.
+#'@details This function can be used to generate individual level genotype and phenotype data. It can be used in three modes:
+#'
+#'To generate genotype data only: No \code{sim_mv} object needs to be included. Supply only \code{N} as a single integer for the
+#'number of individuals, \code{J} for the number of variants, \code{af}, and \code{R_LD} if desired. All other
+#'parameters are not relevant if there is no phenotype, so if they are supplied, you will get an error. The returned object will include a
+#'\code{N x J} matrix of genotypes and a vector of allele frequencies.
+#'
+#'To generate both genotype and phenotype data: Supply \code{dat} (a \code{sim_mv} object) and leave \code{genos} missing. \code{N} and \code{af}
+#'are required and all other options are optional.
+#'
+#'To generate phenotype data only: Supply \code{dat} (a \code{sim_mv} object) and provide a matrix of genotypes to the \code{genos} argument. The number of
+#'rows in \code{genos} must be equal to the total number of individuals implied by \code{N}.
+#' So for example, if there are two traits with 10 samples each and no overlap, \code{genos}
+#'should have 20 rows. The \code{R_LD} and \code{af} arguments should contain the population
+#'LD and allele frequencies used to produce the genotypes. These are used to compute the genetic variance-covariance matrix.
+#'\code{N} and \code{af} are required and all other options are optional.
+#'
 #'@examples
 #' # Use gen_gwas_from_b to generate individual level data with given effect size.
 #' Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
@@ -65,6 +86,9 @@ resample_inddata <- function(N,
     M <- ncol(dat$beta_hat)
     J <- nrow(dat$beta_hat)
     if(!is.null(genos)){
+      #if(!is.null(R_LD) | !is.null(af)){
+      #  warning("Genotypes are provided so supplied R_LD and af are ignored.")
+      #}
       message("Generating phenotypes only.")
     }else{
       message("Generating both genotypes and phenotypes.")
@@ -217,7 +241,7 @@ resample_inddata <- function(N,
   ## Calculate GWAS estimates fast
   sumstats <- fast_lm(X, Y, check = FALSE)
   R$beta_hat <- dplyr::select(sumstats, all_of(paste0("bhat_", 1:M)) ) %>% as.matrix()
-  R$se_beta_hat <- dplyr::select(sumstats, all_of(paste0("s_", 1:M)) ) %>% as.matrix()
+  R$s_estimate <- dplyr::select(sumstats, all_of(paste0("s_", 1:M)) ) %>% as.matrix()
   return(R)
 
 }

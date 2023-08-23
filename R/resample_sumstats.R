@@ -2,25 +2,16 @@
 #'@param dat Object output by \code{sim_mv}
 #'@param N Sample size, scalar, vector, matrix. See \code{?sim_mv} for more details.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
-#'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
+#'@param af Allele frequencies. See \code{?sim_mv} for more details.
+#'@param est_s Logical, should estimates of se(beta_hat) be produced.
+#'@param geno_scale Either "allele" or "sd". Specifies the scale of the effect sizes in the output data.
+#'@param new_env_var Optional. The environmental variance in the new population.
+#'If missing the function will assume the environmental variance is the same as in the old population.
+#'@param new_R_E Optional, specify environmental correlation in the new population.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
+#'@param new_R_obs Optional, specify overall trait correlation in the new population. Specify at most one of \code{new_R_E} or \code{new_R_obs}.
+#'If missing, the function will assume the environmental correlation is the same as in the original data.
 #'@details This function can be used to generate new summary statistics for an existing simulation object.
-#'The new summary statistics will have the same true causal effects as the original. However, you can use a new
-#'sample size and new LD if desired. This function is primarily a wrapper for \code{gen_bhat_from_b}. This function
-#'differs from \code{gen_bhat_from_b} in its arguments. It can accept the original simulated data directly rather than
-#'requiring the  user to extract and supply the joint effects. It will also preserve the direct and total trait effects objects in
-#'the original data.
-#'
-#'Note about effect scalings: If the original simulation object was generated with no allele frequencies, then
-#'all effect size and effect estimate related outputs will all be on the standardized scale (in units of SD change in Y per sd change in genotype).
-#'If you use this object in \code{resample_sumstats} but add allele frequencies, the resulting object will be converted
-#'to non-standardized effects (effects in units of SD change in Y per alternate allele).
-#'
-#'If the original simulation was generated with allele frequencies, then the original object will be on the non-standardized scale.
-#'\code{resample_sumstats} will sample summary statistics assuming the same non-standardized effects. This means that if you use
-#'different allele frequencies with \code{resample_sumstats} than used with the original, the effects in the two objects will differ
-#'on the standardized scale. The rationale for this behavior is that the non-standardized effects are the "biological" effects.
-#'
-#'Note that changing the allele frequency and/or LD will lead to a change in hertiability and genetic covariance (\code{Sigma_G}).
 #'
 #'@examples
 #' # Use resample_sumstats to generate new GWAS results with the same effect sizes.
