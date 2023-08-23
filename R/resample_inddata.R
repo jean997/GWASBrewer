@@ -10,6 +10,7 @@
 #'@param af Allele frequencies. \code{af} is required unless unless \code{genos} is supplied.
 #'@param new_env_var Optional. The environmental variance in the new population.
 #'If missing the function will assume the environmental variance is the same as in the old population.
+#'@param new_h2 Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.
 #'@param new_R_E Optional, specify environmental correlation in the new population.
 #'If missing, the function will assume the environmental correlation is the same as in the original data.
 #'@param new_R_obs Optional, specify overall trait correlation in the new population. Specify at most one of \code{new_R_E} or \code{new_R_obs}.
@@ -33,15 +34,31 @@
 #'\code{N} and \code{af} are required and all other options are optional.
 #'
 #'@examples
-#' # Use gen_gwas_from_b to generate individual level data with given effect size.
-#' Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
-#' G <- matrix(0, nrow = 2, ncol = 2)
-#' R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
-#' # original data
-#' dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
-#'                G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
-#'# Now generate GWAS data
-#'gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE)
+#' # Use resample_inddata to generate genotypes only
+#' simple_ld <- matrix(0.5, nrow = 5, ncol = 5)
+#' diag(simple_ld) <- 1
+#' genos_only <- resample_inddata(N = 8,
+#'                                J = 20,
+#'                                R_LD = list(simple_ld),
+#'                                af = rep(0.3, 5))
+#'# generate genotypes and phenotypes
+#' dat <- sim_mv(N = 0,
+#'               G = 1,
+#'               J = 20,
+#'               pi = 0.5,
+#'               h2 = 0.05,
+#'               R_LD = list(simple_ld),
+#'               af = rep(0.3, 5))
+#' genos_and_phenos <- resample_inddata(dat = dat,
+#'                                       N = 8,
+#'                                       R_LD = list(simple_ld),
+#'                                       af = rep(0.3, 5))
+#' # generate phenos only
+#' phenos_only <- resample_inddata(dat = dat,
+#'                                 genos = genos_only$X,
+#'                                 N = 8,
+#'                                 R_LD = list(simple_ld),
+#'                                 af = rep(0.3, 5))
 #'@export
 resample_inddata <- function(N,
                              dat = NULL,
@@ -51,6 +68,7 @@ resample_inddata <- function(N,
                              af = NULL,
                              sim_func = gen_genos_mvn,
                              new_env_var = NULL,
+                             new_h2 = NULL,
                              new_R_E = NULL,
                              new_R_obs = NULL,
                              calc_sumstats = FALSE){
@@ -69,8 +87,8 @@ resample_inddata <- function(N,
       stop("If dat is missing, N should be a positive integer.")
     }
     M <- 1
-    if(!is.null(new_env_var) | !is.null(new_R_E) | !is.null(new_R_obs) | calc_sumstats){
-      stop("If dat is omitted, new_env_var, new_R_E, new_R_obs should be omitted and calc_sumstats should be FALSE. See help page for more details.\n")
+    if(!is.null(new_env_var) | !is.null(new_h2) | !is.null(new_R_E) | !is.null(new_R_obs) | calc_sumstats){
+      stop("If dat is omitted, new_env_var, new_h2, new_R_E, new_R_obs should be omitted and calc_sumstats should be FALSE. See help page for more details.\n")
     }
     if(!is.null(genos)){
       stop("genos were provided so I have nothing to do.\n")
@@ -86,12 +104,15 @@ resample_inddata <- function(N,
     M <- ncol(dat$beta_hat)
     J <- nrow(dat$beta_hat)
     if(!is.null(genos)){
-      #if(!is.null(R_LD) | !is.null(af)){
-      #  warning("Genotypes are provided so supplied R_LD and af are ignored.")
-      #}
       message("Generating phenotypes only.")
     }else{
       message("Generating both genotypes and phenotypes.")
+    }
+    if(!is.null(new_R_E) & !is.null(new_R_obs)){
+      stop("Provide at most one of new_R_E and new_R_obs")
+    }
+    if(!is.null(new_h2) & !is.null(new_env_var)){
+      stop("Provide at most one of new_h2 and new_env_var")
     }
   }
 
@@ -152,11 +173,14 @@ resample_inddata <- function(N,
   }
 
   ## Environmental variance
-  if(is.null(new_env_var)){
+  if(is.null(new_env_var) & is.null(new_h2)){
     message("I will assume that the environmental variance is the same in the old and new population.")
     v_E <- diag(dat$Sigma_E)
-  }else{
+  }else if(!is.null(new_env_var)){
     v_E <- check_scalar_or_numeric(new_env_var, "new_env_var", M)
+  }else{
+    new_h2 <- check_scalar_or_numeric(new_h2, "new_h2", M)
+    v_E <- v_G*(1-new_h2)/new_h2
   }
   pheno_sd <- sqrt(v_G + v_E)
   h2 <- v_G/(v_G + v_E)

@@ -16,11 +16,8 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(simGWAS)
-library(DiagrammeR)
 library(dplyr)
-library(reshape2)
 library(ggplot2)
-library(hapsim)
 set.seed(1)
 ```
 
@@ -96,7 +93,7 @@ We can also generate individual level data. For this we use the `resample_inddat
 + Genotypes and phenotypes
 + Phenotypes only
 
-`resample_inddata` uses the `hapsim` package to generate individual level data. Currently, the `hapsim` package needs to be explicitly loaded before using the function. 
+`resample_inddata` uses the `hapsim` package to generate individual level data. 
 The sample size argument, `N`, in `resample_inddata` can accept three types of input: scalar, vector, or data frame. These formats are the same as those used by `sim_mv`, so if `N` is a scalar or vector, `resample_inddata` will assume there is no sample overlap. This means that if we use `N = 10` with two traits, we will get out genotype information for 20 individuals, of which half have phenotype 1 information and half have phenotype 2 information. To specify sample overlap, we can use the data frame format. As a reminder, a sample size data frame should have columns named `trait_1`, ... `trait_[M]` and `N`. The `trait_[x]` columns will be interpreted as logicals and the `N` column should give the number of
 samples in each combination of studies.
 
@@ -185,9 +182,9 @@ orig_dat$pheno_sd
 
 ### Changing LD and Allele Frequencies
 
-The resampling functions in `simGWAS` assume that effect sizes in the new population are the same as in the old population on the genotype and phenotype scale given. If you are changing populations, it is much more sensible to assume that effect sizes are constant on the per-allele scale than on the per-genotype SD scale. This means that if you want to regenerate data from a different population, it is advisable to make sure that the input data have `geno_scale` equal to "allele". One consequence of differing allele frequencies and LD structure is that the total genetic variance will be different in the new population than in the old. By default, the resampling functions will assume that the environmental variance is the same in the two populations. This means that the overall variance of the phenotype in the new population will probably not be 1. The resampling functions will **not** rescale the phenotype in the new population because this would mean that the phenotypes in the two populations had different units and were not comparable. 
+The resampling functions in `simGWAS` assume that effect sizes in the new population are the same as in the old population on the genotype and phenotype scale given. If you are changing populations, it is much more sensible to assume that effect sizes are constant on the per-allele scale than on the per-genotype SD scale. This means that if you want to regenerate data from a different population, it is a good idea to start with input data that have `geno_scale` equal to "allele". 
 
-As a simple extreme example to illustrate this issue, suppose that $Y$ has one causal variant that explains 30% of its variance in population A. Lets say this variant has allele frequency 0.25 in population A. We can compute that if $Y$ is scaled to have unit variance in population A, then each alternate allele of the causal variant increases $Y$ by $0.894$ units and the environmental variance is $0.7$. We got the effect size by computing $\sqrt{0.3/(2\cdot 0.25\cdot(1-0.25))}$ which gives us the desired variance explained by the genotype. Now suppose that in population B, the effect size and environmental contribution to the trait are the same but the allele frequency is only 0.01. In this case, when put on the same scale that gave a unit variance in population A, $Y$ only has a variance of $(0.894^2)\cdot(2 \cdot 0.01\cdot(1-0.01)) + 0.7 = 0.716$. 
+One consequence of differing allele frequencies and LD structure is that the total genetic variance will be different in the new population than in the old. By default, the resampling functions will assume that the environmental variance is the same in the two populations. This means that the overall variance of the phenotype in the new population will probably not be 1. The resampling functions will **not** rescale the phenotype in the new population because this would mean that the phenotypes in the two populations had different units and were not comparable. However, you can rescale the output after the fact using \code{rescale_sumstats} if you would like the phenotypes to have unit variance.
 
 We can see this in action by resampling summary statistics using different allele frequencies and LD pattern than used originally. 
 
@@ -205,14 +202,22 @@ Notice that the function produces a message to let us know that the phenotype ha
 
 ```{r}
 new_dat2$pheno_sd
+orig_dat$pheno_sd
 new_dat2$h2
+orig_dat$h2
 new_dat2$Sigma_G
+orig_dat$Sigma_G
 new_dat2$Sigma_E
-
+orig_dat$Sigma_E
 ```
+Note that the features that are kept constant are the environmental variance `Sigma_E` and the per-allele joint effects, `beta_joint`. 
+
 ### Changing Environmental Variance or Covariance
 
-Although the default behavior is to keep `Sigma_E` constant, we can change this using the arguments `new_env_var`, and one of `new_R_E` or `new_R_obs`. These are options for both `resample_sumstats` and `resample_inddata`. The parameter `new_env_var` is a scalar or vector of lenth $M$ giving the environmental variance in the new population. If supplied, `new_R_E` is the environmental correlation in the new population and `new_R_obs` is the total trait correlation in the new population. Only one of these two parameters can be supplied. 
+Although the default behavior is to keep `Sigma_E` constant, we can change this using the arguments `new_env_var`, `new_h2`, `new_R_E` and `new_R_obs`. 
+These are options for both `resample_sumstats` and `resample_inddata`. 
+The `new_env_var` and `new_h2` arguments provide different ways of specifying the environmental variance so only one of these can be used at a time. `new_h2` gives the heritability in the new population while `new_env_var` directly gives the environmental variance.
+The parameters `new_R_E` and `new_R_obs` are alternate ways of specifying environmental correlation. `new_R_E` directly specifies the enviromental correlation while `new_R_obs` gives the total trait correlation. Only one of these two parameters can be supplied. 
 
 ```{r}
 new_R_E <- diag(2)
@@ -225,6 +230,20 @@ new_dat3 <- resample_sumstats(dat = orig_dat,
                               new_R_E = new_R_E)
 new_dat3$Sigma_E
 cov2cor(new_dat3$Sigma_E)
+new_dat3$h2
+```
+
+Note that specifying `new_h2` will always result in exactly the heritability specified. This is in contrast with the `h2` argument of `sim_mv` which gives the expected heritability.
+
+```{r}
+new_dat4 <- resample_sumstats(dat = orig_dat, 
+                              N = N, 
+                              R_LD = list(my_ld2), 
+                              af = af2,
+                              new_h2 = c(0.15, 0.25), 
+                              new_R_E = new_R_E)
+new_dat4$h2
+new_dat4$Sigma_E
 ```
 
 
@@ -248,7 +267,7 @@ orig_rescale2$beta_joint
 
 ```
 
-We can also change the scale of the outcome.
+We can also change the scale of the outcomes.
 
 ```{r}
 orig_rescale3 <- rescale_sumstats(dat = orig_dat, 

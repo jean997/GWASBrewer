@@ -1,3 +1,33 @@
+#'@title Re-Scale Effects of a Simulation Object
+#'@param dat A sim_mv object
+#'@param output_geno_scale Desired genotype scale of output. Either "allele" or "sd".
+#'@param output_pheno_sd Desired sd of phenotype, scalar or vector with length equal to the number of traits.
+#'@param af If converting from sd to allele scale, provide a vector of allele frequencies.
+#'@param verbose Print messages?
+#'@details
+#'This function can be used to change the genotype and phenotype scaling. To check the scaling
+#'of the current object, look at the \code{gneo_scale} and \code{pheno_sd} elements.
+#'If the current object is already on the allele scale and you desire the output to also
+#'be on the allele scale, do not supply \code{af} (doing so will generate an error). If you
+#'convert an "allele" scale object to an "sd" scale object, allele frequencies will be remoed.
+#'@examples
+#' # generate an initial data set
+#' N <- matrix(10000, nrow = 2, ncol =2)
+#' G <- matrix(c(0, 0.5, 0, 0), nrow = 2, ncol = 2)
+#' dat <- sim_mv(N = N,
+#'               G = G,
+#'               J = 20000,
+#'               h2 = c(0.4, 0.3),
+#'               pi = 1000/20000,
+#'               af = function(n){rbeta(n, 1, 5)})
+#'# check scaling
+#'dat$geno_scale # "allele"
+#'dat$pheno_sd # 1 1
+#'
+#'# rescale phenotypes and convert to per-sd scale
+#'dat2 <- rescale_sumstats(dat = dat,
+#'                         output_geno_scale = "sd",
+#'                         output_pheno_sd = c(1.5, 0.3))
 #'@export
 rescale_sumstats <- function(dat,
                              output_geno_scale = c("allele", "sd"),

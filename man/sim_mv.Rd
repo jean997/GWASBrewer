@@ -142,7 +142,7 @@ cor(dat$beta_hat - dat$beta_marg) # Should be similar to dat$R
 
 # The af argument can be a scalar, vector, or function.
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_obs = R_obs, af = function(n){rbeta(n = n, 1, 5)})
+               G = 2, R_obs = R_obs, af = function(n){rbeta(n = n, 1, 5)})
 
 # A very simple example with LD
 # Use a pattern of two small blocks of LD
@@ -153,7 +153,7 @@ diag(A2) <- 1
 # If using LD, af should have the same size as the LD pattern
 af <- runif(n = 16)
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
-               G = G, R_obs = R_obs, R_LD = list(A1, A2), af = af)
+               G = 2, R_obs = R_obs, R_LD = list(A1, A2), af = af)
 
 # Use xyz_to_G to generate G from xyz specification
 myG <- xyz_to_G(tau_xz = c(0.2, -0.3), tau_yz = c(0.1, 0.25),

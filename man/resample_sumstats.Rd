@@ -10,8 +10,9 @@ resample_sumstats(
   R_LD = NULL,
   af = NULL,
   est_s = FALSE,
-  geno_scale = c("allele", "sd"),
+  geno_scale = NULL,
   new_env_var = NULL,
+  new_h2 = NULL,
   new_R_E = NULL,
   new_R_obs = NULL
 )
@@ -32,6 +33,8 @@ resample_sumstats(
 \item{new_env_var}{Optional. The environmental variance in the new population.
 If missing the function will assume the environmental variance is the same as in the old population.}
 
+\item{new_h2}{Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.}
+
 \item{new_R_E}{Optional, specify environmental correlation in the new population.
 If missing, the function will assume the environmental correlation is the same as in the original data.}
 
@@ -43,6 +46,7 @@ Resample Summary Statistics for Existing Simulation Object
 }
 \details{
 This function can be used to generate new summary statistics for an existing simulation object.
+For a discussion of this function and \code{resample_inddata}, see the "Resampling" vignette.
 }
 \examples{
 # Use resample_sumstats to generate new GWAS results with the same effect sizes.
@@ -53,7 +57,6 @@ R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
 dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
                G = G, R_E = R_E)
 # data for second GWAS
-# Since we didn't supply af or an LD pattern in the original GWAS,
-# we have standardized effects.
-dat_new <- resample_sumstats(dat, N = 40000)
+dat_new <- resample_sumstats(dat,
+                             N = 40000)
 }

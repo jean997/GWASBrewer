@@ -7,12 +7,13 @@
 #'@param geno_scale Either "allele" or "sd". Specifies the scale of the effect sizes in the output data.
 #'@param new_env_var Optional. The environmental variance in the new population.
 #'If missing the function will assume the environmental variance is the same as in the old population.
+#'@param new_h2 Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.
 #'@param new_R_E Optional, specify environmental correlation in the new population.
 #'If missing, the function will assume the environmental correlation is the same as in the original data.
 #'@param new_R_obs Optional, specify overall trait correlation in the new population. Specify at most one of \code{new_R_E} or \code{new_R_obs}.
 #'If missing, the function will assume the environmental correlation is the same as in the original data.
 #'@details This function can be used to generate new summary statistics for an existing simulation object.
-#'
+#' For a discussion of this function and \code{resample_inddata}, see the "Resampling" vignette.
 #'@examples
 #' # Use resample_sumstats to generate new GWAS results with the same effect sizes.
 #' N <- matrix(1000, nrow = 2, ncol =2)
@@ -22,23 +23,28 @@
 #' dat <- sim_mv(N = N, J = 20000, h2 = c(0.4, 0.3), pi = 1000/20000,
 #'                G = G, R_E = R_E)
 #' # data for second GWAS
-#' # Since we didn't supply af or an LD pattern in the original GWAS,
-#' # we have standardized effects.
-#' dat_new <- resample_sumstats(dat, N = 40000)
+#' dat_new <- resample_sumstats(dat,
+#'                              N = 40000)
 #'@export
 resample_sumstats <- function(dat,
                               N,
                               R_LD = NULL,
                               af = NULL,
                               est_s = FALSE,
-                              geno_scale = c("allele", "sd"),
+                              geno_scale = NULL,
                               new_env_var = NULL,
+                              new_h2 = NULL,
                               new_R_E = NULL,
                               new_R_obs = NULL){
   if(!"sim_mv" %in% class(dat)) stop("dat must have class sim_mv (use the sim_mv function to produce dat).\n")
   if(!is.null(R_LD) & is.null(af)) stop("af is required if R_LD is provided.\n")
   if(!is.null(new_R_obs) & !is.null(new_R_E)) stop("Provide only one of new_R_obs and new_R_E.\n")
-  geno_scale <- match.arg(geno_scale)
+  if(!is.null(new_h2) & !is.null(new_env_var)) stop("Provide only one of new_h2 and new_env_var.\n")
+  if(is.null(geno_scale)){
+    geno_scale <- dat$geno_scale
+  }else{
+    geno_scale <- match.arg(geno_scale, choices = c("allele", "sd"))
+  }
   if(geno_scale == "allele" & is.null(af)){
     stop("If geno_scale = allele, af must be supplied.\n")
   }
@@ -56,14 +62,17 @@ resample_sumstats <- function(dat,
                         af = af,
                         full_mat = TRUE)
   v_G <- diag(new_dat$Sigma_G)
-  if(!identical(new_dat$Sigma_G, dat$Sigma_G)){
+  if(!all(new_dat$Sigma_G == dat$Sigma_G)){
     message("Genetic variance in the new population differs from the genetic variance in the old population.")
   }
-  if(is.null(new_env_var)){
+  if(is.null(new_env_var) & is.null(new_h2)){
     message("I will assume that the environmental variance is the same in the old and new population.")
     v_E <- diag(dat$Sigma_E)
-  }else{
+  }else if(!is.null(new_env_var)){
     v_E <- check_scalar_or_numeric(new_env_var, "new_env_var", M)
+  }else{
+    new_h2 <- check_scalar_or_numeric(new_h2, "new_h2", M)
+    v_E <- v_G*(1-new_h2)/new_h2
   }
   new_dat$pheno_sd <- sqrt(v_G + v_E)
   new_dat$h2 <- v_G/(v_G + v_E)

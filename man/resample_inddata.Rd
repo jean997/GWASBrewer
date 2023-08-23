@@ -13,6 +13,7 @@ resample_inddata(
   af = NULL,
   sim_func = gen_genos_mvn,
   new_env_var = NULL,
+  new_h2 = NULL,
   new_R_E = NULL,
   new_R_obs = NULL,
   calc_sumstats = FALSE
@@ -36,6 +37,8 @@ in `dat` will also be included.}
 \item{new_env_var}{Optional. The environmental variance in the new population.
 If missing the function will assume the environmental variance is the same as in the old population.}
 
+\item{new_h2}{Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.}
+
 \item{new_R_E}{Optional, specify environmental correlation in the new population.
 If missing, the function will assume the environmental correlation is the same as in the original data.}
 
@@ -58,19 +61,37 @@ parameters are not relevant if there is no phenotype, so if they are supplied, y
 To generate both genotype and phenotype data: Supply \code{dat} (a \code{sim_mv} object) and leave \code{genos} missing. \code{N} and \code{af}
 are required and all other options are optional.
 
-To generate phenotype data only: Supply \code{dat} (a \code{sim_mv} object) and provide a matrix of genotypes to the \code{genos} argument. \code{N}
-must be consistent with the number of genotypes supplied. So for example, if there are two traits with 10 samples each and no overlap, \code{genos}
-should have 20 rows. \code{N} and \code{af}
-are required and all other options are optional.
+To generate phenotype data only: Supply \code{dat} (a \code{sim_mv} object) and provide a matrix of genotypes to the \code{genos} argument. The number of
+rows in \code{genos} must be equal to the total number of individuals implied by \code{N}.
+So for example, if there are two traits with 10 samples each and no overlap, \code{genos}
+should have 20 rows. The \code{R_LD} and \code{af} arguments should contain the population
+LD and allele frequencies used to produce the genotypes. These are used to compute the genetic variance-covariance matrix.
+\code{N} and \code{af} are required and all other options are optional.
 }
 \examples{
-# Use gen_gwas_from_b to generate individual level data with given effect size.
-Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
-G <- matrix(0, nrow = 2, ncol = 2)
-R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
-# original data
-dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
-               G = G, R_E = R_E, af = function(n){rbeta(n, 1, 5)})
-# Now generate GWAS data
-gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE)
+# Use resample_inddata to generate genotypes only
+simple_ld <- matrix(0.5, nrow = 5, ncol = 5)
+diag(simple_ld) <- 1
+genos_only <- resample_inddata(N = 8,
+                               J = 20,
+                               R_LD = list(simple_ld),
+                               af = rep(0.3, 5))
+# generate genotypes and phenotypes
+dat <- sim_mv(N = 0,
+              G = 1,
+              J = 20,
+              pi = 0.5,
+              h2 = 0.05,
+              R_LD = list(simple_ld),
+              af = rep(0.3, 5))
+genos_and_phenos <- resample_inddata(dat = dat,
+                                      N = 8,
+                                      R_LD = list(simple_ld),
+                                      af = rep(0.3, 5))
+# generate phenos only
+phenos_only <- resample_inddata(dat = dat,
+                                genos = genos_only$X,
+                                N = 8,
+                                R_LD = list(simple_ld),
+                                af = rep(0.3, 5))
 }
