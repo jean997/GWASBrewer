@@ -149,8 +149,9 @@ LD and allele frequencies used to produce the genotypes. These are used to compu
 <span class="r-in"><span>                               J <span class="op">=</span> <span class="fl">20</span>,</span></span>
 <span class="r-in"><span>                               R_LD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">simple_ld</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                               af <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: hapsim</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Loading required package: MASS</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Generating genotype matrix only.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in .C("covariance", as.integer(nloci), as.double(C), as.double(P),     as.double(Q), rlt = as.double(null.mat), PACKAGE = "hapsim"):</span> "covariance" not available for .C() for package "hapsim"</span>
 <span class="r-in"><span><span class="co"># generate genotypes and phenotypes</span></span></span>
 <span class="r-in"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_mv.html">sim_mv</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>              G <span class="op">=</span> <span class="fl">1</span>,</span></span>
@@ -165,14 +166,19 @@ LD and allele frequencies used to produce the genotypes. These are used to compu
 <span class="r-in"><span>                                      R_LD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">simple_ld</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                                      af <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Generating both genotypes and phenotypes.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in .C("covariance", as.integer(nloci), as.double(C), as.double(P),     as.double(Q), rlt = as.double(null.mat), PACKAGE = "hapsim"):</span> "covariance" not available for .C() for package "hapsim"</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20 SNPs and 1 traits.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> I will assume that the environmental variance is the same in the old and new population.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.</span>
 <span class="r-in"><span><span class="co"># generate phenos only</span></span></span>
 <span class="r-in"><span><span class="va">phenos_only</span> <span class="op">&lt;-</span> <span class="fu">resample_inddata</span><span class="op">(</span>dat <span class="op">=</span> <span class="va">dat</span>,</span></span>
 <span class="r-in"><span>                                genos <span class="op">=</span> <span class="va">genos_only</span><span class="op">$</span><span class="va">X</span>,</span></span>
 <span class="r-in"><span>                                N <span class="op">=</span> <span class="fl">8</span>,</span></span>
 <span class="r-in"><span>                                R_LD <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">simple_ld</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                                af <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in resample_inddata(dat = dat, genos = genos_only$X, N = 8, R_LD = list(simple_ld),     af = rep(0.3, 5)):</span> object 'genos_only' not found</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Generating phenotypes only.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> SNP effects provided for 20 SNPs and 1 traits.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> I will assume that the environmental variance is the same in the old and new population.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

@@ -13,6 +13,9 @@
     <loc>/articles/index.html</loc>
   </url>
   <url>
+    <loc>/articles/resampling.html</loc>
+  </url>
+  <url>
     <loc>/articles/simulating_data.html</loc>
   </url>
   <url>
@@ -37,6 +40,15 @@
     <loc>/reference/index.html</loc>
   </url>
   <url>
+    <loc>/reference/resample_inddata.html</loc>
+  </url>
+  <url>
+    <loc>/reference/resample_sumstats.html</loc>
+  </url>
+  <url>
+    <loc>/reference/rescale_sumstats.html</loc>
+  </url>
+  <url>
     <loc>/reference/rnormalmix.html</loc>
   </url>
   <url>
@@ -56,6 +68,9 @@
   </url>
   <url>
     <loc>/reference/sim_mv.html</loc>
+  </url>
+  <url>
+    <loc>/reference/sim_mv_determined.html</loc>
   </url>
   <url>
     <loc>/reference/xyz_to_G.html</loc>
