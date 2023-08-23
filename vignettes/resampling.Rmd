@@ -1,0 +1,279 @@
+---
+title: "Resampling and Re-Scaling Summary and Individual Level Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{resampling}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(simGWAS)
+library(DiagrammeR)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(hapsim)
+set.seed(1)
+```
+
+## Introduction
+
+In some applications, we may need to generate multiple data sets for the same set of effect sizes. 
+This would mimic performing multiple GWAS on the same trait.
+There are two functions, `resample_sumstats` and  `resample_inddata` that facilitate this. 
+This vignette will demonstrate these functions as well as discuss important considerations when the simulation involves sampling GWAS for multiple ancestries for the same trait.
+
+To get started, we will generate a small `sim_mv` object. For a review of that function, see the "Simulating Data" vignette. For this vignette, we will keep things very simple by having only 12 variants with very large effect sizes. Of course, this is not realistic, but it will let us see exactly what is going on. In our example, we will have two traits. The first trait has an effect of 0.2 on the second trait. Recalling that `sim_mv` always sets the variance of each trait to 1, this means, that trait 1 explains 4% ($0.2^2 = 0.04$) of the variance of trait 2. We will also use an LD pattern. Here we just specify the LD pattern for five variants. This will be repeated 2.2 times to cover 12 variants. We will specify `N` so that there is no sample overlap. 
+
+```{r}
+set.seed(1000)
+my_ld1 <- matrix(c( 1.00,  0.60,  0.40, -0.1, -0.07,
+                 0.60,  1.00,  0.60, -0.1, -0.07,
+                 0.40,  0.60,  1.00, -0.1, -0.07,
+                 -0.10, -0.10, -0.10,  1.0,  0.90,
+                 -0.07, -0.07, -0.07,  0.9,  1.00), nrow = 5, byrow = T)
+af1 <- c(0.35, 0.3, 0.4, 0.72, 0.75)
+
+G <- matrix(c(0, 0.2, 0, 0), nrow = 2, byrow =T) # matrix of causal effects
+orig_dat <- sim_mv(N = c(10000, 20000),
+                 J = 12,
+                 h2 = c(0.2, 0.3),
+                 pi = 0.4,
+                 G = G,
+                 R_LD = list(my_ld1),
+                 af = af1, 
+                 est_s = TRUE)
+```
+
+
+## Resampling Summary Statistics or Individual Level Data from the Same Population
+
+In the simplest scenario, we want to simulate performing a new GWAS or collecting new individual level data for the original set of traits in the original population, meaning that the LD pattern and allele frequencies are the same.
+
+### Resampling Summary Statistics from the Same Population
+
+To resample summary statistics, we can use `resample_sumstats`. Here, we will regenerate data assuming that samples for the new GWAS are totally overlapping.
+
+```{r}
+N1 <- matrix(50000, nrow = 2, ncol = 2)
+new_dat1 <- resample_sumstats(dat = orig_dat,
+                              N = N1, 
+                              R_LD = list(my_ld1), 
+                              af = af1, 
+                              est_s = TRUE)
+
+```
+
+The `new_dat1` object is another object of class `sim_mv`. The new and old data have the same effect sizes so `beta_joint`, `beta_marg`, `direct_SNP_effects_joint`, and `direct_SNP_effects_marg` are all the same between the two objects. They also have the same causal effect structure so the trait effect matrices `direct_trait_effects` and `total_trait_effects` are the same. However, the summary statistic matrices `beta_hat` and `s_estimate` are different due to random sampling variation. The true standard errors, `se_beta_hat` are also different because the sample size is different. Finally, since there is sample overlap in the samples for `new_dat1` but not in `orig_dat`, the `R` matrices which give the correlation of effect sizes across traits are different.
+
+```{r}
+all.equal(orig_dat$beta_joint, new_dat1$beta_joint)
+all.equal(orig_dat$beta_marg, new_dat1$beta_marg)
+
+head(orig_dat$beta_hat)
+head(new_dat1$beta_hat)
+
+head(orig_dat$se_beta_hat)
+head(new_dat1$se_beta_hat)
+
+head(orig_dat$s_estimate)
+head(new_dat1$s_estimate)
+```
+
+### Resampling Individual Level Data from the Same Population
+
+We can also generate individual level data. For this we use the `resample_inddata` function. This function can be used to produce three types of output:
+
++ Genotypes only
++ Genotypes and phenotypes
++ Phenotypes only
+
+`resample_inddata` uses the `hapsim` package to generate individual level data. Currently, the `hapsim` package needs to be explicitly loaded before using the function. 
+The sample size argument, `N`, in `resample_inddata` can accept three types of input: scalar, vector, or data frame. These formats are the same as those used by `sim_mv`, so if `N` is a scalar or vector, `resample_inddata` will assume there is no sample overlap. This means that if we use `N = 10` with two traits, we will get out genotype information for 20 individuals, of which half have phenotype 1 information and half have phenotype 2 information. To specify sample overlap, we can use the data frame format. As a reminder, a sample size data frame should have columns named `trait_1`, ... `trait_[M]` and `N`. The `trait_[x]` columns will be interpreted as logicals and the `N` column should give the number of
+samples in each combination of studies.
+
+#### Generating genotypes only
+
+If `resample_inddata` is used to generate genotypes only, we are not really "resampling" anything because there is no need to input trait data. In this case, we only need to supply the total number of individuals, the number of variants, and the LD pattern if desired. Here we will generate data for 15 individuals with an LD pattern matching the one used in `orig_dat`. The returned data includes the genotype matrix and a vector of population allele frequencies.
+
+```{r}
+genos_only <- resample_inddata(N = 15, 
+                               J = 12,
+                               R_LD = list(my_ld1), 
+                               af = af1)
+names(genos_only)
+dim(genos_only$X)
+length(genos_only$af)
+genos_only$X
+```
+
+#### Generating Genotypes and Phenotypes
+
+To generate both genotypes and phenotypes, we need to include a `sim_mv` object that contains effect sizes. For our example, we will use the  data frame sample size format to indicate that three individuals have both phenotypes measured and seven have only one or the other measured. Note that we don't need to include the `J` argument because the `sim_mv` object contains all the necessary information. The vector of `M` phenotypes for each individual is simulated as $Y_i = Y_{G,i} + Y_{E,i}$ where $Y_{G,i}$ is the vector of genetic components computed from the genotypes and effect sizes stored in the original `sim_mv` object and $Y_{E,i}$ is a vector of environmental components sampled from a normal distribution with variance given by the `Sigma_E` matrix in the original `sim_mv` object.
+
+```{r}
+N <- data.frame("trait_1" = c(1, 1, 0), "trait_2" = c(0, 1, 1), "N" = c(3, 3, 4))
+new_ind_dat1 <- resample_inddata(N = N, 
+                                 dat = orig_dat, 
+                                 R_LD = list(my_ld1), 
+                                 af = af1, 
+                                 calc_sumstats = FALSE)
+```
+
+Genotype data are stored in `new_ind_dat1$X` and phenotype data are in `new_ind_dat1$Y`. 
+```{r}
+names(new_ind_dat1)
+new_ind_dat1$X
+new_ind_dat1$Y
+```
+The returned object also includes some additional information including `Sigma_G`, `Sigma_E`, and `beta_joint` which have the same meaning as the objects with the same name in a `sim_mv` object.
+If we had set `calc_sumstats` to `TRUE`, the object would also include effect size and standard error estimates for the association between each variant and each trait.
+
+#### Generating Phenotypes Only
+
+Finally, we can use `resample_inddata` to calculate phenotypes for a previously generated set of genotypes from a `sim_mv` object. To do this, we supply the genotypes matrix to the `genos` argument. If this is supplied, no genotypes matrix will be returned. 
+Even though the genotype matrix is supplied, 
+we also need to supply the `R_LD` and `af` arguments for the population LD and allele frequencies. These are used to correctly calculate the genetic variance-covariance matrix.
+Note that it is important that the total number of individuals implied by the sample size argument match the number of rows in the genotypes matrix. The following call will generate an 
+error because we supplied 15 genotypes but the sample size data frame only includes 10 individuals.
+
+```{r,error=TRUE}
+phenos_only <- resample_inddata(N = N, 
+                                dat = orig_dat, 
+                                genos = genos_only$X,
+                                R_LD = list(my_ld1),
+                                af = af1,
+                                calc_sumstats = FALSE)
+```
+
+We can fix the poblem by only including the first 10 rowsof the genotype matrix.
+
+```{r}
+phenos_only <- resample_inddata(N = N, 
+                                dat = orig_dat, 
+                                genos = genos_only$X[1:10,],
+                                R_LD = list(my_ld1),
+                                af = af1,
+                                calc_sumstats = FALSE)
+names(phenos_only)
+phenos_only$Y
+```
+
+## Resampling Data from a Different Population
+
+Both `resample_sumstats` and `resample_inddata` can be used as above with different LD and allele frequencies than used to create the original object. However, there are some special considerations about trait variance and scaling that we will discuss in this section.
+
+
+### Understanding Effect Size Units
+
+To understand resampled data that use different LD or allele frequencies than the original data, it is important to understand the units of effect sizes produced by `sim_mv`. `sim_mv` always assumes that phenotype variance is equal to 1, so the interpretation of the effects in `beta_joint` is the change in phenotype in units of phenotype SD per change in genotype in units of either allele or genotype SD. To see the genotype unit, we can check the `geno_scale` object. For example,
+```{r}
+orig_dat$geno_scale
+```
+By default, `sim_mv` will use the per-allele scale if allele frequencies are available and otherwise use the per-SD scale. We can also check the the phenotypes are scaled to unit variance in `pheno_sd` which will always be a vector of 1's if the object was produced by `sim_mv`.
+```{r}
+orig_dat$pheno_sd
+```
+
+### Changing LD and Allele Frequencies
+
+The resampling functions in `simGWAS` assume that effect sizes in the new population are the same as in the old population on the genotype and phenotype scale given. If you are changing populations, it is much more sensible to assume that effect sizes are constant on the per-allele scale than on the per-genotype SD scale. This means that if you want to regenerate data from a different population, it is advisable to make sure that the input data have `geno_scale` equal to "allele". One consequence of differing allele frequencies and LD structure is that the total genetic variance will be different in the new population than in the old. By default, the resampling functions will assume that the environmental variance is the same in the two populations. This means that the overall variance of the phenotype in the new population will probably not be 1. The resampling functions will **not** rescale the phenotype in the new population because this would mean that the phenotypes in the two populations had different units and were not comparable. 
+
+As a simple extreme example to illustrate this issue, suppose that $Y$ has one causal variant that explains 30% of its variance in population A. Lets say this variant has allele frequency 0.25 in population A. We can compute that if $Y$ is scaled to have unit variance in population A, then each alternate allele of the causal variant increases $Y$ by $0.894$ units and the environmental variance is $0.7$. We got the effect size by computing $\sqrt{0.3/(2\cdot 0.25\cdot(1-0.25))}$ which gives us the desired variance explained by the genotype. Now suppose that in population B, the effect size and environmental contribution to the trait are the same but the allele frequency is only 0.01. In this case, when put on the same scale that gave a unit variance in population A, $Y$ only has a variance of $(0.894^2)\cdot(2 \cdot 0.01\cdot(1-0.01)) + 0.7 = 0.716$. 
+
+We can see this in action by resampling summary statistics using different allele frequencies and LD pattern than used originally. 
+
+```{r}
+af2 <- rep(0.1, 5)
+my_ld2 <- matrix(0.3, nrow = 5, ncol = 5)
+diag(my_ld2) <- 1
+new_dat2 <- resample_sumstats(dat = orig_dat, 
+                              N = N, 
+                              R_LD = list(my_ld2), 
+                              af = af2)
+
+```
+Notice that the function produces a message to let us know that the phenotype has a different variance in the new population. We can check by looking at `pheno_sd`. The genetic covariance matrix, heritability, and overall trait correlation will also be different. However, the environmental covariance will be the same. 
+
+```{r}
+new_dat2$pheno_sd
+new_dat2$h2
+new_dat2$Sigma_G
+new_dat2$Sigma_E
+
+```
+### Changing Environmental Variance or Covariance
+
+Although the default behavior is to keep `Sigma_E` constant, we can change this using the arguments `new_env_var`, and one of `new_R_E` or `new_R_obs`. These are options for both `resample_sumstats` and `resample_inddata`. The parameter `new_env_var` is a scalar or vector of lenth $M$ giving the environmental variance in the new population. If supplied, `new_R_E` is the environmental correlation in the new population and `new_R_obs` is the total trait correlation in the new population. Only one of these two parameters can be supplied. 
+
+```{r}
+new_R_E <- diag(2)
+new_R_E[1,2] <- new_R_E[2,1] <- 0.4
+new_dat3 <- resample_sumstats(dat = orig_dat, 
+                              N = N, 
+                              R_LD = list(my_ld2), 
+                              af = af2,
+                              new_env_var = c(0.9, 1.3), 
+                              new_R_E = new_R_E)
+new_dat3$Sigma_E
+cov2cor(new_dat3$Sigma_E)
+```
+
+
+### Rescaling Effect Size Units
+
+If for any reason we want to change the units of effects in an object produced by `sim_mv` or `resmaple_sumstats`, we can use `rescale_sumstats`. For example, in the code below, we rescale the effects in `orig_dat` to be on the per-SD scale. Note that by doing this, we will delete the allele frequency information in the `snp_info` table. This is because allele frequency is irrelevant for per-SD scaled effects.  To convert back to per-allele scale, we would need to supply the allele frequency.
+
+```{r}
+
+orig_rescale1 <- rescale_sumstats(dat = orig_dat, 
+                                  output_geno_scale = "sd")
+orig_rescale1$beta_joint
+orig_rescale1$geno_scale
+orig_dat$beta_joint
+
+## back to per-allele scale
+orig_rescale2 <- rescale_sumstats(dat = orig_rescale1, 
+                                  output_geno_scale = "allele", 
+                                  af = orig_dat$snp_info$AF)
+orig_rescale2$beta_joint
+
+```
+
+We can also change the scale of the outcome.
+
+```{r}
+orig_rescale3 <- rescale_sumstats(dat = orig_dat, 
+                                  output_geno_scale = "allele", 
+                                  output_pheno_sd = c(1.4, 0.8))
+```
+
+There are a few effects of changing the phenotype scale. First the effect sizes are different. In this case the effect sizes for trait 1 have been multiplied by 1.4 and the effect sizes for trait 2 have been multiplied by 0.8. Second, the genetic and environmental covariance matrices have been scaled appropriately.
+
+```{r}
+orig_rescale3$Sigma_G
+orig_rescale3$Sigma_E
+orig_rescale3$Sigma_G + orig_rescale3$Sigma_E
+```
+
+Note that the heritability, `orig_rescale3$h2` has not changed but is no longer equal to the diagonal of `Sigma_G`. The trait correlation in `trait_corr` is also the same. The final difference is in the total and direct trait effects matrix. In our case, trait 1 has been multiplied by 1.4 and trait 2 was multiplied by 0.8. On the original scale, a one unit increase in trait 1 caused a 0.2 unit increase in trait 2. So on the new scale, a 1 unit increase in trait 1 causes a $0.2 \cdot (0.8/1.4) = 0.114$ unit increase in trait 2.
+
+Note that the causal relationship between the traits implies the following relationship between effect sizes:
+
+```{r}
+with(orig_dat, all.equal(direct_SNP_effects_joint[,2] + total_trait_effects[1,2]*direct_SNP_effects_joint[,1], beta_joint[,2]))
+```
+
+This is the basis of methods like Mendelian randomization. We can see that after scaling, this relationship is still true.
+
+```{r}
+with(orig_rescale3, all.equal(direct_SNP_effects_joint[,2] + total_trait_effects[1,2]*direct_SNP_effects_joint[,1], beta_joint[,2]))
+```
