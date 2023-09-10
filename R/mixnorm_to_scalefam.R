@@ -31,9 +31,9 @@ mixnorm_to_scale_fam <- function(sigma, pi){
 
 #'@title Simulate from a normal mixture distribution
 #'@param n Number of points to simulate
-#'@param sigma Standard deviations
-#'@param mu Means
+#'@param sd Standard deviations
 #'@param pi Mixture proportions
+#'@param mu Means
 #'@param return.Z if TRUE, also return a vector of indicators indicating which of the K classes each sample belongs to
 #'@return If return.Z=TRUE, returns a list with elements beta (samples) and Z (indicators). Otherwise returns a length n vector of samples.
 #'@export

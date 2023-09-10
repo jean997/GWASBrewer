@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{x}{A sim_mv object}
+
+\item{...}{Arguments to be passed to str}
 }
 \description{
 Print sim_mv

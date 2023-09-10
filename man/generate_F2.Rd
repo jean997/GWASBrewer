@@ -15,6 +15,8 @@ generate_F2(
 \arguments{
 \item{non_zero_by_factor}{non_zero_by_factor}
 
+\item{square_row_sums}{square_row_sums}
+
 \item{rfunc}{rfunc}
 }
 \description{

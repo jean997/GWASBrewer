@@ -31,7 +31,6 @@
 #'@param sporadic_pleiotropy Allow sporadic pleiotropy between traits. Defaults to TRUE.
 #'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`.
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly `h2`.
-#'@param return_dat Useful development option, not recommend for general users.
 #'
 #'@return A list with the following elements:
 #'
@@ -215,6 +214,7 @@ sim_mv <- function(N,
 #' Print sim_mv
 #'
 #' @param x A sim_mv object
+#' @param ... Arguments to be passed to str
 #' @export
 print.sim_mv <- function(x, ...) {
   str(x, ...)

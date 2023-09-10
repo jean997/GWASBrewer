@@ -8,6 +8,7 @@
 #'@param J Optional number of variants. \code{J} is only required if \code{dat} is missing.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param af Allele frequencies. \code{af} is required unless unless \code{genos} is supplied.
+#'@param sim_func Function for generating genotype data. Default = gen_genos_mvn
 #'@param new_env_var Optional. The environmental variance in the new population.
 #'If missing the function will assume the environmental variance is the same as in the old population.
 #'@param new_h2 Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.
