@@ -43,3 +43,5 @@ NULL
 
 #' Block LD matrices for SNP data
 "ld_mat_list"
+
+utils::globalVariables(c(".", "Ndf", "Var1", "Var2", "block", "ix_in_block", "ix_in_dat", "pval"))
