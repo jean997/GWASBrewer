@@ -25,10 +25,10 @@ Imports:
 VignetteBuilder:
   knitr
 Suggests: 
-    knitr,
-    rmarkdown,
-    testthat (>= 3.0.0),
-    DiagrammeR,
-    ggplot2,
-    hapsim
+  knitr,
+  rmarkdown,
+  testthat (>= 3.0.0),
+  DiagrammeR,
+  ggplot2,
+  hapsim
 Config/testthat/edition: 3
