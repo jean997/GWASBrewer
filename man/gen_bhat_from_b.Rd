@@ -20,10 +20,6 @@ gen_bhat_from_b(
 \arguments{
 \item{b_joint}{Matrix of joint effect sizes}
 
-\item{b_joint}{Matrix of non-standardized joint (causal) effects (dimension variants by traits). Supply only one of \code{b_joint} or
-\code{b_joint_std}.}
-
-\item{N}{Sample size, scalar, vector, matrix, or data.frame. See \code{?sim_mv} for more details.}
 \item{N}{Sample size, scalar, vector, matrix, or data.frame. See \code{?sim_mv} for more details.}
 
 \item{trait_corr}{Matrix of population trait correlation (traits by traits)}
@@ -46,26 +42,5 @@ gen_bhat_from_b(
 Generate beta hats from standardized or non-standardized direct SNP effects and LD
 }
 \details{
-This function can be used to generate new GWAS results with the same effect sizes by passing in the \code{beta_joint} table
-from a data set simulated using `sim_mv`. If the
-original data are generated with af missing and no LD then the \code{beta_joint} table contains standardized effects. Otherwise
-it contains non-standardized effects. Use the appropriate argument, either \code{b_joint_std} or \code{b_joint}.
-}
-\examples{
-# Use gen_bhat_from_b to generate new GWAS results with the same effect sizes.
-N <- matrix(c(1000, 999, 999, 1000), nrow = 2, ncol =2)
-R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
-# original data
-dat <- sim_mv(G = 2,
-              N = N,
-              J = 20000,
-              h2 = c(0.4, 0.3),
-              pi = 1000/20000,
-              R_E = R_E)
-# data for second GWAS
-# Since we didn't supply af or an LD pattern in the original GWAS,
-# we have standardized effects.
-dat_new <- gen_bhat_from_b(b_joint_std = dat$beta_joint, N = 40000,
-                           trait_corr = dat$trait_corr)
 This has been made an internal function. To resample summary statistics use \code{resample_sumstats}.
 }

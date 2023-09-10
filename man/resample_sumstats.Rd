@@ -4,7 +4,6 @@
 \alias{resample_sumstats}
 \title{Resample Summary Statistics for Existing Simulation Object}
 \usage{
-<<<<<<< HEAD
 resample_sumstats(
   dat,
   N,
@@ -17,9 +16,6 @@ resample_sumstats(
   new_R_E = NULL,
   new_R_obs = NULL
 )
-=======
-resample_sumstats(dat, N, R_LD = NULL, af = NULL, est_s = FALSE)
->>>>>>> cbb686e (changes to solve some issues in R CMD CHECK)
 }
 \arguments{
 \item{dat}{Object output by \code{sim_mv}}

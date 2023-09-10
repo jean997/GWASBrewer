@@ -4,7 +4,7 @@
 \alias{print.sim_mv}
 \title{Print sim_mv}
 \usage{
-\method{print}{sim_mv}(x)
+\method{print}{sim_mv}(x, ...)
 }
 \arguments{
 \item{x}{A sim_mv object}

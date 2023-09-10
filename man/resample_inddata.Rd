@@ -5,7 +5,6 @@
 \title{Sample individual level data with joint effects matching a sim_mv object}
 \usage{
 resample_inddata(
-  dat,
   N,
   dat = NULL,
   genos = NULL,
@@ -21,8 +20,6 @@ resample_inddata(
 )
 }
 \arguments{
-\item{dat}{An object of class \code{sim_mv} (produced by \code{sim_mv} or \code{gen_bhat_from_b}).}
-
 \item{N}{Sample size, scalar, vector, or special sample size format data frame, see details.}
 
 \item{dat}{An object of class \code{sim_mv} (produced by \code{sim_mv}). If `dat` is omitted,
@@ -72,14 +69,29 @@ LD and allele frequencies used to produce the genotypes. These are used to compu
 \code{N} and \code{af} are required and all other options are optional.
 }
 \examples{
-# Use gen_gwas_from_b to generate individual level data with given effect size.
-Ndf <- data.frame(trait_1 = 1, trait_2 = 1, N = 10000)
-G <- matrix(0, nrow = 2, ncol = 2)
-R_E <- matrix(c(1, 0.8, 0.8, 1), nrow = 2, ncol = 2)
-# original data
-af <- rbeta(2000, 1, 5)
-dat <- sim_mv(N = Ndf, J = 2000, h2 = c(0.4, 0.3), pi = 100/2000,
-               G = G, R_E = R_E, af = af)
-# Now generate GWAS data
-gw_dat <- resample_inddata(dat, N = Ndf, calc_sumstats = TRUE, af = af)
+# Use resample_inddata to generate genotypes only
+simple_ld <- matrix(0.5, nrow = 5, ncol = 5)
+diag(simple_ld) <- 1
+genos_only <- resample_inddata(N = 8,
+                               J = 20,
+                               R_LD = list(simple_ld),
+                               af = rep(0.3, 5))
+# generate genotypes and phenotypes
+dat <- sim_mv(N = 0,
+              G = 1,
+              J = 20,
+              pi = 0.5,
+              h2 = 0.05,
+              R_LD = list(simple_ld),
+              af = rep(0.3, 5))
+genos_and_phenos <- resample_inddata(dat = dat,
+                                      N = 8,
+                                      R_LD = list(simple_ld),
+                                      af = rep(0.3, 5))
+# generate phenos only
+phenos_only <- resample_inddata(dat = dat,
+                                genos = genos_only$X,
+                                N = 8,
+                                R_LD = list(simple_ld),
+                                af = rep(0.3, 5))
 }
