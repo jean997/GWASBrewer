@@ -60,6 +60,7 @@
 #'                                 R_LD = list(simple_ld),
 #'                                 af = rep(0.3, 5))
 #'@export
+#' @importFrom stats rnorm
 resample_inddata <- function(N,
                              dat = NULL,
                              genos = NULL,
@@ -82,7 +83,7 @@ resample_inddata <- function(N,
   # Option 3: Generate phenotypes for existing genotypes. Provide genos, and dat. omit J
 
   if(is.null(dat)){
-    if(!require(hapsim)){
+    if(!requireNamespace("hapsim", quietly=TRUE)){
       stop("Please install the hapsim library.")
     }
     message("Generating genotype matrix only.")
@@ -273,7 +274,13 @@ resample_inddata <- function(N,
 
 }
 
-#'@export
+#' Fast implementation of linear model
+#' 
+#' @param X X vector or matrix
+#' @param Y Y vector or matrix
+#' @param check X and Y inputs
+#' 
+#' @export
 fast_lm <- function(X, Y, check = TRUE){
   if(check){
     X <- check_matrix(X, "X")
@@ -304,6 +311,16 @@ fast_lm <- function(X, Y, check = TRUE){
 }
 
 
+#' Generate genotypes from multivariate normal
+#' 
+#' @param n Sample size to generate
+#' @param J Number of variants to generate
+#' @param R_LD Optional list of LD blocks. R_LD should have class \code{list}.
+#'Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
+#'All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite. See Details and vignettes.
+#' @param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
+#'If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
+#'If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).
 #'@export
 gen_genos_mvn <- function(n, J, R_LD, af){
 

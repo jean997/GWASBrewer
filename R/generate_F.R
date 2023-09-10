@@ -1,3 +1,7 @@
+#' Generate F (simple)
+#' 
+#' @param nblocks nblocks
+#' @param type type
 #'@export
 generate_F_simple <- function(nblocks, type=c("nested", "difference",
                                               "checkers1", "checkers2")){
@@ -57,6 +61,11 @@ generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
   return(F_mat)
 }
 
+#' Generate F (2)
+#' 
+#' @param non_zero_by_factor non_zero_by_factor
+#' @param non_zero_by_factor non_zero_by_factor
+#' @param rfunc rfunc
 #'@export
 generate_F2 <- function(non_zero_by_factor,
                         square_row_sums,

@@ -1,3 +1,7 @@
+#' mixnorm_to_scale_fam
+#' 
+#' @param sigma sigma
+#' @param pi pi
 #'@export
 mixnorm_to_scale_fam <- function(sigma, pi){
   K <- length(sigma)
@@ -55,8 +59,10 @@ rnormalmix <- function(n, sd, pi, mu =0, return.Z=FALSE){
   return(beta)
 }
 
-
-#'@export
+#' fixed_to_scale_fam
+#' 
+#' @param b vector
+#' @export
 fixed_to_scale_fam <- function(b){
   f <- function(n, sd, ...){
     newb <- b[ ((0:(n-1)) %% length(b)) + 1]
