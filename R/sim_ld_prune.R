@@ -187,6 +187,7 @@ sim_extract_ld <- function(dat, index, R_LD){
 }
 
 calc_ld_scores <- function(dat, R_LD){
+  R_LD <- check_R_LD(R_LD, "matrix")
   l2 <- sapply(R_LD, function(M){colSums(M^2)}) |> unlist()
   ix <- stringr::str_split(dat$snp_info$SNP, stringr::fixed(".")) |>
         purrr::map(1) |>
