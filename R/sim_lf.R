@@ -321,7 +321,7 @@ sim_lf <- function(F_mat,
     sum_stats$L_mat_marg <- compute_R_times_mat(R_LD, af, J, L_mat)
     sum_stats$L_mat_marg <- sum_stats$L_mat_marg/sum_stats$sx
     sum_stats$theta_marg <- compute_R_times_mat(R_LD, af, J, theta)
-    sum_stats$theta_marg <- sum_stats$theta/sum_stats$sx
+    sum_stats$theta_marg <- sum_stats$theta_marg/sum_stats$sx
   }
   sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
