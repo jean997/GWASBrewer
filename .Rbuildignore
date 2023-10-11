@@ -1,0 +1,7 @@
+^renv$
+^renv\.lock$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^LICENSE\.md$
+^.Rprofile$

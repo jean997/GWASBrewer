@@ -1,11 +1,11 @@
 check_scalar_or_numeric <- function(x, string, n){
   if(is.null(x)) return(x)
-  if("matrix" %in% class(x) | "data.frame" %in% class(x)){
+  if(inherits(x, "matrix") | inherits(x, "data.frame")){
     if(ncol(x) > 1) stop(paste0(string, " must be a numeric vector or one column array."))
     x <- as.numeric(x[,1])
-  }else if(length(x) == 1 & ("numeric" %in% class(x) | all(is.na(x)))){
+  }else if(length(x) == 1 & (inherits(x, "numeric") | all(is.na(x)))){
     x <- rep(x, n)
-  }else if(! "numeric" %in% class(x)){
+  }else if(! inherits(x, "numeric")){
     stop(paste0(string, " must be a numeric vector or one column array."))
   }
   if(length(x) != n) stop(paste0("Expected ", string, " to have length ", n, ", found ", length(x), "\n"))
@@ -15,13 +15,13 @@ check_scalar_or_numeric <- function(x, string, n){
 
 check_matrix <- function(x, string, n, p){
   if(is.null(x)) return(x)
-  if("data.frame" %in% class(x)){
+  if(inherits(x, "data.frame")){
     cat("Coercing ", string, " to matrix.\n")
     x <- as.matrix(x)
     colnames(x) <- NULL
-  }else if("numeric" %in% class(x)){
+  }else if(inherits(x, "numeric")){
     x <- as.matrix(x, ncol = 1)
-  }else if(!"matrix" %in% class(x)){
+  }else if(!inherits(x, "matrix")){
     stop(paste0(string, " must be a numeric vector, matrix, or data.frame."))
   }
   if(!missing(n)){
@@ -35,7 +35,7 @@ check_matrix <- function(x, string, n, p){
 
 
 check_pi <- function(pi, n, p){
-  if("matrix" %in% class(pi)){
+  if(inherits(pi, "matrix")){
     pi <- check_matrix(pi, "pi", n, p)
   }else{
     pi <- check_scalar_or_numeric(pi, "pi", p)
@@ -45,17 +45,17 @@ check_pi <- function(pi, n, p){
 }
 
 check_N <- function(N, n, allow_mat = TRUE){
-  if("sample_size" %in% class(N)){
+  if(inherits(N, "sample_size")){
     if(length(N$N) == n) return(N)
     stop(paste0("Expected information for ", n, " traits but found ", length(N$N), "\n"))
   }
   if(any(is.na(N))){
     stop("N cannot contain missing (NA) values. Use sample size 0 instead.\n")
   }
-  if("matrix" %in% class(N) | "data.frame" %in% class(N)){
+  if(inherits(N, "matrix") | inherits(N, "data.frame")){
     if(ncol(N) == 1){
       type <- "vector"
-    }else if("data.frame" %in% class(N) & "trait_1" %in% names(N)){
+    }else if(inherits(N, "data.frame") & "trait_1" %in% names(N)){
       type <- "df"
     }else{
       if(!allow_mat){
@@ -108,7 +108,7 @@ make_Ndf_indep <- function(N){
 }
 
 check_Ndf <- function(N, M){
-  if(!"data.frame" %in% class(N)){
+  if(!inherits(N, "data.frame")){
     stop("class(N) does not include data.frame\n")
   }
   if(missing(M)){
@@ -163,7 +163,7 @@ check_Ndf <- function(N, M){
 }
 
 subset_N_nonzero <- function(N){
-  stopifnot("sample_size" %in% class(N))
+  stopifnot(inherits(N, "sample_size"))
   i <- which(N$N > 0)
   newN <- N
   newN$N <- N$N[i]
@@ -188,8 +188,8 @@ check_psd <- function(M, string, tol = 1e-8){
 
 
 check_G <- function(G, h2){
-  if(! "matrix" %in% class(G)){
-    if(!(class(G) == "numeric" | class(G) == "integer" )){
+  if(! inherits(G, "matrix")){
+    if(!(inherits(G, "numeric") | inherits(G, "integer") )){
       stop(paste0("G should have class matrix, numeric, or integer, found ", class(G), "\n"))
     }
     if(!(G >= 0 & G == round(G))){
@@ -248,13 +248,13 @@ direct_to_total <- function(G_dir){
 
 check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   return <- match.arg(return, return)
-  if(class(R_LD) != "list"){
+  if(!inherits(R_LD, "list")){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
   }
   cl <- sapply(R_LD, function(x){
-    case_when("matrix" %in% class(x) ~ "matrix",
-              class(x) == "dsCMatrix" ~ "matrix",
-              class(x) == "eigen" ~ "eigen",
+    dplyr::case_when(inherits(x, "matrix") ~ "matrix",
+              inherits(x, "dsCMatrix") ~ "matrix",
+              inherits(x, "eigen") ~ "eigen",
               TRUE ~ "not_allowed")
   })
   if(any(cl == "not_allowed")){
@@ -321,7 +321,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
 
 
 check_snpinfo <- function(snp_info, J){
-  if(!"data.frame" %in% class(snp_info)){
+  if(!inherits(snp_info, "data.frame")){
     stop("snp_info should have class containing data.frame.\n")
   }
   if(nrow(snp_info) != J){
@@ -336,7 +336,7 @@ check_snpinfo <- function(snp_info, J){
 check_af <- function(af, n, function_ok = TRUE){
   if(is.null(af)){
     return(NULL)
-  }else if(class(af) == "function"){
+  }else if(inherits(af, "function")){
     if(!function_ok) stop("af cannot be a function.\n")
     myaf <- af(n)
     af <- myaf
@@ -347,7 +347,7 @@ check_af <- function(af, n, function_ok = TRUE){
 }
 
 check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
-  if(!class(snp_effect_function) == "list"){
+  if(!inherits(snp_effect_function, "list")){
     f <- check_snp_effect_function(snp_effect_function, snp_info)
     fl <- list()
     for(i in 1:M) fl[[i]] <- f
@@ -364,10 +364,10 @@ check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
 
 check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 
-  if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function") ){
+  if(!(inherits(snp_effect_function, "character") | inherits(snp_effect_function, "function")) ){
     stop("snp_effect_function should either be 'normal', a function, or a vector.")
   }
-  if(class(snp_effect_function) == "function"){
+  if(inherits(snp_effect_function, "function")){
     if(!is.null(snp_info)){
       test_snp_info <- snp_info[1:3,]
     }else{

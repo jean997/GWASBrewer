@@ -17,6 +17,10 @@ generate_random_F(
 )
 }
 \arguments{
+\item{K}{K}
+
+\item{M}{M}
+
 \item{g_F}{Function from which non-zero elements of F are generated}
 
 \item{nz_factor}{Number of non-zero elements of each factor if F is to be generated.}

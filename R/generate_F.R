@@ -1,3 +1,7 @@
+#' Generate F (simple)
+#' 
+#' @param nblocks nblocks
+#' @param type type
 #'@export
 generate_F_simple <- function(nblocks, type=c("nested", "difference",
                                               "checkers1", "checkers2")){
@@ -21,6 +25,8 @@ generate_F_simple <- function(nblocks, type=c("nested", "difference",
 }
 
 #'@title Generate random F
+#'@param K K
+#'@param M M
 #'@param g_F Function from which non-zero elements of F are generated
 #'@param nz_factor Number of non-zero elements of each factor if F is to be generated.
 #'@param omega Proportion of trait heritability explained by factors
@@ -57,6 +63,11 @@ generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
   return(F_mat)
 }
 
+#' Generate F (2)
+#' 
+#' @param non_zero_by_factor non_zero_by_factor
+#' @param square_row_sums square_row_sums
+#' @param rfunc rfunc
 #'@export
 generate_F2 <- function(non_zero_by_factor,
                         square_row_sums,

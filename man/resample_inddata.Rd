@@ -34,6 +34,8 @@ in `dat` will also be included.}
 
 \item{af}{Allele frequencies. \code{af} is required unless unless \code{genos} is supplied.}
 
+\item{sim_func}{Function for generating genotype data. Default = gen_genos_mvn}
+
 \item{new_env_var}{Optional. The environmental variance in the new population.
 If missing the function will assume the environmental variance is the same as in the old population.}
 

@@ -69,8 +69,6 @@ should have \code{J} rows.}
 \item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`.}
 
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly `h2`.}
-
-\item{return_dat}{Useful development option, not recommend for general users.}
 }
 \value{
 A list with the following elements:

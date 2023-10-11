@@ -10,18 +10,27 @@ URL: https://github.com/jean997/simGWAS
 BugReports: https://github.com/jean997/simGWAS/issues
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: gzip
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
-IMPORTS:
-  dplyr
-  purrr
-  tidyr
+Imports:
+    dplyr,
+    purrr,
+    tidyr,
+    MASS,
+    Matrix,
+    reshape2,
+    utils,
+    stats,
+    magrittr
 VignetteBuilder:
   knitr
 Suggests: 
-    knitr,
-    rmarkdown,
-    hapsim,
-    testthat (>= 3.0.0)
+  knitr,
+  rmarkdown,
+  testthat (>= 3.0.0),
+  DiagrammeR,
+  ggplot2,
+  hapsim
 Config/testthat/edition: 3

@@ -323,7 +323,7 @@ hist(std_effects2[!std_effects2 == 0], breaks = 30, freq = F, main = "Standardiz
 
 ### Example Using Fixed Effects
 
-Below is some code that combines some of the effect size specification options we have seent to simulate GWAS data for one LD block and two traits. The first trait will have two effect variants that have equal standardized effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes across traits. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4 for one trait and 1e-3 for the other. 
+Below is some code that combines some of the effect size specification options we have seen to simulate GWAS data for one LD block and two traits. The first trait will have two effect variants that have equal standardized effect size. The second trait has two effect variants with different effect sizes. One pair of variants co-localizes across traits. Simulations of this type could be used to test co-localization methods.  Since we are looking at only one block, we will set the heritability of the block to be a reasonable amount of heritability provided by two variants, 6e-4 for one trait and 1e-3 for the other. 
 
 ```{r}
 data("ld_mat_list")
