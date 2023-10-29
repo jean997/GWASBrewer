@@ -1,6 +1,8 @@
 ## Welcome
 
-Welcome to `GWASBrewer`, a flexible tool for simulating realistic GWAS summary statistics for one or many traits from a wide range of scenarios. This package was previously called `simGWAS`. Congratulations on finding our new home.
+Welcome to `GWASBrewer`, a flexible tool for simulating realistic GWAS summary statistics for one or many traits from a wide range of scenarios. 
+
+This package was previously called `simGWAS`. Congratulations on finding our new home.
 
 
 
