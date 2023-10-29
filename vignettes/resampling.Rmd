@@ -2,7 +2,7 @@
 title: "Resampling and Re-Scaling Summary and Individual Level Data"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{resampling}
+  %\VignetteIndexEntry{Resampling and Re-Scaling Summary and Individual Level Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
