@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(simGWAS)
+library(GWASBrewer)
 library(dplyr)
 library(ggplot2)
 set.seed(1)
@@ -182,7 +182,7 @@ orig_dat$pheno_sd
 
 ### Changing LD and Allele Frequencies
 
-The resampling functions in `simGWAS` assume that effect sizes in the new population are the same as in the old population on the genotype and phenotype scale given. If you are changing populations, it is much more sensible to assume that effect sizes are constant on the per-allele scale than on the per-genotype SD scale. This means that if you want to regenerate data from a different population, it is a good idea to start with input data that have `geno_scale` equal to "allele". 
+The resampling functions in `GWASBrewer` assume that effect sizes in the new population are the same as in the old population on the genotype and phenotype scale given. If you are changing populations, it is much more sensible to assume that effect sizes are constant on the per-allele scale than on the per-genotype SD scale. This means that if you want to regenerate data from a different population, it is a good idea to start with input data that have `geno_scale` equal to "allele". 
 
 One consequence of differing allele frequencies and LD structure is that the total genetic variance will be different in the new population than in the old. By default, the resampling functions will assume that the environmental variance is the same in the two populations. This means that the overall variance of the phenotype in the new population will probably not be 1. The resampling functions will **not** rescale the phenotype in the new population because this would mean that the phenotypes in the two populations had different units and were not comparable. However, you can rescale the output after the fact using \code{rescale_sumstats} if you would like the phenotypes to have unit variance.
 

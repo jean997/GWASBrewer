@@ -15,14 +15,14 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(simGWAS)
+library(GWASBrewer)
 library(dplyr)
 library(ggplot2)
 ```
 
 ## Introduction
 
-`simGWAS` can support a range of effect size distributions. At one end of the spectrum, effect sizes and 
+`GWASBrewer` can support a range of effect size distributions. At one end of the spectrum, effect sizes and 
 direct effect variants can be completely deterministic. At the other end of the spectrum, 
 both are random. There are multiple ways to control the distributions of these
 random values demonstrated in this vigentte.
@@ -156,7 +156,7 @@ It should return a length `n` vector of real numbers such that
 the square root sum of squares has expectation `sd`. That is, if
 `f` is our function, and `x <- f(n, sd, snp_info)` then `x` should be 
 length `n` and the expected value of `sqrt(sum(x^2))` should be `sd`.
-Currently, `simGWAS` will not check that your function scales effects correctly so you 
+Currently, `GWASBrewer` will not check that your function scales effects correctly so you 
 should verify this for yourself or use one of the built-in helper functions.
 
 The `snp_info` argument allows the function to recieve variant information such as allele frequency. 
@@ -395,7 +395,7 @@ standard deviation (square root of total variance explained) (`sd`), and SNP inf
 This last argument can be used to create effect distributions that depend on 
 allele frequency or other features. 
 
-The default model used by `simGWAS` is a sparse version of the GCTA model in which
+The default model used by `GWASBrewer` is a sparse version of the GCTA model in which
 all causal variants have the same expected heritability explained. We might, instead
 want to use a heritability model like the [LDAK](https://dougspeed.com/) model
 or we might want to allow the expected heritability explained depend on an annotation. 
