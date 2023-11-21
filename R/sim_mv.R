@@ -154,6 +154,7 @@ sim_mv <- function(N,
     Vdirect <- G$dir_h2 + G$dir_e2
     Gtot <- G$G_tot
     diag(Gtot) <- 1
+    # expected observational correlation if direct env. effects are independent
     R_obs <- t(Gtot) %*% diag(Vdirect, nrow = M) %*% Gtot
     R_obs <- cov2cor(R_obs) # correction for machine precision deviations
   }
