@@ -27,7 +27,8 @@
 #'prune_set_1 <- sim_ld_prune(dat, pvalue = 1, R_LD = ld_mat_list, pval_thresh = 1e-5)
 #'@export
 sim_ld_prune <- function(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1){
-  stopifnot("sim_mv" %in% class(dat))
+  stopifnot("sim_mv" %in% class(dat) |
+              "sim_lf" %in% class(dat))
   if(missing(pvalue)){
     if(!pval_thresh == 1){stop("If providing pval_thresh, please also provide pvalue.\n")}
     message("pvalue omitted so variants will be prioritized randomly")
@@ -183,4 +184,14 @@ sim_extract_ld <- function(dat, index, R_LD){
   mat <- mat[o, o]
   rownames(mat) <- colnames(mat) <- index
   return(mat)
+}
+
+calc_ld_scores <- function(dat, R_LD){
+  R_LD <- check_R_LD(R_LD, "matrix")
+  l2 <- sapply(R_LD, function(M){colSums(M^2)}) |> unlist()
+  ix <- stringr::str_split(dat$snp_info$SNP, stringr::fixed(".")) |>
+        purrr::map(1) |>
+        unlist() |> as.numeric()
+  dat$snp_info$l2 <- l2[ix]
+  return(dat)
 }

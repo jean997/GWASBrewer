@@ -1,4 +1,4 @@
 library(testthat)
-library(simGWAS)
+library(GWASBrewer)
 
-test_check("simGWAS")
+test_check("GWASBrewer")

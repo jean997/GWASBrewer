@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(simGWAS)
+library(GWASBrewer)
 library(DiagrammeR)
 library(dplyr)
 library(reshape2)
@@ -315,7 +315,7 @@ Variants with non-zero values of `beta_joint[,3]` have causal effects on $Z$ whi
 
 ### LD-Pruning, LD-Proxies, and LD Matrix Extraction
 
-Many post-GWAS applications such as Mendelian randomization and polygenic risk score construction require an LD-pruned set of variants. `simGWAS` contains a few LD-related functions to help with pruning and testing methods that require input LD matrices. Note that all of these methods use the true LD pattern rather than estimated LD. 
+Many post-GWAS applications such as Mendelian randomization and polygenic risk score construction require an LD-pruned set of variants. `GWASBrewer` contains a few LD-related functions to help with pruning and testing methods that require input LD matrices. Note that all of these methods use the true LD pattern rather than estimated LD. 
 
 The `sim_ld_prune` function will perform LD-clumping on simulated data, prioritizing variants according to a supplied `pvalue` vector. Although this argument is called `pvalue`, it can be any numeric vector used to prioritize variants. The `pvalue` argument can also accept an integer. If `pvalue = i`,  variants will be prioritized according to the p-value for the `i`th trait in the simulated data. If `pvalue` is omitted, variants will be prioritized randomly (so a different result will be obtained each re-run unless a seed  is set). 
 
@@ -407,7 +407,7 @@ head(sim_dat2$s_estimate)
 
 ### Understanding Genetic and Environmental Covariance
 
-In the model used by `simGWAS`, each trait has a direct genetic component, a direct environmental component, and components from effects of other traits in the DAG. For example, in the four trait DAG we have been working with, the underlying model really looks like this:
+In the model used by `GWASBrewer`, each trait has a direct genetic component, a direct environmental component, and components from effects of other traits in the DAG. For example, in the four trait DAG we have been working with, the underlying model really looks like this:
 
 ```{r, echo=FALSE, fig.align='center', fig.width = 5}
 

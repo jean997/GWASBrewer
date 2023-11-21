@@ -45,9 +45,9 @@ generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
   omega <- check_01(omega, "omega")
   h2_trait <- check_01(h2_trait, "h2_trait")
   srs <- omega*h2_trait
-  F_mat <- sumstatFactors:::generate_F2(non_zero_by_factor = nz_factor,
-                                        square_row_sums = srs,
-                                        rfunc = g_F)
+  F_mat <- generate_F2(non_zero_by_factor = nz_factor,
+                        square_row_sums = srs,
+                        rfunc = g_F)
   if(any(rowSums(F_mat^2) == 0 & srs != 0) & pad){
     ix <- which(rowSums(F_mat^2)==0 & srs != 0)
     stF <- matrix(0, nrow = M, ncol = length(ix))

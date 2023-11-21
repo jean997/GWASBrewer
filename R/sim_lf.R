@@ -66,7 +66,8 @@
 #'
 #'@examples
 #'myF <- generate_random_F(K = 3, M = 10, nz_factor = c(2, 3, 2),
-#'                         omega = rep(0.8, 10), h2_trait = rep(0.6, 10), pad = TRUE)
+#'                         omega = rep(0.8, 10),
+#'                         h2_trait = rep(0.6, 10), pad = TRUE)
 #'dat <- sim_lf(myF, N = 10000, J = 20000, h2_trait = rep(0.6, 10),
 #'                       omega = rep(0.8, 10), pi_L = 0.1, pi_theta = 0.1)
 #'
@@ -114,7 +115,7 @@ sim_lf <- function(F_mat,
 
   if(any(omega < 1 & pi_theta == 0)){
     i <- which(omega < 1 & pi_theta == 0)
-    stop(paste0("Any traits with omega < 1 (not all heritability explained by factors) must have pi_theta > 0. CHeck traits ",
+    stop(paste0("Any traits with omega < 1 (not all heritability explained by factors) must have pi_theta > 0. Check traits ",
                 paste0(i, collapse = ",")))
   }
 
@@ -123,7 +124,8 @@ sim_lf <- function(F_mat,
 
   if(is.null(R_E) & is.null(R_obs)){
     if(nn$overlap){
-      message("Neither R_E nor R_obs was provided but there are overlapping samples.\nI will assume that environmental components not mediated by factors are independent.")
+      message("Neither R_E nor R_obs was provided but there are overlapping samples.\n
+              I will assume that environmental components not mediated by factors are independent.")
     }
     R_E <- diag(M)
   }else if(!is.null(R_E)){
@@ -145,10 +147,11 @@ sim_lf <- function(F_mat,
 
   if(!missing(h2_factor)){
     h2_factor <- check_scalar_or_numeric(h2_factor, "h2_factor", K)
-    h2_factor <- check_01(h2_factor)
+    h2_factor <- check_01(h2_factor, "h2_factor")
   }else{
     if(nn$overlap){
-      warning("h2_factors is not supplied and there are overlapping samples. Using h2_factor = 1\n")
+      warning("h2_factor is not supplied and there are overlapping samples.
+              Using h2_factor = 1 (no environmental variance mediated by factors).\n")
     }
     h2_factor <- rep(1, K)
   }
@@ -256,7 +259,7 @@ sim_lf <- function(F_mat,
 
 
   # trait covariance due to non-genetic factor component
-  # sigma2_F is the variance of the environmental component of each factor
+  # realized genetic variance of each factor, close to 1
   varG_realized <- compute_h2(b_joint = L_mat,
                               geno_scale = "sd",
                               pheno_sd = 1,
@@ -303,6 +306,7 @@ sim_lf <- function(F_mat,
   sum_stats$F_mat <- F_mat
   sum_stats$Sigma_G <- Sigma_G
   sum_stats$Sigma_E <- Sigma_FE + Sigma_E
+  sum_stats$Sigma_FE <- Sigma_FE
   sum_stats$h2 <- diag(Sigma_G)
   sum_stats$trait_corr <- trait_corr
   sum_stats$snp_info <- snp_info
@@ -321,7 +325,7 @@ sim_lf <- function(F_mat,
     sum_stats$L_mat_marg <- compute_R_times_mat(R_LD, af, J, L_mat)
     sum_stats$L_mat_marg <- sum_stats$L_mat_marg/sum_stats$sx
     sum_stats$theta_marg <- compute_R_times_mat(R_LD, af, J, theta)
-    sum_stats$theta_marg <- sum_stats$theta/sum_stats$sx
+    sum_stats$theta_marg <- sum_stats$theta_marg/sum_stats$sx
   }
   sum_stats <- structure(sum_stats, class = c("sim_lf", "list"))
 
