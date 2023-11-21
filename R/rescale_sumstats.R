@@ -57,25 +57,31 @@ rescale_sumstats <- function(dat,
   }
   af <- check_scalar_or_numeric(af, "af", J)
 
-  A <- get_convert_matrix(input_geno_scale = dat$geno_scale,
+  cm <- get_convert_matrix(input_geno_scale = dat$geno_scale,
                           output_geno_scale = output_geno_scale,
                           input_pheno_sd = dat$pheno_sd,
                           output_pheno_sd = output_pheno_sd,
                           J = J,
-                          af = af)
-
+                          af = af,
+                          return_all = TRUE)
+  A <- cm$scale_matrix
   dat$beta_hat <- mat_times(dat$beta_hat, A)
   dat$se_beta_hat <- mat_times(dat$se_beta_hat, A)
   dat$beta_joint <- mat_times(dat$beta_joint, A)
   dat$beta_marg <- mat_times(dat$beta_marg, A)
 
-  dat$L_mat <- mat_times(dat$L_mat, A)
-  dat$theta <- mat_times(dat$theta, A)
 
+  dat$theta_joint <- mat_times(dat$theta_joint, A)
+  dat$theta_marg <- mat_times(dat$theta_marg, A)
   dat$s_estimate <- mat_times(dat$s_estimate, A)
 
   dat$direct_SNP_effects_joint <- mat_times(dat$direct_SNP_effects_joint, A)
   dat$direct_SNP_effects_marg <- mat_times(dat$direct_SNP_effects_marg, A)
+
+  dat$L_mat_joint <- col_times(dat$L_mat_joint, cm$geno_scale)
+  dat$L_mat_marg <- col_times(dat$L_mat_margt, cm$geno_scale)
+  dat$F_mat <- col_times(dat$F_mat, cm$pheno_scale)
+
 
   dat$geno_scale <- output_geno_scale
   if(is.null(af)){
@@ -119,7 +125,8 @@ get_convert_matrix <- function(input_geno_scale,
                                input_pheno_sd,
                                output_pheno_sd,
                                J,
-                               af = NULL){
+                               af = NULL,
+                               return_all = FALSE){
   ## no checks, internal function
   M <- length(input_pheno_sd)
   if(is.null(af)){
@@ -129,16 +136,22 @@ get_convert_matrix <- function(input_geno_scale,
   }
 
   if(identical(input_geno_scale, output_geno_scale)  & identical(input_pheno_sd, output_pheno_sd)){
-    return(1)
+    if(!return_all) return(1)
+    return(list(scale_matrix = 1, pheno_scale = 1, geno_scale = 1))
   }else if(identical(input_geno_scale, output_geno_scale)){
     pheno_scale <- output_pheno_sd/input_pheno_sd
-    scale_matrix <- matrix(pheno_scale, nrow = J, ncol = M, byrow = T)
+    geno_scale <- rep(1, J)
+    #scale_matrix <- matrix(pheno_scale, nrow = J, ncol = M, byrow = T)
   }else if(input_geno_scale == "sd"){ ## input is sd, output is allele
     pheno_scale <- output_pheno_sd/input_pheno_sd
-    scale_matrix <- kronecker(1/sx, pheno_scale) |> matrix(nrow = J, byrow = T)
+    geno_scale <- 1/sx
+    #scale_matrix <- kronecker(1/sx, pheno_scale) |> matrix(nrow = J, byrow = T)
   }else{ ## input is allele, output is sd
     pheno_scale <- output_pheno_sd/input_pheno_sd
-    scale_matrix <- kronecker(sx, pheno_scale) |> matrix(nrow = J, byrow = T)
+    geno_scale <- sx
+    #scale_matrix <- kronecker(sx, pheno_scale) |> matrix(nrow = J, byrow = T)
   }
-  return(scale_matrix)
+  scale_matrix <- kronecker(geno_scale, pheno_scale) |> matrix(nrow = J, byrow = T)
+  if(!return_all) return(scale_matrix)
+  return(list(scale_matrix = scale_matrix, pheno_scale = pheno_scale, geno_scale = geno_scale))
 }

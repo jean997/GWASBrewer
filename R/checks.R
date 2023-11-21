@@ -175,12 +175,12 @@ subset_N_nonzero <- function(N){
 
 
 
-check_psd <- function(M, string){
+check_psd <- function(M, string, tol = 1e-8){
   if(!Matrix::isSymmetric(M)){
     stop(paste0(string, " must be symmetric.\n"))
   }
-  eM <- eigen(M)
-  if(!all(eM$values >= 0)){
+  eMvals <- eigen(M, only.values = TRUE)$values
+  if(!all(eMvals >= -1*tol)){
     stop(paste0(string, " is not positive semi-definite.\n"))
   }
   return(M)
