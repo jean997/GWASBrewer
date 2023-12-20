@@ -8,8 +8,8 @@
 <meta name="description" content="GWASBrewer">
 <title>Simulating Data • GWASBrewer</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Simulating Data">
 <meta property="og:description" content="GWASBrewer">
@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">GWASBrewer</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.0145</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.0158</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,8 +67,8 @@
 
 
 
-<script src="simulating_data_files/htmlwidgets-1.5.4/htmlwidgets.js"></script><script src="simulating_data_files/viz-1.8.2/viz.js"></script><link href="simulating_data_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
-<script src="simulating_data_files/grViz-binding-1.0.7/grViz.js"></script><div class="row">
+<script src="simulating_data_files/htmlwidgets-1.6.2/htmlwidgets.js"></script><script src="simulating_data_files/viz-1.8.2/viz.js"></script><link href="simulating_data_files/DiagrammeR-styles-0.2/styles.css" rel="stylesheet">
+<script src="simulating_data_files/grViz-binding-1.0.10/grViz.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Simulating Data</h1>
             
@@ -82,7 +82,6 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jean997/GWASBrewer" class="external-link">GWASBrewer</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rich-iannone/DiagrammeR" class="external-link">DiagrammeR</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: package 'DiagrammeR' was built under R version 4.1.2</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
@@ -312,10 +311,10 @@ environmental variance matrices are in <code>Sigma_G</code> and
 <span><span class="co">#&gt; [2,] 4.515705e-06 2.530663e-01 0.0009271551</span></span>
 <span><span class="co">#&gt; [3,] 5.262836e-04 9.271551e-04 0.4429666631</span></span>
 <span><span class="va">dat_simple</span><span class="op">$</span><span class="va">Sigma_E</span></span>
-<span><span class="co">#&gt;               [,1]          [,2]          [,3]</span></span>
-<span><span class="co">#&gt; [1,]  8.954661e-01 -4.515705e-06 -0.0005262836</span></span>
-<span><span class="co">#&gt; [2,] -4.515705e-06  7.469337e-01 -0.0009271551</span></span>
-<span><span class="co">#&gt; [3,] -5.262836e-04 -9.271551e-04  0.5570333369</span></span></code></pre></div>
+<span><span class="co">#&gt;           [,1]      [,2]      [,3]</span></span>
+<span><span class="co">#&gt; [1,] 0.8954661 0.0000000 0.0000000</span></span>
+<span><span class="co">#&gt; [2,] 0.0000000 0.7469337 0.0000000</span></span>
+<span><span class="co">#&gt; [3,] 0.0000000 0.0000000 0.5570333</span></span></code></pre></div>
 <p>The diagonal of <code>dat_simple$Sigma_G</code> is equal to the trait
 heritability (also stored in <code>dat_simple$h2</code>). We can see
 that these numbers are close to but not exactly equal to the values
@@ -396,7 +395,7 @@ of trait <span class="math inline">\(i\)</span>.</p>
 <span><span class="co">#&gt; Z 0.4472136 0.0 0 -0.5477226</span></span>
 <span><span class="co">#&gt; W 0.0000000 0.0 0  0.0000000</span></span></code></pre></div>
 <p>corresponds to the graph</p>
-<div id="htmlwidget-df83d9952437447d4e46" style="width:480px;height:432.632880098888px;" class="grViz html-widget"></div>
+<div class="grViz html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-df83d9952437447d4e46" style="width:480px;height:432.632880098888px;"></div>
 <script type="application/json" data-for="htmlwidget-df83d9952437447d4e46">{"x":{"diagram":"digraph {\n\ngraph [layout = \"neato\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"circle\",\n      fixedsize = \"true\",\n      width = \"0.5\",\n      style = \"filled\",\n      fillcolor = \"aliceblue\",\n      color = \"gray70\",\n      fontcolor = \"gray50\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray80\",\n     arrowsize = \"0.5\"]\n\n  \"1\" [label = \"X\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"0,0!\"] \n  \"2\" [label = \"Y\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"1,-0.5!\"] \n  \"3\" [label = \"Z\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"1,1!\"] \n  \"4\" [label = \"W\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"2,0!\"] \n\"3\"->\"1\" [color = \"black\", label = \"0.447\"] \n\"1\"->\"2\" [color = \"black\", label = \"0.5\"] \n\"1\"->\"4\" [color = \"black\", label = \"0.387\"] \n\"2\"->\"4\" [color = \"black\", label = \"0.316\"] \n\"3\"->\"4\" [color = \"black\", label = \"-0.548\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script><p>To simulate simple data from this graph, we can use</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_dat1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_mv.html">sim_mv</a></span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>,</span>
@@ -423,16 +422,16 @@ traits.</p>
 <span><span class="co">#&gt; W 0.03485498 0.08886324 -0.1494222  0.40289524</span></span>
 <span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">Sigma_E</span></span>
 <span><span class="co">#&gt;           X         Y          Z          W</span></span>
-<span><span class="co">#&gt; X 0.7175039 0.3586494  0.2292472  0.2656083</span></span>
-<span><span class="co">#&gt; Y 0.3586494 0.7008739  0.1146771  0.2985392</span></span>
-<span><span class="co">#&gt; Z 0.2292472 0.1146771  0.5107731 -0.1543846</span></span>
-<span><span class="co">#&gt; W 0.2656083 0.2985392 -0.1543846  0.5971048</span></span>
+<span><span class="co">#&gt; X 0.7175039 0.3545701  0.2288111  0.2619020</span></span>
+<span><span class="co">#&gt; Y 0.3545701 0.7008739  0.1130720  0.2951464</span></span>
+<span><span class="co">#&gt; Z 0.2288111 0.1130720  0.5107731 -0.1531603</span></span>
+<span><span class="co">#&gt; W 0.2619020 0.2951464 -0.1531603  0.5971048</span></span>
 <span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">trait_corr</span></span>
 <span><span class="co">#&gt;           X         Y          Z          W</span></span>
-<span><span class="co">#&gt; X 1.0000000 0.5000000  0.4472136  0.3004632</span></span>
-<span><span class="co">#&gt; Y 0.5000000 1.0000000  0.2236068  0.3874024</span></span>
-<span><span class="co">#&gt; Z 0.4472136 0.2236068  1.0000000 -0.3038068</span></span>
-<span><span class="co">#&gt; W 0.3004632 0.3874024 -0.3038068  1.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt; X 1.0000000 0.4959207  0.4467774  0.2967570</span></span>
+<span><span class="co">#&gt; Y 0.4959207 1.0000000  0.2220017  0.3840097</span></span>
+<span><span class="co">#&gt; Z 0.4467774 0.2220017  1.0000000 -0.3025824</span></span>
+<span><span class="co">#&gt; W 0.2967570 0.3840097 -0.3025824  1.0000000</span></span></code></pre></div>
 <p>By default, <code>sim_mv</code> assumes that direct environmental
 components of each trait are independent, meaning that the DAG explains
 all of the correlation between traits. This is modifiable using the
@@ -512,6 +511,7 @@ variant.</p>
 <span>                  pi <span class="op">=</span> <span class="fl">0.01</span>, </span>
 <span>                  af <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">{</span><span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 10000 SNPs and 4 traits.</span></span>
+<span></span>
 <span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">geno_scale</span></span>
 <span><span class="co">#&gt; [1] "allele"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">snp_info</span><span class="op">)</span></span>
@@ -552,6 +552,7 @@ size of each block in the list).</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">ld_mat_list</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 39</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ld_mat_list</span>, <span class="va">class</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix"</span></span>
 <span><span class="co">#&gt;  [7] "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix" "dsCMatrix"</span></span>
@@ -566,8 +567,10 @@ size of each block in the list).</p>
 <span><span class="co">#&gt;  [1] 140 519 339 435 523 280 675 325 651 548 274 483 442 744 460 177 469 173 358</span></span>
 <span><span class="co">#&gt; [20] 564 392 737 596 818 307 863 276 435 204 364 480 381 757 844 753 656 483 856</span></span>
 <span><span class="co">#&gt; [39] 709</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">ld_mat_list</span>, <span class="va">nrow</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 19490</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">AF</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 19490</span></span></code></pre></div>
 <p>The LD pattern covers 19,490 SNPs, equal to the length of the
@@ -634,7 +637,7 @@ equivalent ways.</p>
 <span>                            pval_thresh <span class="op">=</span> <span class="fl">1e-6</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Prioritizing variants based on p-value for trait 3</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pruned_set1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 350</span></span>
+<span><span class="co">#&gt; [1] 354</span></span>
 <span><span class="va">pval3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">sim_dat1_LD</span>, <span class="fl">2</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">beta_hat</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span><span class="op">/</span><span class="va">se_beta_hat</span><span class="op">[</span>,<span class="fl">3</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">pruned_set2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_ld_prune.html">sim_ld_prune</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="va">sim_dat1_LD</span>, </span>
 <span>                            pvalue <span class="op">=</span> <span class="va">pval3</span>, </span>
@@ -767,6 +770,7 @@ two traits are equivalent.</p>
 <span><span class="co">#&gt;       [,1]  [,2]</span></span>
 <span><span class="co">#&gt; [1,] 60000 30000</span></span>
 <span><span class="co">#&gt; [2,] 30000 60000</span></span>
+<span></span>
 <span><span class="va">Ndf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>trait_1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>, </span>
 <span>                  trait_2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, </span>
 <span>                  N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">30000</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
@@ -812,13 +816,13 @@ overlapping samples in studies for the other three traits.</p>
 <span>                  est_s <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; SNP effects provided for 100000 SNPs and 4 traits.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              [,1]         [,2] [,3]          [,4]</span></span>
-<span><span class="co">#&gt; [1,] -0.003947481  0.006753057   NA  7.500862e-04</span></span>
-<span><span class="co">#&gt; [2,] -0.010923937 -0.011265536   NA -1.192012e-02</span></span>
-<span><span class="co">#&gt; [3,] -0.000181418 -0.005158865   NA -1.743991e-02</span></span>
-<span><span class="co">#&gt; [4,] -0.007176134  0.009576499   NA -5.857484e-03</span></span>
-<span><span class="co">#&gt; [5,] -0.008172649 -0.005773862   NA -5.796112e-05</span></span>
-<span><span class="co">#&gt; [6,] -0.006235849 -0.002374765   NA  2.546546e-03</span></span>
+<span><span class="co">#&gt;               [,1]         [,2] [,3]          [,4]</span></span>
+<span><span class="co">#&gt; [1,]  1.258828e-03 -0.002383374   NA  1.074629e-02</span></span>
+<span><span class="co">#&gt; [2,] -8.580051e-03 -0.015482893   NA -7.281355e-03</span></span>
+<span><span class="co">#&gt; [3,] -2.515356e-03 -0.001070368   NA -2.189328e-02</span></span>
+<span><span class="co">#&gt; [4,]  5.422213e-05 -0.003164621   NA  8.103383e-03</span></span>
+<span><span class="co">#&gt; [5,] -8.150978e-03 -0.005807492   NA  5.922625e-05</span></span>
+<span><span class="co">#&gt; [6,] -5.861632e-03 -0.003012872   NA  3.302201e-03</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             [,1]  [,2] [,3]        [,4]</span></span>
 <span><span class="co">#&gt; [1,] 0.004472136 0.005   NA 0.007071068</span></span>
@@ -829,12 +833,12 @@ overlapping samples in studies for the other three traits.</p>
 <span><span class="co">#&gt; [6,] 0.004472136 0.005   NA 0.007071068</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">s_estimate</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             [,1]        [,2] [,3]        [,4]</span></span>
-<span><span class="co">#&gt; [1,] 0.004453540 0.004976579   NA 0.007050543</span></span>
-<span><span class="co">#&gt; [2,] 0.004471712 0.005008367   NA 0.007080975</span></span>
-<span><span class="co">#&gt; [3,] 0.004471735 0.004975981   NA 0.007034466</span></span>
-<span><span class="co">#&gt; [4,] 0.004458930 0.004981930   NA 0.007069075</span></span>
-<span><span class="co">#&gt; [5,] 0.004480090 0.004961526   NA 0.007006851</span></span>
-<span><span class="co">#&gt; [6,] 0.004472669 0.004987348   NA 0.007045428</span></span></code></pre></div>
+<span><span class="co">#&gt; [1,] 0.004453566 0.004976698   NA 0.007050114</span></span>
+<span><span class="co">#&gt; [2,] 0.004471810 0.005008104   NA 0.007081267</span></span>
+<span><span class="co">#&gt; [3,] 0.004471716 0.004976063   NA 0.007033821</span></span>
+<span><span class="co">#&gt; [4,] 0.004459041 0.004982154   NA 0.007068942</span></span>
+<span><span class="co">#&gt; [5,] 0.004480086 0.004961544   NA 0.007006829</span></span>
+<span><span class="co">#&gt; [6,] 0.004472674 0.004987358   NA 0.007045390</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="understanding-genetic-and-environmental-covariance">Understanding Genetic and Environmental Covariance<a class="anchor" aria-label="anchor" href="#understanding-genetic-and-environmental-covariance"></a>
@@ -844,7 +848,7 @@ genetic component, a direct environmental component, and components from
 effects of other traits in the DAG. For example, in the four trait DAG
 we have been working with, the underlying model really looks like
 this:</p>
-<div id="htmlwidget-445f32b7b29d339e2b23" style="width:480px;height:432.632880098888px;" class="grViz html-widget"></div>
+<div class="grViz html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-445f32b7b29d339e2b23" style="width:480px;height:432.632880098888px;"></div>
 <script type="application/json" data-for="htmlwidget-445f32b7b29d339e2b23">{"x":{"diagram":"digraph {\n\ngraph [layout = \"neato\",\n       outputorder = \"edgesfirst\",\n       bgcolor = \"white\"]\n\nnode [fontname = \"Helvetica\",\n      fontsize = \"10\",\n      shape = \"circle\",\n      fixedsize = \"true\",\n      width = \"0.5\",\n      style = \"filled\",\n      fillcolor = \"aliceblue\",\n      color = \"gray70\",\n      fontcolor = \"gray50\"]\n\nedge [fontname = \"Helvetica\",\n     fontsize = \"8\",\n     len = \"1.5\",\n     color = \"gray80\",\n     arrowsize = \"0.5\"]\n\n  \"1\" [label = \"X\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"0,0!\"] \n  \"2\" [label = \"Y\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"1,-0.5!\"] \n  \"3\" [label = \"Z\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"1,1!\"] \n  \"4\" [label = \"W\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"black\", fillcolor = \"#FFFFFF\", pos = \"2,0!\"] \n  \"5\" [label = \"Gx\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"-0.5,0.25!\"] \n  \"6\" [label = \"Ex\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"-0.5,-0.25!\"] \n  \"7\" [label = \"Gz\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"0.8,1.5!\"] \n  \"8\" [label = \"Ez\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"1.2,1.5!\"] \n  \"9\" [label = \"Gy\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"0.8,-1!\"] \n  \"10\" [label = \"Ey\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"1.2,-1!\"] \n  \"11\" [label = \"Gw\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"2.5,0.25!\"] \n  \"12\" [label = \"Ew\", fontname = \"Helvetica\", fontsize = \"10\", width = \"0.3\", fontcolor = \"black\", color = \"blue\", fillcolor = \"#FFFFFF\", pos = \"2.5,-0.25!\"] \n\"3\"->\"1\" [color = \"black\", label = \"0.447\"] \n\"1\"->\"2\" [color = \"black\", label = \"0.5\"] \n\"1\"->\"4\" [color = \"black\", label = \"0.387\"] \n\"2\"->\"4\" [color = \"black\", label = \"0.316\"] \n\"3\"->\"4\" [color = \"black\", label = \"-0.548\"] \n\"5\"->\"1\" [color = \"black\", color = \"black\"] \n\"6\"->\"1\" [color = \"black\", color = \"black\"] \n\"7\"->\"3\" [color = \"black\", color = \"black\"] \n\"8\"->\"3\" [color = \"black\", color = \"black\"] \n\"9\"->\"2\" [color = \"black\", color = \"black\"] \n\"10\"->\"2\" [color = \"black\", color = \"black\"] \n\"11\"->\"4\" [color = \"black\", color = \"black\"] \n\"12\"->\"4\" [color = \"black\", color = \"black\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script><p>In this picture, <span class="math inline">\(G_x\)</span>, <span class="math inline">\(G_y\)</span>, <span class="math inline">\(G_z\)</span>, and <span class="math inline">\(G_w\)</span> are direct genetic components of each
 trait and <span class="math inline">\(E_x\)</span>, <span class="math inline">\(E_y\)</span>, <span class="math inline">\(E_z\)</span>, and <span class="math inline">\(E_w\)</span> are direct environmental components.
 We always assume that the direct genetic components are independent of
@@ -857,10 +861,10 @@ trait correlation is</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_dat1</span><span class="op">$</span><span class="va">trait_corr</span></span>
 <span><span class="co">#&gt;           X         Y          Z          W</span></span>
-<span><span class="co">#&gt; X 1.0000000 0.5000000  0.4472136  0.3004632</span></span>
-<span><span class="co">#&gt; Y 0.5000000 1.0000000  0.2236068  0.3874024</span></span>
-<span><span class="co">#&gt; Z 0.4472136 0.2236068  1.0000000 -0.3038068</span></span>
-<span><span class="co">#&gt; W 0.3004632 0.3874024 -0.3038068  1.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt; X 1.0000000 0.4959207  0.4467774  0.2967570</span></span>
+<span><span class="co">#&gt; Y 0.4959207 1.0000000  0.2220017  0.3840097</span></span>
+<span><span class="co">#&gt; Z 0.4467774 0.2220017  1.0000000 -0.3025824</span></span>
+<span><span class="co">#&gt; W 0.2967570 0.3840097 -0.3025824  1.0000000</span></span></code></pre></div>
 <p>The simulation data object contains four matrices that describe trait
 covarince, <code>Sigma_E</code>, the total environmental trait
 covariance, <code>Sigma_G</code> the total genetic trait covariance,
@@ -943,10 +947,10 @@ there is non-zero correlation between the summary statistics.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_dat2</span><span class="op">$</span><span class="va">R</span></span>
 <span><span class="co">#&gt;           [,1]      [,2] [,3]      [,4]</span></span>
-<span><span class="co">#&gt; [1,] 1.0000000 0.1118034    0 0.0000000</span></span>
-<span><span class="co">#&gt; [2,] 0.1118034 1.0000000    0 0.1369674</span></span>
+<span><span class="co">#&gt; [1,] 1.0000000 0.1120147    0 0.0000000</span></span>
+<span><span class="co">#&gt; [2,] 0.1120147 1.0000000    0 0.1355998</span></span>
 <span><span class="co">#&gt; [3,] 0.0000000 0.0000000    0 0.0000000</span></span>
-<span><span class="co">#&gt; [4,] 0.0000000 0.1369674    0 1.0000000</span></span></code></pre></div>
+<span><span class="co">#&gt; [4,] 0.0000000 0.1355998    0 1.0000000</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>

@@ -8,8 +8,8 @@
 <meta name="description" content="GWASBrewer">
 <title>Resampling and Re-Scaling Summary and Individual Level Data • GWASBrewer</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Resampling and Re-Scaling Summary and Individual Level Data">
 <meta property="og:description" content="GWASBrewer">
@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">GWASBrewer</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.0145</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.0158</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -177,6 +177,7 @@ across traits are different.</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span><span class="va">orig_dat</span><span class="op">$</span><span class="va">beta_marg</span>, <span class="va">new_dat1</span><span class="op">$</span><span class="va">beta_marg</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">orig_dat</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               [,1]         [,2]</span></span>
 <span><span class="co">#&gt; [1,] -0.1080910136 -0.009750299</span></span>
@@ -186,13 +187,14 @@ across traits are different.</p>
 <span><span class="co">#&gt; [5,]  0.2105222770  0.019324228</span></span>
 <span><span class="co">#&gt; [6,]  0.0002105625 -0.299937884</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">new_dat1</span><span class="op">$</span><span class="va">beta_hat</span><span class="op">)</span></span>
-<span><span class="co">#&gt;              [,1]        [,2]</span></span>
-<span><span class="co">#&gt; [1,] -0.106394073  0.01945083</span></span>
-<span><span class="co">#&gt; [2,] -0.169038427  0.02943957</span></span>
-<span><span class="co">#&gt; [3,] -0.101019398  0.00913013</span></span>
-<span><span class="co">#&gt; [4,]  0.249389088  0.05005124</span></span>
-<span><span class="co">#&gt; [5,]  0.233785957  0.05143598</span></span>
-<span><span class="co">#&gt; [6,] -0.002708207 -0.29119204</span></span>
+<span><span class="co">#&gt;              [,1]         [,2]</span></span>
+<span><span class="co">#&gt; [1,] -0.106418649  0.019449404</span></span>
+<span><span class="co">#&gt; [2,] -0.169053933  0.029430270</span></span>
+<span><span class="co">#&gt; [3,] -0.101005542  0.009112222</span></span>
+<span><span class="co">#&gt; [4,]  0.249366373  0.050046188</span></span>
+<span><span class="co">#&gt; [5,]  0.233752764  0.051418782</span></span>
+<span><span class="co">#&gt; [6,] -0.002706624 -0.291194649</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">orig_dat</span><span class="op">$</span><span class="va">se_beta_hat</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            [,1]       [,2]</span></span>
 <span><span class="co">#&gt; [1,] 0.01482499 0.01048285</span></span>
@@ -209,22 +211,23 @@ across traits are different.</p>
 <span><span class="co">#&gt; [4,] 0.007042952 0.007042952</span></span>
 <span><span class="co">#&gt; [5,] 0.007302967 0.007302967</span></span>
 <span><span class="co">#&gt; [6,] 0.006629935 0.006629935</span></span>
+<span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">orig_dat</span><span class="op">$</span><span class="va">s_estimate</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            [,1]       [,2]</span></span>
-<span><span class="co">#&gt; [1,] 0.01486679 0.01047939</span></span>
-<span><span class="co">#&gt; [2,] 0.01556145 0.01096741</span></span>
-<span><span class="co">#&gt; [3,] 0.01454838 0.01021066</span></span>
-<span><span class="co">#&gt; [4,] 0.01550031 0.01120229</span></span>
-<span><span class="co">#&gt; [5,] 0.01608335 0.01164884</span></span>
-<span><span class="co">#&gt; [6,] 0.01485687 0.01028612</span></span>
+<span><span class="co">#&gt; [1,] 0.01462257 0.01053189</span></span>
+<span><span class="co">#&gt; [2,] 0.01514042 0.01091440</span></span>
+<span><span class="co">#&gt; [3,] 0.01432211 0.01025373</span></span>
+<span><span class="co">#&gt; [4,] 0.01563268 0.01119651</span></span>
+<span><span class="co">#&gt; [5,] 0.01623509 0.01164215</span></span>
+<span><span class="co">#&gt; [6,] 0.01471137 0.01025486</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">new_dat1</span><span class="op">$</span><span class="va">s_estimate</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             [,1]        [,2]</span></span>
-<span><span class="co">#&gt; [1,] 0.006598484 0.006612023</span></span>
-<span><span class="co">#&gt; [2,] 0.006857675 0.006894809</span></span>
-<span><span class="co">#&gt; [3,] 0.006442011 0.006454754</span></span>
-<span><span class="co">#&gt; [4,] 0.006975122 0.007056953</span></span>
-<span><span class="co">#&gt; [5,] 0.007226557 0.007294838</span></span>
-<span><span class="co">#&gt; [6,] 0.006628349 0.006496083</span></span></code></pre></div>
+<span><span class="co">#&gt; [1,] 0.006612584 0.006626085</span></span>
+<span><span class="co">#&gt; [2,] 0.006862624 0.006899731</span></span>
+<span><span class="co">#&gt; [3,] 0.006454305 0.006467005</span></span>
+<span><span class="co">#&gt; [4,] 0.006970514 0.007052383</span></span>
+<span><span class="co">#&gt; [5,] 0.007221306 0.007289617</span></span>
+<span><span class="co">#&gt; [6,] 0.006621972 0.006489576</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="resampling-individual-level-data-from-the-same-population">Resampling Individual Level Data from the Same Population<a class="anchor" aria-label="anchor" href="#resampling-individual-level-data-from-the-same-population"></a>
@@ -283,21 +286,21 @@ frequencies.</p>
 <span><span class="co">#&gt; [1] 12</span></span>
 <span><span class="va">genos_only</span><span class="op">$</span><span class="va">X</span></span>
 <span><span class="co">#&gt;     [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]</span></span>
-<span><span class="co">#&gt; S1     1    0    0    2    2    0    1    1    1     1     1     0</span></span>
-<span><span class="co">#&gt; S2     0    0    0    1    1    1    0    0    2     2     1     1</span></span>
-<span><span class="co">#&gt; S3     0    0    0    2    2    0    0    1    1     1     1     1</span></span>
-<span><span class="co">#&gt; S4     2    2    2    2    2    2    2    2    2     2     2     2</span></span>
-<span><span class="co">#&gt; S5     1    1    1    1    1    2    2    2    2     2     0     0</span></span>
-<span><span class="co">#&gt; S6     1    1    2    2    2    0    0    0    2     2     1     0</span></span>
-<span><span class="co">#&gt; S7     0    0    0    1    1    1    1    1    2     2     2     2</span></span>
-<span><span class="co">#&gt; S8     0    0    0    2    2    0    0    0    2     2     2     2</span></span>
-<span><span class="co">#&gt; S9     1    1    0    2    2    0    0    0    2     2     2     2</span></span>
-<span><span class="co">#&gt; S10    2    2    2    1    1    1    1    1    2     2     2     2</span></span>
-<span><span class="co">#&gt; S11    0    0    1    2    2    1    1    1    1     1     1     1</span></span>
-<span><span class="co">#&gt; S12    0    1    1    2    2    0    0    1    0     0     1     1</span></span>
-<span><span class="co">#&gt; S13    1    1    1    2    2    2    2    2    1     1     1     1</span></span>
-<span><span class="co">#&gt; S14    1    1    1    1    1    1    0    0    0     1     1     1</span></span>
-<span><span class="co">#&gt; S15    0    0    0    2    2    0    0    1    1     1     2     2</span></span></code></pre></div>
+<span><span class="co">#&gt; S1     0    0    0    2    2    1    1    1    2     2     1     0</span></span>
+<span><span class="co">#&gt; S2     1    1    0    2    2    0    0    0    2     2     1     1</span></span>
+<span><span class="co">#&gt; S3     0    0    0    2    2    1    0    2    2     2     1     1</span></span>
+<span><span class="co">#&gt; S4     0    0    1    0    0    0    0    1    0     0     2     2</span></span>
+<span><span class="co">#&gt; S5     2    1    1    2    2    1    0    0    0     0     0     0</span></span>
+<span><span class="co">#&gt; S6     1    0    2    1    1    0    0    0    2     2     1     0</span></span>
+<span><span class="co">#&gt; S7     0    0    2    2    2    1    0    0    1     1     2     2</span></span>
+<span><span class="co">#&gt; S8     0    0    0    2    2    0    1    0    2     2     2     2</span></span>
+<span><span class="co">#&gt; S9     1    0    0    2    2    0    0    0    2     2     2     2</span></span>
+<span><span class="co">#&gt; S10    2    2    2    1    1    1    1    1    1     1     2     2</span></span>
+<span><span class="co">#&gt; S11    1    0    1    2    2    2    2    2    1     1     1     1</span></span>
+<span><span class="co">#&gt; S12    0    1    1    2    2    0    2    2    2     2     1     1</span></span>
+<span><span class="co">#&gt; S13    0    0    1    1    1    2    2    2    1     1     1     1</span></span>
+<span><span class="co">#&gt; S14    0    0    0    1    1    1    1    0    2     2     1     1</span></span>
+<span><span class="co">#&gt; S15    0    1    0    2    2    1    1    2    2     2     2     2</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="generating-genotypes-and-phenotypes">Generating Genotypes and Phenotypes<a class="anchor" aria-label="anchor" href="#generating-genotypes-and-phenotypes"></a>
@@ -335,28 +338,28 @@ data are in <code>new_ind_dat1$Y</code>.</p>
 <span><span class="co">#&gt; [6] "pheno_sd"   "h2"         "trait_corr" "beta_joint"</span></span>
 <span><span class="va">new_ind_dat1</span><span class="op">$</span><span class="va">X</span></span>
 <span><span class="co">#&gt;     [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12]</span></span>
-<span><span class="co">#&gt; S1     1    0    1    2    2    0    0    0    2     2     1     2</span></span>
-<span><span class="co">#&gt; S2     2    2    2    0    1    0    0    0    2     2     2     1</span></span>
-<span><span class="co">#&gt; S3     0    0    1    2    2    2    1    2    2     2     0     0</span></span>
-<span><span class="co">#&gt; S4     0    0    1    2    2    0    1    0    2     2     0     1</span></span>
-<span><span class="co">#&gt; S5     0    0    0    2    2    0    0    0    1     1     1     1</span></span>
-<span><span class="co">#&gt; S6     1    0    0    2    2    1    0    0    1     1     1     1</span></span>
-<span><span class="co">#&gt; S7     1    1    1    1    1    1    1    1    1     1     2     1</span></span>
-<span><span class="co">#&gt; S8     0    0    1    2    2    0    0    1    1     1     1     1</span></span>
-<span><span class="co">#&gt; S9     1    1    1    0    0    2    2    2    1     1     2     2</span></span>
-<span><span class="co">#&gt; S10    1    1    1    1    1    0    0    0    2     2     1     1</span></span>
+<span><span class="co">#&gt; S1     0    0    1    1    1    0    0    0    1     1     1     2</span></span>
+<span><span class="co">#&gt; S2     2    2    2    1    1    0    0    0    2     2     2     1</span></span>
+<span><span class="co">#&gt; S3     0    0    1    1    1    1    1    1    0     0     0     0</span></span>
+<span><span class="co">#&gt; S4     0    0    1    2    2    0    0    0    1     1     0     1</span></span>
+<span><span class="co">#&gt; S5     0    0    0    2    2    1    0    0    2     2     1     1</span></span>
+<span><span class="co">#&gt; S6     0    0    0    2    2    1    1    0    1     2     1     1</span></span>
+<span><span class="co">#&gt; S7     1    1    1    1    1    2    1    1    2     2     2     1</span></span>
+<span><span class="co">#&gt; S8     1    0    1    2    2    0    1    1    2     2     1     1</span></span>
+<span><span class="co">#&gt; S9     1    1    2    1    1    2    2    2    0     0     2     2</span></span>
+<span><span class="co">#&gt; S10    0    0    0    1    1    0    0    0    2     2     1     1</span></span>
 <span><span class="va">new_ind_dat1</span><span class="op">$</span><span class="va">Y</span></span>
-<span><span class="co">#&gt;           y_1        y_2</span></span>
-<span><span class="co">#&gt; 1  -0.7339953         NA</span></span>
-<span><span class="co">#&gt; 2  -1.9041605         NA</span></span>
-<span><span class="co">#&gt; 3  -0.1802462         NA</span></span>
-<span><span class="co">#&gt; 4   0.3454380  1.5696273</span></span>
-<span><span class="co">#&gt; 5   0.5364932  0.0501794</span></span>
-<span><span class="co">#&gt; 6  -1.2849076  0.1160046</span></span>
-<span><span class="co">#&gt; 7          NA  0.4662867</span></span>
-<span><span class="co">#&gt; 8          NA -2.0110008</span></span>
-<span><span class="co">#&gt; 9          NA -2.0778489</span></span>
-<span><span class="co">#&gt; 10         NA  1.0233827</span></span></code></pre></div>
+<span><span class="co">#&gt;           y_1         y_2</span></span>
+<span><span class="co">#&gt; 1  -0.9660107          NA</span></span>
+<span><span class="co">#&gt; 2  -1.6707661          NA</span></span>
+<span><span class="co">#&gt; 3  -0.4127266          NA</span></span>
+<span><span class="co">#&gt; 4   0.3558235  1.57133493</span></span>
+<span><span class="co">#&gt; 5   0.5363123  0.05390283</span></span>
+<span><span class="co">#&gt; 6  -1.2896112  0.12940470</span></span>
+<span><span class="co">#&gt; 7          NA  0.48527806</span></span>
+<span><span class="co">#&gt; 8          NA -2.00566078</span></span>
+<span><span class="co">#&gt; 9          NA -2.01050960</span></span>
+<span><span class="co">#&gt; 10         NA  0.97844193</span></span></code></pre></div>
 <p>The returned object also includes some additional information
 including <code>Sigma_G</code>, <code>Sigma_E</code>, and
 <code>beta_joint</code> which have the same meaning as the objects with
@@ -407,16 +410,16 @@ genotype matrix.</p>
 <span><span class="co">#&gt; [6] "h2"         "trait_corr" "beta_joint"</span></span>
 <span><span class="va">phenos_only</span><span class="op">$</span><span class="va">Y</span></span>
 <span><span class="co">#&gt;           y_1        y_2</span></span>
-<span><span class="co">#&gt; 1  -0.6475843         NA</span></span>
-<span><span class="co">#&gt; 2   0.7128501         NA</span></span>
-<span><span class="co">#&gt; 3  -0.2145142         NA</span></span>
-<span><span class="co">#&gt; 4  -0.0955433 -0.8877962</span></span>
-<span><span class="co">#&gt; 5  -0.6851972 -2.4045409</span></span>
-<span><span class="co">#&gt; 6  -0.0188514 -0.5577963</span></span>
-<span><span class="co">#&gt; 7          NA -0.9774442</span></span>
-<span><span class="co">#&gt; 8          NA  1.0685742</span></span>
-<span><span class="co">#&gt; 9          NA -0.4387923</span></span>
-<span><span class="co">#&gt; 10         NA -0.7950118</span></span></code></pre></div>
+<span><span class="co">#&gt; 1  -0.6443696         NA</span></span>
+<span><span class="co">#&gt; 2   0.7978988         NA</span></span>
+<span><span class="co">#&gt; 3  -0.2142834         NA</span></span>
+<span><span class="co">#&gt; 4  -0.2455013 -0.3309879</span></span>
+<span><span class="co">#&gt; 5  -0.4448521 -0.9023457</span></span>
+<span><span class="co">#&gt; 6  -0.1022008 -0.6312573</span></span>
+<span><span class="co">#&gt; 7          NA -0.1918427</span></span>
+<span><span class="co">#&gt; 8          NA  1.0820581</span></span>
+<span><span class="co">#&gt; 9          NA -0.4664964</span></span>
+<span><span class="co">#&gt; 10         NA -0.7820182</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -513,12 +516,12 @@ However, the environmental covariance will be the same.</p>
 <span><span class="co">#&gt; [2,] 0.01934268 0.25705783</span></span>
 <span><span class="va">new_dat2</span><span class="op">$</span><span class="va">Sigma_E</span></span>
 <span><span class="co">#&gt;           [,1]      [,2]</span></span>
-<span><span class="co">#&gt; [1,] 0.8875505 0.1806573</span></span>
-<span><span class="co">#&gt; [2,] 0.1806573 0.7429422</span></span>
+<span><span class="co">#&gt; [1,] 0.8875505 0.1736201</span></span>
+<span><span class="co">#&gt; [2,] 0.1736201 0.7429422</span></span>
 <span><span class="va">orig_dat</span><span class="op">$</span><span class="va">Sigma_E</span></span>
 <span><span class="co">#&gt;           [,1]      [,2]</span></span>
-<span><span class="co">#&gt; [1,] 0.8875505 0.1806573</span></span>
-<span><span class="co">#&gt; [2,] 0.1806573 0.7429422</span></span></code></pre></div>
+<span><span class="co">#&gt; [1,] 0.8875505 0.1736201</span></span>
+<span><span class="co">#&gt; [2,] 0.1736201 0.7429422</span></span></code></pre></div>
 <p>Note that the features that are kept constant are the environmental
 variance <code>Sigma_E</code> and the per-allele joint effects,
 <code>beta_joint</code>.</p>
@@ -597,7 +600,8 @@ information in the <code>snp_info</code> table. This is because allele
 frequency is irrelevant for per-SD scaled effects. To convert back to
 per-allele scale, we would need to supply the allele frequency.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">orig_rescale1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rescale_sumstats.html">rescale_sumstats</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="va">orig_dat</span>, </span>
+<code class="sourceCode R"><span></span>
+<span><span class="va">orig_rescale1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rescale_sumstats.html">rescale_sumstats</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="va">orig_dat</span>, </span>
 <span>                                  output_geno_scale <span class="op">=</span> <span class="st">"sd"</span><span class="op">)</span></span>
 <span><span class="va">orig_rescale1</span><span class="op">$</span><span class="va">beta_joint</span></span>
 <span><span class="co">#&gt;               [,1]          [,2]</span></span>
@@ -629,6 +633,7 @@ per-allele scale, we would need to supply the allele frequency.</p>
 <span><span class="co">#&gt; [10,]  0.000000000  0.000000000</span></span>
 <span><span class="co">#&gt; [11,]  0.000000000  0.000000000</span></span>
 <span><span class="co">#&gt; [12,] -0.432491442 -0.086498288</span></span>
+<span></span>
 <span><span class="co">## back to per-allele scale</span></span>
 <span><span class="va">orig_rescale2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rescale_sumstats.html">rescale_sumstats</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="va">orig_rescale1</span>, </span>
 <span>                                  output_geno_scale <span class="op">=</span> <span class="st">"allele"</span>, </span>
@@ -664,12 +669,12 @@ matrices have been scaled appropriately.</p>
 <span><span class="co">#&gt; [2,] 0.02166381 0.16451701</span></span>
 <span><span class="va">orig_rescale3</span><span class="op">$</span><span class="va">Sigma_E</span></span>
 <span><span class="co">#&gt;           [,1]      [,2]</span></span>
-<span><span class="co">#&gt; [1,] 1.7395990 0.2023362</span></span>
-<span><span class="co">#&gt; [2,] 0.2023362 0.4754830</span></span>
+<span><span class="co">#&gt; [1,] 1.7395990 0.1944545</span></span>
+<span><span class="co">#&gt; [2,] 0.1944545 0.4754830</span></span>
 <span><span class="va">orig_rescale3</span><span class="op">$</span><span class="va">Sigma_G</span> <span class="op">+</span> <span class="va">orig_rescale3</span><span class="op">$</span><span class="va">Sigma_E</span></span>
-<span><span class="co">#&gt;       [,1]  [,2]</span></span>
-<span><span class="co">#&gt; [1,] 1.960 0.224</span></span>
-<span><span class="co">#&gt; [2,] 0.224 0.640</span></span></code></pre></div>
+<span><span class="co">#&gt;           [,1]      [,2]</span></span>
+<span><span class="co">#&gt; [1,] 1.9600000 0.2161183</span></span>
+<span><span class="co">#&gt; [2,] 0.2161183 0.6400000</span></span></code></pre></div>
 <p>Note that the heritability, <code>orig_rescale3$h2</code> has not
 changed but is no longer equal to the diagonal of <code>Sigma_G</code>.
 The trait correlation in <code>trait_corr</code> is also the same. The
