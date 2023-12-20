@@ -111,7 +111,8 @@ which is equal to the correlation in the error terms of \code{beta_hat} (See Exa
 }
 \examples{
 myF <- generate_random_F(K = 3, M = 10, nz_factor = c(2, 3, 2),
-                        omega = rep(0.8, 10), h2_trait = rep(0.6, 10), pad = TRUE)
+                        omega = rep(0.8, 10),
+                        h2_trait = rep(0.6, 10), pad = TRUE)
 dat <- sim_lf(myF, N = 10000, J = 20000, h2_trait = rep(0.6, 10),
                       omega = rep(0.8, 10), pi_L = 0.1, pi_theta = 0.1)
 

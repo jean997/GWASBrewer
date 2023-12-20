@@ -56,9 +56,9 @@ All elements should be correlation matrices, meaning that they have 1 on the dia
 If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).}
 
-\item{snp_effect_function}{Optional function to generate variant.
+\item{snp_effect_function}{Optional function to generate variant effects.
 \code{snp_effect_function} can be a single function
-or list of functions of length equal to the number of traits.}
+or list of functions of length equal to the number of traits (see Details).}
 
 \item{snp_info}{Optional \code{data.frame} of variant information to be passed to variant effect functions. If \code{R_LD} is
 specified, \code{snp_info} should have number of rows equal to the size of the supplied LD pattern. Otherwise \code{snp_info}
@@ -66,7 +66,7 @@ should have \code{J} rows.}
 
 \item{sporadic_pleiotropy}{Allow sporadic pleiotropy between traits. Defaults to TRUE.}
 
-\item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to `round(pi*J)`.}
+\item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to \code{round(pi*J)}.}
 
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly `h2`.}
 
@@ -116,9 +116,10 @@ The previous "xyz" mode is now deprecated. If you are used to using this functio
 you can generate the corresponding G using the xyz_to_G function (see examples).
 
 G should be square (#traits by #traits) matrix with 0s on the diagonal.
-All traits have variance 1, so \code{G[i,j]^2} is the proportion of variance of trait j explained by the effect of trait i.
-You will get an error if you specify a cyclic DAG, a DAG that is impossible, or a combination of \code{G} and \code{h2}
-that is impossible.
+All traits have variance 1, so \code{G[i,j]^2} is the proportion of variance of trait j explained by the direct effect of trait i.
+You will get an error if you specify a cyclic DAG. There are also some combinations of DAG and heritability that are impossible and
+will give an error. For example in a two trait DAG where trait 1 has an effect of \eqn{x} on trait 2, and trait 1 has a heritability
+of \eqn{h^2_1}, trait 2 must have a heritability of at least \eqn{(x^2)*(h^2_1)}.
 
 To generate data with LD, supply \code{R_LD} which can be a list of matrices, sparse matrices, or eigen-decompositions.
 These matrices are interpreted as blocks in a block-diagonal LD matrix. The \code{af} argument must be provided
@@ -129,6 +130,14 @@ to generate the desired number of variants.
 If \code{R_obs} is NULL (default value), we assume that direct environmental effects on each trait are independent and all
 environmental correlation results from the relationships specified in \code{G}. Alternatively \code{R_obs} can be any positive
 definite correlation matrix.
+
+The \code{snp_effect_function} argument supplies a custom function to generate standardized direct variant effects. By default,
+standardized direct effects are generated from a normal distribution. This means that in the default mode, all variants
+have equal expected heritability explained regardless of allele frequency or other features. The function(s) passed to
+\code{snp_effect_function} will override this default. This function should take three arguments, \code{n}, \code{sd}, and \code{snp_info}.
+The output should be a vector of length n with expected total sum of squares equal to \code{sd^2}. Note: Even though the
+final effects returned will usually be on the per-allele scale, \code{snp_effect_function} should
+return standardized (per-sd) effect sizes.
 }
 \examples{
 # Two traits with no causal relationship and some environmental correlation

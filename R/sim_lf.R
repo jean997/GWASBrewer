@@ -191,14 +191,8 @@ sim_lf <- function(F_mat,
     snp_info$SNP <- with(snp_info, paste0(SNP, ".", rep))
   }
 
-  if(J < 3){
-    test_snp_info <- do.call("rbind", replicate(3, snp_info, simplify = FALSE))[1:3,]
-    test_snp_info$SNP <- 1:3
-  }else{
-    test_snp_info <- snp_info[1:3,]
-  }
-  f_L <- check_effect_function_list(snp_effect_function_L, K, test_snp_info)
-  f_theta <- check_effect_function_list(snp_effect_function_theta, M, test_snp_info)
+  f_L <- check_effect_function_list(snp_effect_function_L, K, snp_info)
+  f_theta <- check_effect_function_list(snp_effect_function_theta, M, snp_info)
 
 
   #Re-scale rows of F
