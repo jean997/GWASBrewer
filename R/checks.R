@@ -365,17 +365,35 @@ check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
 check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 
   if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function") ){
-    stop("snp_effect_function should either be 'normal', a function, or a vector.")
+    stop("snp_effect_function should either be 'normal', or a function.")
   }
   if(class(snp_effect_function) == "function"){
     if(!is.null(snp_info)){
-      test_snp_info <- snp_info[1:3,]
+      if(nrow(snp_info) < 1000 ){
+        nr <- ceiling(1000/nrow(snp_info))
+        test_snp_info <- do.call("rbind", replicate(nr, snp_info, simplify = FALSE))[1:1000,]
+        test_snp_info$SNP <- 1:1000
+      }else{
+        test_snp_info <- snp_info[1:1000,]
+      }
     }else{
-      test_snp_info <- data.frame(SNP = 1:3, AF = rep(0.5, 3))
+      test_snp_info <- data.frame(SNP = 1:1000, AF = rbeta(n = 1000, 1, 5))
     }
-    x <- tryCatch(snp_effect_function(n = 3, sd = 1, snp_info = test_snp_info), error = function(e){
+    x <- tryCatch(snp_effect_function(n = 1000, sd = 1, snp_info = test_snp_info), error = function(e){
       stop(paste0("Failed to run snp_effect_function with error: ", e) )
     })
+    test_stat <- try(t.test(x^2 - (1/1000)), silent = TRUE)
+    if(!inherits(test_stat, "try-error")){
+      if(test_stat$p.value < 0.01){
+        warning(paste0("Your snp_effect_function may not generate effects with the correct variance. This
+                will lead to realized heritabilities that are very different from your desired heritability.
+                This warning was generated in a test run. I generated 1000 effect sizes from your function
+                and expected to find the total sum of squares approximately equal to 1. The total sum of
+                squares I observed was ", sum(x^2), ". This warning will occur occaisionally for correct
+                functions due to randomness. If you see this warning, verify that your function is correct.
+                Check the vignette or ?sim_mv for more details."))
+      }
+    }
     return(snp_effect_function)
   }else if(snp_effect_function == "normal"){
     f <- function(n, sd, ...){
