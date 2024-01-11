@@ -57,7 +57,9 @@ sim_ld_prune <- function(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1){
   dat$snp_info$ix_in_dat <- seq(nrow(dat$snp_info))
 
   keep_list <- purrr::map2(combos$block, combos$rep, function(b, r){
-    d <- filter(dat$snp_info, block == b & rep == r) %>% select(ix_in_block, ix_in_dat) %>% arrange(ix_in_block)
+    d <- filter(dat$snp_info, block == b & rep == r) %>%
+      select(ix_in_block, ix_in_dat) %>%
+      arrange(ix_in_block)
     d$pval <- pvalue[d$ix_in_dat]
     df_rem <- d %>%
       arrange(pval) %>%
