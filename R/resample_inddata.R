@@ -309,7 +309,7 @@ gen_genos_mvn <- function(n, J, R_LD, af){
 
   if(is.null(R_LD)){
     af <- check_af(af, J)
-    X <- replicate(n = n, rbinom(n = J, size = 2, prob = af)) %>% t()
+    X <- replicate(n = n, stats::rbinom(n = J, size = 2, prob = af)) %>% t()
     if(J == 1) X <- t(X)
     return(list(X = X, af = af))
   }

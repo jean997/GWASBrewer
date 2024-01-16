@@ -1,5 +1,5 @@
 test_that("fast_lm is equivalent to lm", {
-  X <- matrix(rbinom(n = 100*2, size = 2, prob = 0.3), nrow  = 100)
+  X <- matrix(stats::rbinom(n = 100*2, size = 2, prob = 0.3), nrow  = 100)
   Y <- matrix(stats::rnorm(n = 100), nrow = 100)
   fast_lm_res <- fast_lm(X, Y)
   lm_res <- purrr::map_dfr(1:2, function(i){
