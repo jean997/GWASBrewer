@@ -4,8 +4,8 @@ test_that("resample_sumstats executes", {
   diag(A1) <- 1
   A2 <- matrix(0.1, nrow = 6, ncol = 6)
   diag(A2) <- 1
-  af1 <- runif(n = 16, min = 0.3, max = 0.7)
-  af2 <- runif(n = 16, min = 0.05, max = 0.25)
+  af1 <- stats::runif(n = 16, min = 0.3, max = 0.7)
+  af2 <- stats::runif(n = 16, min = 0.05, max = 0.25)
   af <- stats::rbeta(n = 100, 1, 5)
   # simple no LD, no AF, one study
   dat1 <- sim_mv(N = 1e5,

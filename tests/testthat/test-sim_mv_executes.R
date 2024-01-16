@@ -6,7 +6,7 @@ test_that("sim_mv executes", {
   diag(A1) <- 1
   A2 <- matrix(0.1, nrow = 6, ncol = 6)
   diag(A2) <- 1
-  af <- runif(n = 16)
+  af <- stats::runif(n = 16)
   # simple no LD, no AF, one study
   dat1 <- sim_mv(N = 1e5,
                  J = 100,
