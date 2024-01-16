@@ -13,9 +13,9 @@ LazyData: true
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
-IMPORTS:
   dplyr
   purrr
+Imports:
   tidyr
 VignetteBuilder:
   knitr
