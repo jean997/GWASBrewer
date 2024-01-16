@@ -26,6 +26,7 @@ VignetteBuilder:
 Suggests: 
     DiagrammeR,
     knitr,
+    ggplot2,
     rmarkdown,
     hapsim,
     testthat (>= 3.0.0)
