@@ -20,6 +20,7 @@ Imports:
 VignetteBuilder:
   knitr
 Suggests: 
+    DiagrammeR,
     knitr,
     rmarkdown,
     hapsim,
