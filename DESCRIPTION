@@ -19,6 +19,7 @@ Imports:
   Matrix,
   purrr,
   reshape2,
+  stringr,
   tidyr
 VignetteBuilder:
   knitr
