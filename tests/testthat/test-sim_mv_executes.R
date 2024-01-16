@@ -46,7 +46,7 @@ test_that("sim_mv executes", {
                  pi = 0.5,
                  G = 2,
                  R_E = R_E)
-  expect_equal(cov2cor(dat3$Sigma_E), R_E)
+  expect_equal(stats::cov2cor(dat3$Sigma_E), R_E)
   expect_equal(dat3$R, Nc*dat3$trait_corr)
 
   set.seed(5)

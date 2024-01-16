@@ -86,10 +86,10 @@ check_N <- function(N, n, allow_mat = TRUE){
     if(any(diag(N) == 0)){
       i <- which(diag(N) == 0)
       Nc <- matrix(0, nrow = n, ncol = n)
-      Nci <- N[-i, -i, drop = FALSE] |> check_psd("N") |> cov2cor()
+      Nci <- N[-i, -i, drop = FALSE] |> check_psd("N") |> stats::cov2cor()
       Nc[-i, -i] <- Nci
     }else{
-      Nc <- check_psd(N, "N") |> cov2cor()
+      Nc <- check_psd(N, "N") |> stats::cov2cor()
     }
     N <- diag(N)
   }
@@ -153,9 +153,9 @@ check_Ndf <- function(N, M){
   if(any(ct == 0)){
     i <- which(ct == 0)
     Nc <- matrix(0, nrow = M, ncol = M)
-    Nc[-i, -i] <- cov2cor(Nmat[-i, -i])
+    Nc[-i, -i] <- stats::cov2cor(Nmat[-i, -i])
   }else{
-    Nc <- cov2cor(Nmat)
+    Nc <- stats::cov2cor(Nmat)
   }
   overlap <- !Matrix::isDiagonal(Nc)
   ret <- list("Ndf" = N, "Nc"= Nc, "N" = ct, "overlap" = overlap) |> structure(class = c("sample_size", "sample_size_df", "list"))

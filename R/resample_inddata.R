@@ -189,9 +189,9 @@ resample_inddata <- function(N,
   h2 <- v_G/(v_G + v_E)
   if(is.null(new_R_obs) & is.null(new_R_E)){
     message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
-    R_E <- cov2cor(dat$Sigma_E)
+    R_E <- stats::cov2cor(dat$Sigma_E)
     Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
-    trait_corr <- cov2cor(Sigma_G + Sigma_E)
+    trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }else if(!is.null(new_R_obs)){
     new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
@@ -207,7 +207,7 @@ resample_inddata <- function(N,
     new_R_E <- check_psd(new_R_E, "new_R_E")
     if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
     Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
-    trait_corr <- cov2cor(Sigma_G + Sigma_E)
+    trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }
   if(!all(pheno_sd == dat$pheno_sd)){
     message("Note that the phenotype in the new population has a different variance from the phenotype in the old population.")
