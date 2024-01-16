@@ -16,6 +16,7 @@ Depends:
 Imports:
   dplyr,
   MASS,
+  Matrix,
   purrr,
   tidyr
 VignetteBuilder:
