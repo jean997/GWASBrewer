@@ -377,7 +377,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
         test_snp_info <- snp_info[1:1000,]
       }
     }else{
-      test_snp_info <- data.frame(SNP = 1:1000, AF = rbeta(n = 1000, 1, 5))
+      test_snp_info <- data.frame(SNP = 1:1000, AF = stats::rbeta(n = 1000, 1, 5))
     }
     x <- tryCatch(snp_effect_function(n = 1000, sd = 1, snp_info = test_snp_info), error = function(e){
       stop(paste0("Failed to run snp_effect_function with error: ", e) )

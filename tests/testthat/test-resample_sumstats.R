@@ -6,7 +6,7 @@ test_that("resample_sumstats executes", {
   diag(A2) <- 1
   af1 <- runif(n = 16, min = 0.3, max = 0.7)
   af2 <- runif(n = 16, min = 0.05, max = 0.25)
-  af <- rbeta(n = 100, 1, 5)
+  af <- stats::rbeta(n = 100, 1, 5)
   # simple no LD, no AF, one study
   dat1 <- sim_mv(N = 1e5,
                  J = 100,
