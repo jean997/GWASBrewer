@@ -5,7 +5,7 @@ hapsim_simple <- function(n, hap, seed = NULL){
   if(is.null(hap$eCov)){
     hap$eCov <- eigen(hap$cov)
   }
-  A <- matrix(rnorm(n*nloci), nrow = n)
+  A <- matrix(stats::rnorm(n*nloci), nrow = n)
   A <- hap$eCov$vectors %*% diag(sqrt(pmax(hap$eCov$values, 0)), nloci) %*% t(A)
   A <- t(A)
   quants <- stats::qnorm(hap$freqs)

@@ -223,7 +223,7 @@ resample_inddata <- function(N,
   })
 
   # environmental component of phenotype
-  y_E <- matrix(rnorm(n = M*ntotal), nrow = ntotal)
+  y_E <- matrix(stats::rnorm(n = M*ntotal), nrow = ntotal)
   y_E <- y_E %*% diag(sqrt(eV$values), M) %*% t(eV$vectors)
 
   # YG <- purrr::map_dfc(1:M, function(m){

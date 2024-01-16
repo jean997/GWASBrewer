@@ -397,7 +397,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
     return(snp_effect_function)
   }else if(snp_effect_function == "normal"){
     f <- function(n, sd, ...){
-      rnorm(n =n, mean = 0, sd = sd/sqrt(n))
+      stats::rnorm(n =n, mean = 0, sd = sd/sqrt(n))
     }
     return(f)
   }
