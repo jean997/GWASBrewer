@@ -415,7 +415,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 #https://stackoverflow.com/questions/27870542/r-check-if-function-in-a-package-was-called-from-the-package-fun-or-externally
 called_intern <- function() {
   te <- topenv(parent.frame(1))
-  if(isNamespace(te) && getNamespaceName(te) == "simGWAS") {
+  if(isNamespace(te) && getNamespaceName(te) == "GWASBrewer") {
     return(1) # called internally
   }
   return(0)

@@ -44,7 +44,7 @@ test_that("resample_sumstats executes", {
   expect_equal(diag(dat1_5$Sigma_G) + diag(dat1_5$Sigma_E), dat1_5$pheno_sd^2)
   expect_equal(dat1_5$pheno_sd^2, c(0.7, 1.3) + diag(dat1$Sigma_G))
   expect_equal(dat1_2$beta_joint, dat1_5$beta_joint)
-  expect_equal(dat1_2$se_beta_hat, simGWAS:::row_times(dat1_5$se_beta_hat, 1/dat1_5$pheno_sd))
+  expect_equal(dat1_2$se_beta_hat, GWASBrewer:::row_times(dat1_5$se_beta_hat, 1/dat1_5$pheno_sd))
 
   ## allele frequncies and LD different in two populations
   set.seed(1000)
