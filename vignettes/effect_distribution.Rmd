@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 library(GWASBrewer)
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 ```
 
 ## Introduction
