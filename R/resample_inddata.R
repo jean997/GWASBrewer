@@ -82,7 +82,7 @@ resample_inddata <- function(N,
   # Option 3: Generate phenotypes for existing genotypes. Provide genos, and dat. omit J
 
   if(is.null(dat)){
-    if(!require(hapsim)){
+    if(!requireNamespace("hapsim", quietly = TRUE)){
       stop("Please install the hapsim library.")
     }
     message("Generating genotype matrix only.")
