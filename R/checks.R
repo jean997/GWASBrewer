@@ -382,7 +382,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
     x <- tryCatch(snp_effect_function(n = 1000, sd = 1, snp_info = test_snp_info), error = function(e){
       stop(paste0("Failed to run snp_effect_function with error: ", e) )
     })
-    test_stat <- try(t.test(x^2 - (1/1000)), silent = TRUE)
+    test_stat <- try(stats::t.test(x^2 - (1/1000)), silent = TRUE)
     if(!inherits(test_stat, "try-error")){
       if(test_stat$p.value < 0.01){
         warning(paste0("Your snp_effect_function may not generate effects with the correct variance. This
