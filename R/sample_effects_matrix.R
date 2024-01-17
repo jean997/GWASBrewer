@@ -89,7 +89,7 @@ sample_effects_matrix <- function(J, M, pi,
       t <- which(nz_ix == i)
       n <- length(t)
       val <- rep(0, J)
-      if(n > 0) val[t] <- f[[i]](n=n, sd = sig_j[i], snp_info = snp_info[t,])
+      if(n > 0) val[t] <- f[[i]](n=n, sd = sqrt(n)*sig_j[i], snp_info = snp_info[t,])
       return(val)
     }) %>% do.call(cbind, .)
   }
