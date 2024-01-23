@@ -36,7 +36,7 @@ generate_F_simple <- function(nblocks, type=c("nested", "difference",
 #'matrix is re-scaled so that \code{colSums(F_mat^2) = omega*h2_trait}.
 #'@return A matrix
 #'@export
-generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
+generate_random_F <- function(K, M, g_F= function(n){stats::runif(n, -1, 1)},
                               nz_factor, omega, h2_trait,
                               pad = FALSE){
   nz_factor <- check_scalar_or_numeric(nz_factor, "nz_factor", K)
@@ -60,7 +60,7 @@ generate_random_F <- function(K, M, g_F= function(n){runif(n, -1, 1)},
 #'@export
 generate_F2 <- function(non_zero_by_factor,
                         square_row_sums,
-                        rfunc = function(n){runif(n, -1, 1)}){
+                        rfunc = function(n){stats::runif(n, -1, 1)}){
   f <- function(n, nz){
     stopifnot(nz >= 1)
     x <- rep(0, n)

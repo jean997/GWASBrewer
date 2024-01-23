@@ -167,7 +167,7 @@ sim_mv <- function(N,
     R_obs <- t(Gtot) %*% diag(Vdirect, nrow = M) %*% Gtot
     ## expected genetic covariance
     Sigma_G_exp <- F_mat %*% t(F_mat)
-    R_E <- cov2cor(R_obs - Sigma_G_exp)
+    R_E <- stats::cov2cor(R_obs - Sigma_G_exp)
     R_obs <- NULL
   }
 

@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 library(GWASBrewer)
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 ```
 
 ## Introduction
@@ -226,8 +227,8 @@ myf <- function(n, sd, ...){
   # choose which variants are from which component
   Z <- rbinom(n =n, size = 1, prob = 0.1)
   x <- rep(NA, n)
-  x[Z == 0] <- rnorm(n = sum(Z == 0), sd = mix_sds[1])
-  x[Z == 1] <- rnorm(n = sum(Z == 1), sd = mix_sds[2])
+  x[Z == 0] <- stats::rnorm(n = sum(Z == 0), sd = mix_sds[1])
+  x[Z == 1] <- stats::rnorm(n = sum(Z == 1), sd = mix_sds[2])
   return(x)
 }
 
@@ -288,7 +289,7 @@ The resulting object can be translated to a different phenotype scale using `res
 Below is a very simple example using `sim_mv_determined` for ten variants and two traits. We will put the desired direct effects into a matrix and then pass these to `sim_mv_determined`. Here we use effects on the per-genotype SD scale, so we set `geno_scale=sd`. 
 
 ```{r}
-G <- matrix(c(0, 0.5, 0, 0), nrow = 2, byrow =T)
+G <- matrix(c(0, 0.5, 0, 0), nrow = 2, byrow =TRUE)
 my_effects <- matrix(0, nrow = 10, ncol = 2)
 my_effects[c(1, 5),1] <- c(-0.008, 0.01)
 my_effects[c(3, 6, 9), 2] <- c(-0.02, 0.06, 0.009)
@@ -457,7 +458,7 @@ myf <- function(n, sd, snp_info){
   scale <- (sd^2)/sum(s2)
   s2 <- s2*scale
   # sample standardized effect sizes from normal distributions
-  x <- rnorm(n = n, mean = 0, sd = sqrt(s2))
+  x <- stats::rnorm(n = n, mean = 0, sd = sqrt(s2))
   return(x)
 }
 ```

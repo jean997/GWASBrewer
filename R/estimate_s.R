@@ -58,7 +58,7 @@ estimate_s <- function(N, beta_hat,
     oot <- kronecker(matrix(one_minus_mu[s:p], ncol=1), matrix(one_minus_mu[s:p], nrow =1))
 
     (ld_mat[[i]]*vvt*oot + (ld_mat[[i]]^2)*(vvt^2)) %>%
-              cov2cor() %>%
+              stats::cov2cor() %>%
               eigen %>% with(., vectors %*% diag(sqrt(values)))
 
   })
@@ -74,7 +74,7 @@ estimate_s <- function(N, beta_hat,
     vvt <- kronecker(matrix(v[s:p], ncol=1), matrix(v[s:p], nrow =1))
     oot <- kronecker(matrix(one_minus_mu[s:p], ncol=1), matrix(one_minus_mu[s:p], nrow =1))
     sx_Rsqrtl <- (ld_mat[[b]][seq(x), seq(x)]*vvt*oot + (ld_mat[[b]][seq(x), seq(x)]^2)*(vvt^2)) %>%
-             cov2cor() %>%
+             stats::cov2cor() %>%
              eigen %>% with(., vectors %*% diag(sqrt(values)))
 
     sx_Rsqrt[[nblock + 1]] <- sx_Rsqrtl

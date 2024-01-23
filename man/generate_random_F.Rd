@@ -8,7 +8,7 @@ generate_random_F(
   K,
   M,
   g_F = function(n) {
-     runif(n, -1, 1)
+     stats::runif(n, -1, 1)
  },
   nz_factor,
   omega,
