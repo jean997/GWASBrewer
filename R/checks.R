@@ -80,7 +80,7 @@ check_N <- function(N, n, allow_mat = TRUE){
   }else if(type == "matrix"){
     N <- check_matrix(N, "N", n, n)
     max_val <- apply(N, 1, max)
-    if(!all(max_val == diag(N)) | !all(N >=0) | !Matrix::isSymmetric(N)){
+    if(!all(max_val == diag(N)) | !all(N >=0) | !all.equal(N, t(N))){
       stop("N is not a valid sample size matrix.\nCheck that matrix is symmetric with only positive elements and that off-diagonal and diagonal entries are compatible.\n")
     }
     if(any(diag(N) == 0)){
@@ -176,7 +176,11 @@ subset_N_nonzero <- function(N){
 
 
 check_psd <- function(M, string, tol = 1e-8){
-  if(!Matrix::isSymmetric(M)){
+  #if(!Matrix::isSymmetric(M)){
+  #  stop(paste0(string, " must be symmetric.\n"))
+  #}
+  ## all.equal uses sqrt(.Machine$double.eps) as tolerance by default
+  if(!all.equal(M, t(M))){
     stop(paste0(string, " must be symmetric.\n"))
   }
   eMvals <- eigen(M, only.values = TRUE)$values
