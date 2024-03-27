@@ -74,8 +74,9 @@
 #'myF <- diag(2)
 #'N <- matrix(c(10000, 8000, 8000, 10000), nrow = 2)
 #'R_E <- matrix(c(1, 0.6, 0.6, 1), nrow = 2)
-#'dat <- sim_lf(F_mat = myF, N = N, J = 20000, h2_trait = rep(0.6, 2), omega = rep(1, 2), h2_factor = rep(1, 2),
-#'                        pi_L = 0.1, pi_theta = 0.1, R_E = R_E)
+#'dat <- sim_lf(F_mat = myF, N = N, J = 20000, h2_trait = rep(0.6, 2),
+#'              omega = rep(1, 2), h2_factor = rep(1, 2),
+#'              pi_L = 0.1, pi_theta = 0.1, R_E = R_E)
 #'dat$R
 #'cor(dat$beta_hat[,1]-dat$beta_joint[,1], dat$beta_hat[,2]-dat$beta_joint[,2])
 #'@export

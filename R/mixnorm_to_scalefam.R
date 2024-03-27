@@ -11,7 +11,7 @@ mixnorm_to_scale_fam <- function(sigma, pi){
   if(abs(tot -1) > 1e-8) stop("pi should sum to 1.\n")
 
   if(K == 1){
-    f <- function(n, sd, ...){rnorm(n = n, mean = 0, sd = sd)}
+    f <- function(n, sd, ...){stats::rnorm(n = n, mean = 0, sd = sd)}
     return(f)
   }
 
@@ -49,7 +49,7 @@ rnormalmix <- function(n, sd, pi, mu =0, return.Z=FALSE){
   for(k in 1:K){
     nk <- sum(Z==k)
     if(nk==0) next
-    beta[Z==k] <- rnorm(n=nk , mean=mu[k], sd = sd[k])
+    beta[Z==k] <- stats::rnorm(n=nk , mean=mu[k], sd = sd[k])
   }
   if(return.Z) return(list("beta"=beta, "Z"=Z))
   return(beta)

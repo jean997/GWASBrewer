@@ -12,15 +12,21 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
 Depends: 
-    R (>= 2.10)
-IMPORTS:
-  dplyr
-  purrr
+    R (>= 4.1.0)
+Imports:
+  dplyr,
+  MASS,
+  Matrix,
+  purrr,
+  reshape2,
+  stringr,
   tidyr
 VignetteBuilder:
   knitr
 Suggests: 
+    DiagrammeR,
     knitr,
+    ggplot2,
     rmarkdown,
     hapsim,
     testthat (>= 3.0.0)

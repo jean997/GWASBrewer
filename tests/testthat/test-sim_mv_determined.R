@@ -15,7 +15,7 @@ test_that("sim_mv_determined works", {
 
 
   # now give effects as per-allele
-  af <- rbeta(10, 1, 5)
+  af <- stats::rbeta(10, 1, 5)
   sim_dat2 <- sim_mv_determined(N = 0,
                                direct_SNP_effects_joint = my_effects,
                                geno_scale = "allele",

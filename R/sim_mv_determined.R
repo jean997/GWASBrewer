@@ -27,7 +27,7 @@
 #'@details A wrapper for \code{sim_mv}. See \code{?sim_mv} and the "Providing an Exact Set of Direct Effects" section of the Effect Size vignette.
 #'
 #'@examples
-#' G <- matrix(c(0, 0.5, 0, 0), nrow = 2, byrow =T)
+#' G <- matrix(c(0, 0.5, 0, 0), nrow = 2, byrow =TRUE)
 #' my_effects <- matrix(0, nrow = 10, ncol = 2)
 #' my_effects[c(1, 5),1] <- c(-0.008, 0.01)
 #' my_effects[c(3, 6, 9), 2] <- c(-0.02, 0.06, 0.009)

@@ -86,10 +86,10 @@ check_N <- function(N, n, allow_mat = TRUE){
     if(any(diag(N) == 0)){
       i <- which(diag(N) == 0)
       Nc <- matrix(0, nrow = n, ncol = n)
-      Nci <- N[-i, -i, drop = FALSE] |> check_psd("N") |> cov2cor()
+      Nci <- N[-i, -i, drop = FALSE] |> check_psd("N") |> stats::cov2cor()
       Nc[-i, -i] <- Nci
     }else{
-      Nc <- check_psd(N, "N") |> cov2cor()
+      Nc <- check_psd(N, "N") |> stats::cov2cor()
     }
     N <- diag(N)
   }
@@ -153,9 +153,9 @@ check_Ndf <- function(N, M){
   if(any(ct == 0)){
     i <- which(ct == 0)
     Nc <- matrix(0, nrow = M, ncol = M)
-    Nc[-i, -i] <- cov2cor(Nmat[-i, -i])
+    Nc[-i, -i] <- stats::cov2cor(Nmat[-i, -i])
   }else{
-    Nc <- cov2cor(Nmat)
+    Nc <- stats::cov2cor(Nmat)
   }
   overlap <- !Matrix::isDiagonal(Nc)
   ret <- list("Ndf" = N, "Nc"= Nc, "N" = ct, "overlap" = overlap) |> structure(class = c("sample_size", "sample_size_df", "list"))
@@ -381,12 +381,12 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
         test_snp_info <- snp_info[1:1000,]
       }
     }else{
-      test_snp_info <- data.frame(SNP = 1:1000, AF = rbeta(n = 1000, 1, 5))
+      test_snp_info <- data.frame(SNP = 1:1000, AF = stats::rbeta(n = 1000, 1, 5))
     }
     x <- tryCatch(snp_effect_function(n = 1000, sd = 1, snp_info = test_snp_info), error = function(e){
       stop(paste0("Failed to run snp_effect_function with error: ", e) )
     })
-    test_stat <- try(t.test(x^2 - (1/1000)), silent = TRUE)
+    test_stat <- try(stats::t.test(x^2 - (1/1000)), silent = TRUE)
     if(!inherits(test_stat, "try-error")){
       if(test_stat$p.value < 0.01){
         warning(paste0("Your snp_effect_function may not generate effects with the correct variance. This
@@ -401,7 +401,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
     return(snp_effect_function)
   }else if(snp_effect_function == "normal"){
     f <- function(n, sd, ...){
-      rnorm(n =n, mean = 0, sd = sd/sqrt(n))
+      stats::rnorm(n =n, mean = 0, sd = sd/sqrt(n))
     }
     return(f)
   }
@@ -419,7 +419,7 @@ check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 #https://stackoverflow.com/questions/27870542/r-check-if-function-in-a-package-was-called-from-the-package-fun-or-externally
 called_intern <- function() {
   te <- topenv(parent.frame(1))
-  if(isNamespace(te) && getNamespaceName(te) == "simGWAS") {
+  if(isNamespace(te) && getNamespaceName(te) == "GWASBrewer") {
     return(1) # called internally
   }
   return(0)

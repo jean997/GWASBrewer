@@ -47,7 +47,7 @@ sample_effects_matrix <- function(J, M, pi,
 
   if(pi_mat){
       eff <- purrr::map(seq(M), function(i){
-      t <- rbinom(n=J, size=1, prob = pi[,i])
+      t <- stats::rbinom(n=J, size=1, prob = pi[,i])
       n <- sum(t==1)
       if(n > 0) t[t==1] <- f[[i]](n=n, sd = sqrt(n)*sig_j[i], snp_info = snp_info[t==1,])
       return(t)
@@ -64,7 +64,7 @@ sample_effects_matrix <- function(J, M, pi,
     }) %>% do.call(cbind, .)
   }else if(sporadic_pleiotropy){
     eff <- purrr::map(seq(M), function(i){
-      t <- rbinom(n=J, size=1, prob = pi[i])
+      t <- stats::rbinom(n=J, size=1, prob = pi[i])
       n <- sum(t==1)
       if(n > 0) t[t==1] <- f[[i]](n=n, sd = sqrt(n)*sig_j[i], snp_info = snp_info[t==1,])
       return(t)
