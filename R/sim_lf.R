@@ -225,9 +225,10 @@ sim_lf <- function(F_mat,
 
 
   #Generate L
+  #message(paste0("h2_trait: ", paste0(h2_trait, collapse = ",")))
   L_mat <- sample_effects_matrix(J = J, M = K,
                                  pi = pi_L,
-                                 sigma = 1,
+                                 sigma = as.numeric(h2_trait > 0 & colSums(F_mat^2) > 0),
                                  f = f_L,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,
