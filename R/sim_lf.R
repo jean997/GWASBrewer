@@ -50,14 +50,14 @@
 #'and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
 #'the sum of four corresponding covariance matrices.
 #'
-#'Cov(T) = Sigma_FG + Sigma_FE + Sigma_GDir + Sigma_EDir
+#'\deqn{Cov(T) = Sigma_{FG} + Sigma_{FE} + Sigma_{GDir} + Sigma_{EDir}}
 #'
-#'We assume that all cross-trait genetic sharing is explained by the factors so that Sigma_GDir is diagonal.
+#'We assume that all cross-trait genetic sharing is explained by the factors so that \eqn{Sigma_{GDir}} is diagonal.
 #'Each factor is a sum of a genetic component and an environmental components and factors are independent
 #'(both genetic and environmental components) are independent across factors. This means that
-#'Sigma_FG = F S_{FG} F^T and Sigma_FE = F S_{FE} F^T where S_{FG} and S_{FE} are diagonal matrices. The parameter R_E specifies
-#'the correlation of the residual environmental component (i.e. R_E = cov2cor(Sigma_{EDir}).
-#'Alternatively, if \code{R_obs} is specified, Sigma_EDir will be chosen to give the desired observational correlation.
+#'\eqn{Sigma_{FG} = F S_{FG} F^T} and \eqn{Sigma_{FE} = F S_{FE} F^T} where \eqn{S_{FG}} and \eqn{S_{FE}} are diagonal matrices. The parameter \code{R_E} specifies
+#'the correlation of the residual environmental component (i.e. \eqn{R_E = cov2cor(Sigma_{EDir}}).
+#'Alternatively, if \code{R_obs} is specified, \eqn{Sigma_{EDir}} will be chosen to give the desired observational correlation.
 
 #'In the returned object, \code{Sigma_G} is equal to the sum of the two genetic covariance components and \code{Sigma_E}
 #'is equal to the sum of the two environmental components.
