@@ -36,7 +36,7 @@
 #'This function will generate GWAS summary statistics for M traits with K common factors.
 #'The matrix F_mat provides the effects of each factor on each trait, \code{F_mat[i,j]}
 #'gives the effect of factor j on trait i. The rows of \code{F_mat} will be scaled in order
-#'to provide desired proportion of hertiability of each trait explained by factors but the relative
+#'to provide desired proportion of heritability of each trait explained by factors but the relative
 #'size and sign of elements within rows will be retained.
 #'
 #'A random factor matrix can be generated using \code{generate_random_F} (see Examples).
