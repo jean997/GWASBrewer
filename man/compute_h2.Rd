@@ -2,7 +2,7 @@
 % Please edit documentation in R/compute_h2.R
 \name{compute_h2}
 \alias{compute_h2}
-\title{Compute hertiability from standardized or non-standardized effects}
+\title{Compute heritability from standardized or non-standardized effects}
 \usage{
 compute_h2(
   b_joint,
@@ -23,5 +23,5 @@ compute_h2(
 \item{b_joint_std, b_joint}{matrix of standardized or non-standardized effects. Provide only one of these options.}
 }
 \description{
-Compute hertiability from standardized or non-standardized effects
+Compute heritability from standardized or non-standardized effects
 }
