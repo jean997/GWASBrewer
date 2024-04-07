@@ -47,7 +47,7 @@ The `sim_mv` function has five required arguments:
 
 + `N`: The GWAS sample size for each trait. This can be a scalar, vector, matrix, or data frame. If a vector, `N` should have length equal to $M$. If there are overlapping samples between GWAS, `N` should be an $M \times M$ matrix or data frame  with format described in the "Sample Overlap" section below. 
 + `J`: The number of SNPs to simulate (scalar).
-+ `h2`: The hertiability of each trait. This can be a scalar or a length $M$ vector.
++ `h2`: The heritability of each trait. This can be a scalar or a length $M$ vector.
 + `pi`: The proportion of SNPs that have a direct effect on each trait. This can be a scalar, a length $M$ vector, or a matrix with $J \times M$ matrix (more details on the matrix format can be found in the Effect Size Distribution vignette).
 + `G`: A matrix specifying direct causal effects between traits. `G` should be an $M\times M$ matrix described below. Alternatively, if there are no causal effects between any traits, `G` can be given as the positive integer $M$. This is equivalent to `G = matrix(0, nrow = M, ncol = M)`. 
 

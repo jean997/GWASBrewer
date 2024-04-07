@@ -36,7 +36,7 @@
 #'This function will generate GWAS summary statistics for M traits with K common factors.
 #'The matrix F_mat provides the effects of each factor on each trait, \code{F_mat[i,j]}
 #'gives the effect of factor j on trait i. The rows of \code{F_mat} will be scaled in order
-#'to provide desired proportion of hertiability of each trait explained by factors but the relative
+#'to provide desired proportion of heritability of each trait explained by factors but the relative
 #'size and sign of elements within rows will be retained.
 #'
 #'A random factor matrix can be generated using \code{generate_random_F} (see Examples).
@@ -50,14 +50,14 @@
 #'and the environmental component not mediated by factors. Therefore, the total trait covariance can be decomposed into
 #'the sum of four corresponding covariance matrices.
 #'
-#'Cov(T) = Sigma_FG + Sigma_FE + Sigma_GDir + Sigma_EDir
+#'\deqn{Cov(T) = Sigma_{FG} + Sigma_{FE} + Sigma_{GDir} + Sigma_{EDir}}
 #'
-#'We assume that all cross-trait genetic sharing is explained by the factors so that Sigma_GDir is diagonal.
+#'We assume that all cross-trait genetic sharing is explained by the factors so that \eqn{Sigma_{GDir}} is diagonal.
 #'Each factor is a sum of a genetic component and an environmental components and factors are independent
 #'(both genetic and environmental components) are independent across factors. This means that
-#'Sigma_FG = F S_{FG} F^T and Sigma_FE = F S_{FE} F^T where S_{FG} and S_{FE} are diagonal matrices. The parameter R_E specifies
-#'the correlation of the residual environmental component (i.e. R_E = cov2cor(Sigma_{EDir}).
-#'Alternatively, if \code{R_obs} is specified, Sigma_EDir will be chosen to give the desired observational correlation.
+#'\eqn{Sigma_{FG} = F S_{FG} F^T} and \eqn{Sigma_{FE} = F S_{FE} F^T} where \eqn{S_{FG}} and \eqn{S_{FE}} are diagonal matrices. The parameter \code{R_E} specifies
+#'the correlation of the residual environmental component (i.e. \eqn{R_E = cov2cor(Sigma_{EDir}}).
+#'Alternatively, if \code{R_obs} is specified, \eqn{Sigma_{EDir}} will be chosen to give the desired observational correlation.
 
 #'In the returned object, \code{Sigma_G} is equal to the sum of the two genetic covariance components and \code{Sigma_E}
 #'is equal to the sum of the two environmental components.
@@ -228,7 +228,7 @@ sim_lf <- function(F_mat,
   #message(paste0("h2_trait: ", paste0(h2_trait, collapse = ",")))
   L_mat <- sample_effects_matrix(J = J, M = K,
                                  pi = pi_L,
-                                 sigma = as.numeric(h2_trait > 0 & colSums(F_mat^2) > 0),
+                                 sigma = as.numeric(h2_factor > 0 & colSums(F_mat^2) > 0),
                                  f = f_L,
                                  sporadic_pleiotropy = sporadic_pleiotropy ,
                                  pi_exact = pi_exact,

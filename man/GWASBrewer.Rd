@@ -2,10 +2,19 @@
 % Please edit documentation in R/package.R
 \docType{package}
 \name{GWASBrewer}
+\alias{GWASBrewer-package}
 \alias{GWASBrewer}
 \title{GWASBrewer}
 \description{
 Simulate GWAS summary statistics from specified DAG or factor structure.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jean997/GWASBrewer}
+  \item Report bugs at \url{https://github.com/jean997/GWASBrewer/issues}
+}
+
 }
 \author{
 Jean Morrison <jvmorr@umich.edu>

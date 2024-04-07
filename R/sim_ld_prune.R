@@ -37,9 +37,9 @@ sim_ld_prune <- function(dat, pvalue, R_LD, r2_thresh = 0.1, pval_thresh = 1){
     stopifnot(pvalue == round(pvalue))
     message(paste0("Prioritizing variants based on p-value for trait ", pvalue, "\n"))
     if(!is.null(dat$s_estimate)){
-      p <- 2*pnorm(-abs(dat$beta_hat/dat$s_estimate))
+      p <- 2*stats::pnorm(-abs(dat$beta_hat/dat$s_estimate))
     }else{
-      p <- 2*pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
+      p <- 2*stats::pnorm(-abs(dat$beta_hat/dat$se_beta_hat))
     }
     pvalue <- p[,pvalue]
   }
