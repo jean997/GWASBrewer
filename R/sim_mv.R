@@ -13,8 +13,7 @@
 #'@param est_s If TRUE, return estimates of se(`beta_hat`). If FALSE, the exact standard error of `beta_hat` is returned. Defaults to FALSE.
 #'@param R_obs Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
 #'See Details for default behavior.
-#'@param R_E Total correlation of the environmental components only. R_E and R_obs are alternative methods of specifying trait correlation.
-#'Use only one of these two options.
+#'@param R_E Total correlation of the environmental components of traits. Use only one of R_obs or R_E.
 #'R_E may be phased out in the future.
 #'@param R_LD Optional list of LD blocks. R_LD should have class \code{list}.
 #'Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
