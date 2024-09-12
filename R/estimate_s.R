@@ -31,10 +31,18 @@ estimate_s <- function(N, beta_hat,
     }
     s2_denom_s <- kronecker(matrix(sqrt(s2x), nrow = J), matrix(sqrt(nn$N), nrow = 1))
 
-    s2_denom <-  kronecker(matrix(v2x, nrow = J), matrix(nn$N, nrow = 1)) + s2_denom*s2_denom_s
+    s2_denom_final <-  kronecker(matrix(v2x, nrow = J), matrix(nn$N, nrow = 1)) + s2_denom*s2_denom_s
 
-    s2_estimate <- t( t(1/s2_denom)*s2_num) - t(t(beta_hat^2)/(nn$N-2))
-
+    s2_estimate <- t( t(1/s2_denom_final)*s2_num) - t(t(beta_hat^2)/(nn$N-2))
+    iter <- 0
+    while(any(s2_estimate < 0)){
+      iter <- iter + 1
+      cat("updating to fix negaive s2: ", iter, "\n")
+      i <- which(apply(s2_estimate, 1, min) < 0)
+      s2_denom[i,] <- MASS::mvrnorm(n = length(i), mu = rep(0, M), Sigma = nn$Nc)
+      s2_denom_final <-  kronecker(matrix(v2x, nrow = J), matrix(nn$N, nrow = 1)) + s2_denom*s2_denom_s
+      s2_estimate <- t( t(1/s2_denom_final)*s2_num) - t(t(beta_hat^2)/(nn$N-2))
+    }
     return(sqrt(s2_estimate))
   }
 
@@ -85,19 +93,43 @@ estimate_s <- function(N, beta_hat,
   nb <- length(block_info$l)
   start_ix <- cumsum(c(1, block_info$l[-nb]))
   end_ix <- start_ix + block_info$l-1
-
-  s2_denom2 <- lapply(seq(nb), function(i){
-    tcrossprod(sx_Rsqrt[[block_info$block_index[i]]], t(s2_denom[start_ix[i]:end_ix[i], ]))
-  }) %>% do.call( rbind, .)
-
-
-  s2x <- s2x[block_info$index] # Variance of S2x
-  v2x <- (v^2)[block_info$index]
-  s2_denom_s <- kronecker(matrix(sqrt(s2x), nrow = J), matrix(sqrt(nn$N), nrow = 1))
-
-  s2_denom <-  kronecker(matrix(v2x, nrow = J), matrix(nn$N, nrow = 1)) + s2_denom2*s2_denom_s
-
-  s2_estimate <- t( t(1/s2_denom)*s2_num) - t(t(beta_hat^2)/(nn$N-2))
-
+  
+  s2_estimate <- lapply(seq(nb), function(i){
+    
+    d2 <- tcrossprod(sx_Rsqrt[[block_info$block_index[i]]], t(s2_denom[start_ix[i]:end_ix[i], ]))
+    s2x_i <- s2x[block_info$index[start_ix[i]:end_ix[i]]] # Variance of S2x
+    v2x_i <- (v^2)[block_info$index[start_ix[i]:end_ix[i]]]
+    s2_denom_si <- kronecker(matrix(sqrt(s2x_i), nrow = block_info$l[i]), matrix(sqrt(nn$N), nrow = 1))
+    
+    s2_denom_finali <-  kronecker(matrix(v2x_i, nrow = block_info$l[i]), matrix(nn$N, nrow = 1)) + d2*s2_denom_si
+    
+    x <- t( t(1/s2_denom_finali)*s2_num) - t(t(beta_hat[start_ix[i]:end_ix[i],]^2)/(nn$N-2))
+    iter <- 0
+    while(any(x < 0)){
+      iter <- iter + 1
+      cat("updating to fix negaive s2: ", i, " ", iter, "\n")
+      s2_denom[start_ix[i]:end_ix[i], ] <- MASS::mvrnorm(n = block_info$l[i], mu = rep(0, M), Sigma = nn$Nc)
+      
+      d2 <- tcrossprod(sx_Rsqrt[[block_info$block_index[i]]], t(s2_denom[start_ix[i]:end_ix[i], ]))
+      s2_denom_finali <-  kronecker(matrix(v2x_i, nrow = block_info$l[i]), matrix(nn$N, nrow = 1)) + d2*s2_denom_si
+      
+      x <- t( t(1/s2_denom_finali)*s2_num) - t(t(beta_hat[start_ix[i]:end_ix[i],]^2)/(nn$N-2))
+    }
+    return(x)
+  }) %>% do.call(rbind, .)
+  
+  # s2_denom2 <- lapply(seq(nb), function(i){
+  #   tcrossprod(sx_Rsqrt[[block_info$block_index[i]]], t(s2_denom[start_ix[i]:end_ix[i], ]))
+  # }) %>% do.call( rbind, .)
+  # 
+  # 
+  # s2x <- s2x[block_info$index] # Variance of S2x
+  # v2x <- (v^2)[block_info$index]
+  # s2_denom_s <- kronecker(matrix(sqrt(s2x), nrow = J), matrix(sqrt(nn$N), nrow = 1))
+  # 
+  # s2_denom_final <-  kronecker(matrix(v2x, nrow = J), matrix(nn$N, nrow = 1)) + s2_denom2*s2_denom_s
+  # 
+  # s2_estimate <- t( t(1/s2_denom_final)*s2_num) - t(t(beta_hat^2)/(nn$N-2))
+ 
   return(sqrt(s2_estimate))
 }
