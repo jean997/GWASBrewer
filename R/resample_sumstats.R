@@ -84,7 +84,7 @@ resample_sumstats <- function(dat,
   }else if(!is.null(new_R_obs)){
     new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
-    if(!all(diag(new_R_obs) == 1)) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
+    if(!all.equal(diag(new_R_obs), rep(1, M))) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
     new_dat$trait_corr <- new_R_obs
     Sigma_tot <- diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
     new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
@@ -94,7 +94,7 @@ resample_sumstats <- function(dat,
   }else if(!is.null(new_R_E)){
     new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
     new_R_E <- check_psd(new_R_E, "new_R_E")
-    if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
+    if(!all.equal(diag(new_R_E), rep(1, M))) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
     new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
     new_dat$trait_corr <- stats::cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
   }

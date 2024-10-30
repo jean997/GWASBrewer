@@ -135,13 +135,13 @@ sim_lf <- function(F_mat,
     }
     R_E <- check_matrix(R_E, "R_E", M, M)
     R_E <- check_psd(R_E, "R_E")
-    if(!all(diag(R_E) == 1)){
+    if(!all.equal(diag(R_E), rep(1, M))){
       stop("R_E should be a correlation matrix. All diagonal entries should be 1.")
     }
   }else if(!is.null(R_obs)){
     R_obs <- check_matrix(R_obs, "R_obs", M, M)
     R_obs <- check_psd(R_obs, "R_obs")
-    if(!all(diag(R_obs) == 1)){
+    if(!all.equal(diag(R_obs), rep(1, M))){
       stop("R_obs should be a correlation matrix. All diagonal entries should be 1.")
     }
   }

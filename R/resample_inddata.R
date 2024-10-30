@@ -195,7 +195,7 @@ resample_inddata <- function(N,
   }else if(!is.null(new_R_obs)){
     new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
-    if(!all(diag(new_R_obs) == 1)) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
+    if(!all.equal(diag(new_R_obs), rep(1, M))) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
     trait_corr <- new_R_obs
     Sigma_tot <- diag(pheno_sd, nrow  = M) %*% new_R_obs %*% diag(pheno_sd, nrow = M)
     Sigma_E <- Sigma_tot - Sigma_G
@@ -205,7 +205,7 @@ resample_inddata <- function(N,
   }else if(!is.null(new_R_E)){
     new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
     new_R_E <- check_psd(new_R_E, "new_R_E")
-    if(!all(diag(new_R_E) == 1)) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
+    if(!all.equal(diag(new_R_E),  rep(1, M))) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
     Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
     trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }
@@ -242,7 +242,12 @@ resample_inddata <- function(N,
   # })
   Y <- purrr::map_dfc(1:M, function(m){
     b <- dat$beta_joint[,m]
-    y_gen <- t(t(X[study_ix[[m]],])*b) %>% rowSums()
+    ii <- which(b != 0)
+    if(length(ii) == 0){
+      y_gen <- rep(0, length(study_ix[[m]]))
+    }else{
+      y_gen <- t(t(X[study_ix[[m]],ii])*b[ii]) %>% rowSums()
+    }
     y <- y_gen + y_E[study_ix[[m]], m]
     my_y <- data.frame(y = rep(NA, ntotal))
     names(my_y)[1] <- paste0("y_", m)
