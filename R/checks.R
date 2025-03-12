@@ -183,7 +183,7 @@ check_psd <- function(M, string, tol = 1e-8){
   if(!all.equal(M, t(M))){
     stop(paste0(string, " must be symmetric.\n"))
   }
-  eMvals <- eigen(M, only.values = TRUE)$values
+  eMvals <- fast_eigen_vals(M)
   if(!all(eMvals >= -1*tol)){
     stop(paste0(string, " is not positive semi-definite.\n"))
   }
@@ -266,20 +266,22 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   }
   if(return=="eigen"){
     if(all(cl == "matrix")){
-      R_LD <- lapply(R_LD, function(x){eigen(x)})
+      R_LD <- lapply(R_LD, function(x){fast_eigen(x)})
     }else if(any(cl == "matrix")){
       ii <- which(cl == "matrix")
-      R_LD[ii] <- lapply(R_LD[ii], function(x){eigen(x)})
+      R_LD[ii] <- lapply(R_LD[ii], function(x){fast_eigen(x)})
     }
   }else if(return=="matrix"){
     if(all(cl == "eigen")){
       R_LD <- lapply(R_LD, function(x){
-        tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
+        tcrossprod(x$vectors, (x$vectors * rep(x$values, each = nrow(x$vectors))))
+        #tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
       })
     }else if(any(cl == "eigen")){
       ii <- which(cl == "eigen")
       R_LD[ii] <- lapply(R_LD[ii], function(x)function(x){
-        tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
+        tcrossprod(x$vectors, (x$vectors * rep(x$values, each = nrow(x$vectors))))
+        #tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
       })
     }else{
       R_LD <- lapply(R_LD, as.matrix)
@@ -287,22 +289,26 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   }else if(return == "sqrt"){
     if(all(cl == "eigen")){
       R_LD <- lapply(R_LD, function(x){
-        tcrossprod(x$vectors, diag(sqrt(x$values)))
+        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+        #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
     }else if(all(cl == "matrix")){
       R_LD <- lapply(R_LD, function(m){
-        x <- eigen(m)
-        tcrossprod(x$vectors, diag(sqrt(x$values)))
+        x <- fast_eigen(m)
+        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+        #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
     }else{
       ie <- which(cl == "eigen")
       R_LD[ie] <- lapply(R_LD[ie], function(x){
-        tcrossprod(x$vectors, diag(sqrt(x$values)))
+        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+        #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
       im <- which(cl == "matrix")
       R_LD[im] <- lapply(R_LD[im], function(m){
-        x <- eigen(m)
-        tcrossprod(x$vectors, diag(sqrt(x$values)))
+        x <- fast_eigen(m)
+        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+        #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
     }
   }else if(return == "l"){
