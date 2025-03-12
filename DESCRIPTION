@@ -1,7 +1,7 @@
 Package: GWASBrewer
 Type: Package
 Title: Simulate Realistic GWAS Summary Statistics
-Version: 0.3.0.0214
+Version: 0.3.0.0215
 Author: Jean Morrison
 Maintainer: Jean Morrison <jvmorr@umich.edu>
 Description: Simulate GWAS summary statistics from specified DAG or factor structure.
@@ -20,7 +20,9 @@ Imports:
   purrr,
   reshape2,
   stringr,
-  tidyr
+  tidyr,
+  Rcpp (>= 1.0.5),
+  RcppArmadillo
 VignetteBuilder:
   knitr
 Suggests: 
@@ -32,3 +34,4 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 LazyDataCompression: xz
+LinkingTo: Rcpp, RcppArmadillo
