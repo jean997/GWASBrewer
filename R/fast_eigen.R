@@ -26,3 +26,13 @@ fast_eigen <- function(m) {
 fast_eigen_vals <- function(m) {
   .Call(`_GWASBrewer_fast_eigen_vals`, m)
 }
+
+# computes U %*% diag(d) %*% t(V)
+udvt <- function(U, d, V){
+  tcrossprod((U * rep(d, each = nrow(U))), V)
+}
+
+# computes diag(s) %*% R %*% diag(x)
+sRx <- function(s, R, x){
+  t( t(R*s) *x)
+}
