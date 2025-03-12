@@ -274,13 +274,13 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   }else if(return=="matrix"){
     if(all(cl == "eigen")){
       R_LD <- lapply(R_LD, function(x){
-        tcrossprod(x$vectors, (x$vectors * rep(x$values, each = nrow(x$vectors))))
+        with(x, udvt(vectors, values, vectors))
         #tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
       })
     }else if(any(cl == "eigen")){
       ii <- which(cl == "eigen")
       R_LD[ii] <- lapply(R_LD[ii], function(x)function(x){
-        tcrossprod(x$vectors, (x$vectors * rep(x$values, each = nrow(x$vectors))))
+        with(x, udvt(vectors, values, vectors))
         #tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
       })
     }else{

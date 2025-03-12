@@ -3,10 +3,11 @@ hapsim_simple <- function(n, hap, seed = NULL){
     set.seed(seed)
   nloci <- length(hap$freqs)
   if(is.null(hap$eCov)){
-    hap$eCov <- eigen(hap$cov)
+    hap$eCov <- fast_eigen(hap$cov)
   }
   A <- matrix(stats::rnorm(n*nloci), nrow = n)
-  A <- hap$eCov$vectors %*% diag(sqrt(pmax(hap$eCov$values, 0)), nloci) %*% t(A)
+  sqrt_eV <- sqrt(pmax(hap$eCov$values, 0))
+  A <- udvt(hap$eCov$vectors, sqrt_eV, A)
   A <- t(A)
   quants <- stats::qnorm(hap$freqs)
   Y <- t( t(A) > quants)
@@ -35,7 +36,7 @@ R_LD_to_haplodat <- function(R_LD, af){
       warning("Coercing LD matrix to feasible values.\n")
       V <- hapsim::makepd(V)
     }
-    eV <- eigen(V)
+    eV <- fast_eigen(V)
     return(list(freqs  = P, cor = C, cov = V, eCov = eV))
   })
   return(hdat)
