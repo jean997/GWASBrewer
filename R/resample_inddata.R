@@ -191,7 +191,7 @@ resample_inddata <- function(N,
   if(is.null(new_R_obs) & is.null(new_R_E)){
     message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
     R_E <- stats::cov2cor(dat$Sigma_E)
-    Sigma_E <- sRx(sqrt_V_E, R_E, sqrt_V_E)
+    Sigma_E <- sRx(sqrt_v_E, R_E, sqrt_v_E)
     #Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
     trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }else if(!is.null(new_R_obs)){
