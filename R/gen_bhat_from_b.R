@@ -3,6 +3,7 @@
 #'@param N Sample size, scalar, vector, matrix, or data.frame. See \code{?sim_mv} for more details.
 #'@param trait_corr Matrix of population trait correlation (traits by traits)
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
+#'@param R_LD_eigen Optionally, also supply list of eigen decompositions. The program will not check that this matches R_LD.
 #'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
 #'@param est_s Estimate standard errors?
 #'@param input_geno_scale Genotype scale of effects in  b_joint
@@ -14,6 +15,7 @@ gen_bhat_from_b <- function(b_joint,
                             N,
                             trait_corr = NULL,
                             R_LD = NULL,
+                            R_LD_eigen = NULL,
                             af = NULL,
                             est_s = FALSE,
                             input_geno_scale = c("allele", "sd"),
@@ -115,7 +117,11 @@ gen_bhat_from_b <- function(b_joint,
   if(is.null(af)) stop("Please provide af to go with R_LD.")
 
   ld_mat <- check_R_LD(R_LD, "matrix")
-  ld_sqrt <- check_R_LD(R_LD, "sqrt")
+  if(!is.null(R_LD_eigen)){
+    ld_sqrt <- check_R_LD(R_LD_eigen, "sqrt")
+  }else{
+    ld_sqrt <- check_R_LD(R_LD, "sqrt")
+  }
   l <- check_R_LD(R_LD, "l")
 
   af <- check_af(af, sum(l), function_ok = FALSE)
@@ -128,8 +134,8 @@ gen_bhat_from_b <- function(b_joint,
     x <- block_info$last_block_info[2]
     last_block <- ld_mat[[b]][seq(x), seq(x)]
     ld_mat[[nblock + 1]] <- last_block
-    elb <- eigen(last_block)
-    ld_sqrt[[nblock + 1]] <- with(elb, vectors %*% diag(sqrt(values)))
+    elb <- fast_eigen(as.matrix(last_block))
+    ld_sqrt[[nblock + 1]] <- with(elb, vectors * rep(sqrt(values), each = nrow(vectors)))
   }
 
   snp_info <- data.frame(SNP = 1:sum(l), AF = af)
