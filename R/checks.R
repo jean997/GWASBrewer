@@ -257,13 +257,26 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
   }
   cl <- sapply(R_LD, function(x){
     case_when("matrix" %in% class(x) ~ "matrix",
-              class(x) == "dsCMatrix" ~ "matrix",
+              class(x) == "dsCMatrix" ~ "spmatrix",
               class(x) == "eigen" ~ "eigen",
               TRUE ~ "not_allowed")
   })
   if(any(cl == "not_allowed")){
     stop("R_LD should be a list with elements of class matrix, dsCMatrix, or eigen.")
   }
+  
+  if(any(cl == "spmatrix")){
+    if(all(cl == "spmatrix")){
+      R_LD <- lapply(R_LD, as.matrix)
+      cl <- rep("matrix", length(R_LD))
+    }else if(any(cl == "spmatrix")){
+      ii <- which(cl == "spmatrix")
+      R_LD[ii] <- lapply(R_LD[ii], function(x){as.matrix(x)})
+      cl[ii] <- "matrix"
+    }
+  }
+  
+  
   if(return=="eigen"){
     if(all(cl == "matrix")){
       R_LD <- lapply(R_LD, function(x){fast_eigen(x)})
