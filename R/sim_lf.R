@@ -135,11 +135,7 @@ sim_lf <- function(F_mat,
     }
     R_E <- check_matrix(R_E, "R_E", M, M)
     R_E <- check_psd(R_E, "R_E")
-<<<<<<< HEAD
     if(!all.equal(diag(R_E), rep(1, M), check.names = FALSE)){
-=======
-    if(!all.equal(diag(R_E), rep(1, M), check.attributes = FALSE)){
->>>>>>> fdea10e7c4d86585a42c918a2ab828103e07b5ae
       stop("R_E should be a correlation matrix. All diagonal entries should be 1.")
     }
   }else if(!is.null(R_obs)){
