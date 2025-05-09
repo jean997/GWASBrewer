@@ -76,17 +76,20 @@ resample_sumstats <- function(dat,
   }
   new_dat$pheno_sd <- sqrt(v_G + v_E)
   new_dat$h2 <- v_G/(v_G + v_E)
+  sqrt_v_E <- sqrt(v_E)
   if(is.null(new_R_obs) & is.null(new_R_E)){
     message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
     R_E <- stats::cov2cor(dat$Sigma_E)
-    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$Sigma_E <- sRx(sqrt_v_E, R_E, sqrt_v_E) 
+        #  diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
     new_dat$trait_corr <- stats::cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
   }else if(!is.null(new_R_obs)){
     new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
     if(!all.equal(diag(new_R_obs), rep(1, M))) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
     new_dat$trait_corr <- new_R_obs
-    Sigma_tot <- diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
+    Sigma_tot <-sRx(pheno_sd, new_R_obs, pheno_sd)
+      #diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
     new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
     new_dat$Sigma_E <- tryCatch(check_psd(new_dat$Sigma_E, "Sigma_E"), error = function(e){
       stop("new_R_obs is incompatible with trait relationships and heritability.")
@@ -95,7 +98,8 @@ resample_sumstats <- function(dat,
     new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
     new_R_E <- check_psd(new_R_E, "new_R_E")
     if(!all.equal(diag(new_R_E), rep(1, M))) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
-    new_dat$Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
+    new_dat$Sigma_E <- sRx(sqrt_v_E, new_R_E, sqrt_v_E)
+        #diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
     new_dat$trait_corr <- stats::cov2cor(new_dat$Sigma_G + new_dat$Sigma_E)
   }
   if(!all(new_dat$pheno_sd == dat$pheno_sd)){

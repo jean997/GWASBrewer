@@ -187,17 +187,20 @@ resample_inddata <- function(N,
   }
   pheno_sd <- sqrt(v_G + v_E)
   h2 <- v_G/(v_G + v_E)
+  sqrt_v_E <- sqrt(v_E)
   if(is.null(new_R_obs) & is.null(new_R_E)){
     message("I will assume that environmental correlation is the same in the old and new population. Note that this could result in different overall trait correlations.")
     R_E <- stats::cov2cor(dat$Sigma_E)
-    Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
+    Sigma_E <- sRx(sqrt_v_E, R_E, sqrt_v_E)
+    #Sigma_E <- diag(sqrt(v_E),nrow = M) %*% R_E %*% diag(sqrt(v_E), nrow = M)
     trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }else if(!is.null(new_R_obs)){
     new_R_obs <- check_matrix(new_R_obs, "new_R_obs", M, M)
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
     if(!all.equal(diag(new_R_obs), rep(1, M))) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
     trait_corr <- new_R_obs
-    Sigma_tot <- diag(pheno_sd, nrow  = M) %*% new_R_obs %*% diag(pheno_sd, nrow = M)
+    Sigma_tot <- sRx(pheno_sd, new_R_obs, pheno_sd) #t(t(new_R_obs*pheno_sd) * pheno_sd)
+    #Sigma_tot <- diag(pheno_sd, nrow  = M) %*% new_R_obs %*% diag(pheno_sd, nrow = M)
     Sigma_E <- Sigma_tot - Sigma_G
     Sigma_E <- tryCatch(check_psd(Sigma_E, "Sigma_E"), error = function(e){
       stop("new_R_obs is incompatible with trait relationships and heritability.")
@@ -206,7 +209,8 @@ resample_inddata <- function(N,
     new_R_E <- check_matrix(new_R_E, "new_R_E", M, M)
     new_R_E <- check_psd(new_R_E, "new_R_E")
     if(!all.equal(diag(new_R_E),  rep(1, M))) stop("new_R_E should be a correlation matrix. Found diagonal entries not equal to 1.")
-    Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
+    Sigma_E <- sRx(sqrt_v_E, new_R_E, sqrt_v_E)
+    #Sigma_E <- diag(sqrt(v_E),nrow = M) %*% new_R_E %*% diag(sqrt(v_E), nrow = M)
     trait_corr <- stats::cov2cor(Sigma_G + Sigma_E)
   }
   if(!all(pheno_sd == dat$pheno_sd)){
@@ -214,7 +218,7 @@ resample_inddata <- function(N,
     message("I will keep the phenotype on the same scale as the original data, so effect sizes in the old and new object are comparable.")
   }
 
-  eV <- eigen(Sigma_E)
+  eV <- fast_eigen(Sigma_E)
 
   study_id <- rep(1:nrow(nn$Ndf), nn$Ndf$N)
   study_ix <- lapply(1:M, function(m){
@@ -224,22 +228,10 @@ resample_inddata <- function(N,
 
   # environmental component of phenotype
   y_E <- matrix(stats::rnorm(n = M*ntotal), nrow = ntotal)
-  y_E <- y_E %*% diag(sqrt(eV$values), M) %*% t(eV$vectors)
+  sqrt_eV <- as.vector(sqrt(eV$values))
+  y_E <- udvt(y_E, sqrt_eV, eV$vectors)
 
-  # YG <- purrr::map_dfc(1:M, function(m){
-  #   b <- dat$beta_joint[,m]
-  #   y_gen <- t(t(X[study_ix[[m]],])*b) %>% rowSums()
-  #   my_y <- data.frame(y = rep(NA, ntotal))
-  #   names(my_y)[1] <- paste0("y_", m)
-  #   my_y[study_ix[[m]],1] <- y_gen
-  #   return(my_y)
-  # })
-  # YE <- purrr::map_dfc(1:M, function(m){
-  #   my_y <- data.frame(y = rep(NA, ntotal))
-  #   names(my_y)[1] <- paste0("y_", m)
-  #   my_y[study_ix[[m]],1] <- y_E[study_ix[[m]], m]
-  #   return(my_y)
-  # })
+
   Y <- purrr::map_dfc(1:M, function(m){
     b <- dat$beta_joint[,m]
     ii <- which(b != 0)

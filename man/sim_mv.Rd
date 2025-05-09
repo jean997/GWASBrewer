@@ -44,8 +44,7 @@ on the diagonal.}
 \item{R_obs}{Total observational correlation between traits. R_obs won't impact summary statistics unless there is sample overlap.
 See Details for default behavior.}
 
-\item{R_E}{Total correlation of the environmental components only. R_E and R_obs are alternative methods of specifying trait correlation.
-Use only one of these two options.
+\item{R_E}{Total correlation of the environmental components of traits. Use only one of R_obs or R_E.
 R_E may be phased out in the future.}
 
 \item{R_LD}{Optional list of LD blocks. R_LD should have class \code{list}.
