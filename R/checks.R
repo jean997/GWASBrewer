@@ -250,8 +250,17 @@ direct_to_total <- function(G_dir){
   return(G_total)
 }
 
-check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
+check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"), 
+                       checkPD = (any(return == "eigen") | any(return == "sqrt")),
+                       posd_tol = 1e-10){
   return <- match.arg(return, return)
+  
+  if(checkPD & !(return == "eigen" | return == "sqrt")){
+    warning("I can't checkPD unless return type is eigen or sqrt.")
+    checkPD <- FALSE
+  }
+  
+  
   if(class(R_LD) != "list"){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
   }
@@ -284,6 +293,13 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
       ii <- which(cl == "matrix")
       R_LD[ii] <- lapply(R_LD[ii], function(x){fast_eigen(x)})
     }
+    if(checkPD){
+      check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
+      if(any(check_pos)){
+        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+      }
+    }
   }else if(return=="matrix"){
     if(all(cl == "eigen")){
       R_LD <- lapply(R_LD, function(x){
@@ -292,6 +308,11 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
       })
     }else if(any(cl == "eigen")){
       ii <- which(cl == "eigen")
+      check_pos <- sapply(R_LD[ii], function(x){any(x$values < posd_tol)})
+      if(any(check_pos)){
+        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+      }
       R_LD[ii] <- lapply(R_LD[ii], function(x)function(x){
         with(x, udvt(vectors, values, vectors))
         #tcrossprod(x$vectors, tcrossprod(x$vectors, diag(x$values)))
@@ -301,28 +322,72 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l")){
     }
   }else if(return == "sqrt"){
     if(all(cl == "eigen")){
+      if(checkPD){
+        check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
+        if(any(check_pos)){
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+        }
+      }
       R_LD <- lapply(R_LD, function(x){
         x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
         #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
     }else if(all(cl == "matrix")){
-      R_LD <- lapply(R_LD, function(m){
-        x <- fast_eigen(m)
-        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
-        #tcrossprod(x$vectors, diag(sqrt(x$values)))
-      })
+      if(checkPD){
+        R_LD <- lapply(R_LD, function(m){
+          x <- fast_eigen(m)
+        })
+        check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
+        if(any(check_pos)){
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+        }
+        R_LD <- lapply(R_LD, function(x){
+          x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+          #tcrossprod(x$vectors, diag(sqrt(x$values)))
+        })
+      }else{
+        R_LD <- lapply(R_LD, function(m){
+          x <- fast_eigen(m)
+          x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+          #tcrossprod(x$vectors, diag(sqrt(x$values)))
+        })
+      }
     }else{
       ie <- which(cl == "eigen")
+      if(checkPD){
+        check_pos <- sapply(R_LD[ie], function(x){any(x$values < posd_tol)})
+        if(any(check_pos)){
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+        }
+      }
       R_LD[ie] <- lapply(R_LD[ie], function(x){
         x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
         #tcrossprod(x$vectors, diag(sqrt(x$values)))
       })
       im <- which(cl == "matrix")
-      R_LD[im] <- lapply(R_LD[im], function(m){
-        x <- fast_eigen(m)
-        x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
-        #tcrossprod(x$vectors, diag(sqrt(x$values)))
-      })
+      if(checkPD){
+        R_LD[im] <- lapply(R_LD[im], function(m){
+          x <- fast_eigen(m)
+        })
+        check_pos <- sapply(R_LD[im], function(x){any(x$values < posd_tol)})
+        if(any(check_pos)){
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+                  to positive definite."))
+        }
+        R_LD[im] <- lapply(R_LD[im], function(x){
+          x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+          #tcrossprod(x$vectors, diag(sqrt(x$values)))
+        })
+      }else{
+        R_LD[im] <- lapply(R_LD[im], function(m){
+          x <- fast_eigen(m)
+          x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
+          #tcrossprod(x$vectors, diag(sqrt(x$values)))
+        }) 
+      }
     }
   }else if(return == "l"){
     if(all(cl == "eigen")){
