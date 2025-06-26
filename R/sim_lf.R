@@ -17,9 +17,10 @@
 #'@param est_s If TRUE, return estimates of se(beta_hat).
 #'@param R_E Correlation between environmental trait components not mediated by factors. M by M pd matrix.
 #'@param R_obs Observational correlation between traits. M by M pd matrix. At most one of R_E and R_obs can be specified.
-#' @param R_LD List of LD blocks. R_LD should have class \code{list}.
+#'@param R_LD List of LD blocks. R_LD should have class \code{list}.
 #' Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
 #' All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite.
+#'@param R_LD_eigen Optionally, also supply list of eigen decompositions. The program will not check that this matches R_LD.
 #' @param af Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 #'If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).
 #'If R_LD is supplied, af must be a vector with length equal to the size of the supplied LD pattern (See Examples).
@@ -92,6 +93,7 @@ sim_lf <- function(F_mat,
                    R_E=NULL,
                    R_obs = NULL,
                    R_LD = NULL,
+                   R_LD_eigen = NULL,
                    af = NULL,
                    sporadic_pleiotropy = TRUE,
                    h2_exact = FALSE,
@@ -290,6 +292,7 @@ sim_lf <- function(F_mat,
                                trait_corr = trait_corr,
                                N = N,
                                R_LD = R_LD,
+                               R_LD_eigen = R_LD_eigen,
                                af = af,
                                est_s = est_s,
                                input_geno_scale = "sd",
