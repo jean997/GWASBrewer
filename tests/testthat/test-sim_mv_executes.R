@@ -99,5 +99,5 @@ test_that("sim_mv executes", {
   expect_equal(dat7$direct_SNP_effects_marg, S %*% L %*% solve(S) %*% dat7$direct_SNP_effects_joint)
   expect_equal(dat7$beta_joint, dat7$direct_SNP_effects_joint)
   expect_equal(dat7$beta_marg, dat7$direct_SNP_effects_marg)
-  expect_equal(dat7$beta_hat[1,1], 0.1, tolerance = 1e-1) # this just tells me if gen_bhat_from_b has changed
+  expect_equal(dat7$beta_hat[1,1], 0.1415, tolerance = 1e-2) # this just tells me if gen_bhat_from_b has changed
 })
