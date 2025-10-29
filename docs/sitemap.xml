@@ -28,7 +28,16 @@
     <loc>/reference/GWASBrewer.html</loc>
   </url>
   <url>
+    <loc>/reference/R_LD_to_haplodat.html</loc>
+  </url>
+  <url>
     <loc>/reference/compute_h2.html</loc>
+  </url>
+  <url>
+    <loc>/reference/fast_eigen.html</loc>
+  </url>
+  <url>
+    <loc>/reference/fast_eigen_vals.html</loc>
   </url>
   <url>
     <loc>/reference/gen_bhat_from_b.html</loc>
@@ -38,6 +47,9 @@
   </url>
   <url>
     <loc>/reference/generate_random_F.html</loc>
+  </url>
+  <url>
+    <loc>/reference/hapsim_simple.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
