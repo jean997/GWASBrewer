@@ -33,13 +33,15 @@ devtools::install_github("jean997/GWASBrewer",  build_vignettes = TRUE)
 browseVignettes("GWASBrewer")
 ```
 
-Note that the "Simulating Data" vignette requires the following packages which will not be 
-installed automatically:
-
-+ DiagrammeR (use `install.packages`)
-
-Generating individual level data using `resample_inddata` (see "Resampling and Rescaling..." vignette) requires the `hapsim` package which will not be installed automatically. This can be installed with 
+or install without vignettes, 
 
 ```
-install.packages("hapsim")
+devtools::install_github("jean997/GWASBrewer",  build_vignettes = FALSE)
 ```
+
+The vignettes require two packages that will not be installed automatically. 
+The "Simulating Data" vignette requires DiagrammeR (use `install.packages`).
+
+Generating individual level data using `resample_inddata` (see "Resampling and Rescaling..." vignette) requires the `hapsim` package. This 
+package was removed from CRAN in June 2025 but can be installed using `devtools::install_github("CRAN/hapsim")`. 
+

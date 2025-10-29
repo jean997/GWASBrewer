@@ -14,6 +14,7 @@ sim_mv(
   R_obs = NULL,
   R_E = NULL,
   R_LD = NULL,
+  R_LD_eigen = NULL,
   af = NULL,
   snp_effect_function = "normal",
   snp_info = NULL,
@@ -50,6 +51,8 @@ R_E may be phased out in the future.}
 \item{R_LD}{Optional list of LD blocks. R_LD should have class \code{list}.
 Each element of R_LD can be either a) a matrix, b) a sparse matrix (class \code{dsCMatrix}) or c) an eigen decomposition (class \code{eigen}).
 All elements should be correlation matrices, meaning that they have 1 on the diagonal and are positive definite. See Details and vignettes.}
+
+\item{R_LD_eigen}{Optionally, also supply list of eigen decompositions. The program will not check that this matches R_LD.}
 
 \item{af}{Optional vector of allele frequencies. If R_LD is not supplied, af can be a scalar, vector or function.
 If af is a function it should take a single argument (n) and return a vector of n allele frequencies (See Examples).

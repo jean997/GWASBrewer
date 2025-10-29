@@ -9,6 +9,7 @@ gen_bhat_from_b(
   N,
   trait_corr = NULL,
   R_LD = NULL,
+  R_LD_eigen = NULL,
   af = NULL,
   est_s = FALSE,
   input_geno_scale = c("allele", "sd"),
@@ -25,6 +26,8 @@ gen_bhat_from_b(
 \item{trait_corr}{Matrix of population trait correlation (traits by traits)}
 
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
+
+\item{R_LD_eigen}{Optionally, also supply list of eigen decompositions. The program will not check that this matches R_LD.}
 
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
 

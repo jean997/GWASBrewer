@@ -1,5 +1,6 @@
 #'@title Compute heritability from standardized or non-standardized effects
-#'@param b_joint_std,b_joint matrix of standardized or non-standardized effects. Provide only one of these options.
+#'@param b_joint matrix of standardized or non-standardized effects. Provide only one of these options.
+#'@param geno_scale One of allele or sd, depending on scale of b_joint
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param af Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.
 #'@param full_mat If TRUE, return the full genetic variance-covariance matrix

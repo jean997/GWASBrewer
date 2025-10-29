@@ -1,7 +1,7 @@
 Package: GWASBrewer
 Type: Package
 Title: Simulate Realistic GWAS Summary Statistics
-Version: 0.3.0.0235
+Version: 0.3.0.0236
 Author: Jean Morrison
 Maintainer: Jean Morrison <jvmorr@umich.edu>
 Description: Simulate GWAS summary statistics from specified DAG or factor structure.
@@ -10,7 +10,7 @@ URL: https://github.com/jean997/GWASBrewer
 BugReports: https://github.com/jean997/GWASBrewer/issues
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 4.1.0)
 Imports:
