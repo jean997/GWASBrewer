@@ -7,11 +7,11 @@
 xyz_to_G(tau_xz, tau_yz, dir_xz, dir_yz, gamma)
 }
 \arguments{
+\item{tau_xz, tau_yz}{Effect size between Z and X or Y as signed percent variance explained (see details)}
+
 \item{dir_xz, dir_yz}{Effect direction between Z and X or Y (see details)}
 
 \item{gamma}{Signed variance of Y explained by X, see details}
-
-\item{taux_xz, tau_yz}{Effect size between Z and X or Y as signed percent variance explained (see details)}
 }
 \value{
 A matrix of direct effects corresponding to variables in the order (Y, X, Z_1, ..., Z_K)
