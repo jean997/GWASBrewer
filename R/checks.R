@@ -121,7 +121,7 @@ check_Ndf <- function(N, M){
     stop(paste0("Did not find all of trait_1 ...trait_", M, " in data frame N\n"))
   }
   if(!all(names(N) %in% c(paste0("trait_", 1:M), "N"))){
-    unused_cols <- setdiff(names(Ndf), c(paste0("trait_", 1:M), "N"))
+    unused_cols <- setdiff(names(N), c(paste0("trait_", 1:M), "N"))
     warning(paste0("Sample size dataframe contains unused columns: ", paste0(unused_cols, collapse = ","), "\n"))
   }
   N <- dplyr::select(N, all_of(c(paste0("trait_", 1:M), "N"))) %>%
