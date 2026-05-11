@@ -35,3 +35,5 @@ Suggests:
 Config/testthat/edition: 3
 LazyDataCompression: xz
 LinkingTo: Rcpp, RcppArmadillo
+Remotes:
+    cran/hapsim
