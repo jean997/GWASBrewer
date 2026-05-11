@@ -21,8 +21,7 @@ Imports:
   reshape2,
   stringr,
   tidyr,
-  Rcpp (>= 1.0.5),
-  RcppArmadillo
+  Rcpp (>= 1.0.5)
 VignetteBuilder:
   knitr
 Suggests: 
