@@ -1,3 +1,8 @@
+#'@title Generate simple block factor matrices
+#'@param nblocks Number of blocks.
+#'@param type Type of pattern: one of "nested", "difference", "checkers1", or "checkers2".
+#'@return A factor matrix \code{F_mat}.
+#'@keywords internal
 #'@export
 generate_F_simple <- function(nblocks, type=c("nested", "difference",
                                               "checkers1", "checkers2")){
@@ -21,6 +26,8 @@ generate_F_simple <- function(nblocks, type=c("nested", "difference",
 }
 
 #'@title Generate random F
+#'@param K Number of factors.
+#'@param M Number of traits.
 #'@param g_F Function from which non-zero elements of F are generated
 #'@param nz_factor Number of non-zero elements of each factor if F is to be generated.
 #'@param omega Proportion of trait heritability explained by factors
@@ -57,6 +64,12 @@ generate_random_F <- function(K, M, g_F= function(n){stats::runif(n, -1, 1)},
   return(F_mat)
 }
 
+#'@title Generate a random factor matrix with specified sparsity and row sums
+#'@param non_zero_by_factor Vector giving the number of non-zero elements per factor (columns).
+#'@param square_row_sums Vector of target row sums of squared entries.
+#'@param rfunc Function used to draw non-zero entries.
+#'@return A factor matrix \code{F_mat} with the requested sparsity and rescaled rows.
+#'@keywords internal
 #'@export
 generate_F2 <- function(non_zero_by_factor,
                         square_row_sums,

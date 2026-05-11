@@ -1,3 +1,8 @@
+#'@title Build a scale-family effect function from a normal mixture
+#'@param sigma Vector of component standard deviations.
+#'@param pi Vector of mixture proportions, summing to 1.
+#'@return A function with arguments \code{n} and \code{sd} for generating effects.
+#'@keywords internal
 #'@export
 mixnorm_to_scale_fam <- function(sigma, pi){
   K <- length(sigma)
@@ -27,7 +32,7 @@ mixnorm_to_scale_fam <- function(sigma, pi){
 
 #'@title Simulate from a normal mixture distribution
 #'@param n Number of points to simulate
-#'@param sigma Standard deviations
+#'@param sd Standard deviations
 #'@param mu Means
 #'@param pi Mixture proportions
 #'@param return.Z if TRUE, also return a vector of indicators indicating which of the K classes each sample belongs to
@@ -56,6 +61,10 @@ rnormalmix <- function(n, sd, pi, mu =0, return.Z=FALSE){
 }
 
 
+#'@title Build a scale-family effect function from a fixed effect vector
+#'@param b Vector of fixed effects.
+#'@return A function with arguments \code{n} and \code{sd} that returns rescaled effects.
+#'@keywords internal
 #'@export
 fixed_to_scale_fam <- function(b){
   f <- function(n, sd, ...){
