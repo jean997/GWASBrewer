@@ -65,7 +65,7 @@ estimate_s <- function(N, beta_hat,
     vvt <- kronecker(matrix(v[s:p], ncol=1), matrix(v[s:p], nrow =1))
     oot <- kronecker(matrix(one_minus_mu[s:p], ncol=1), matrix(one_minus_mu[s:p], nrow =1))
 
-    sx_R <- cov2cor(ld_mat[[i]]*vvt*oot + (ld_mat[[i]]^2)*(vvt^2)) 
+    sx_R <- stats::cov2cor(ld_mat[[i]]*vvt*oot + (ld_mat[[i]]^2)*(vvt^2))
     esx_R <- fast_eigen(sx_R)
     with(esx_R,  vectors*rep(sqrt(values), each = nrow(vectors)))
 
