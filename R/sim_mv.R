@@ -32,6 +32,7 @@
 #'@param pi_exact If TRUE, the number of direct effect SNPs for each trait will be exactly equal to \code{round(pi*J)}.
 #'@param h2_exact If TRUE, the heritability of each trait will be exactly `h2`.
 #'@param return_dat Useful development option, not recommend for general users.
+#'@param restrict_dag If TRUE, the function will check that G corresponds to a valid DAG. If FALSE, the function will allow cyclic graphs that satisfy the spectral radius condition: |max(eigen(G)$values)| < 1. Default is TRUE.
 #'
 #'@return A list with the following elements:
 #'
@@ -145,9 +146,10 @@ sim_mv <- function(N,
                    snp_info = NULL,
                    sporadic_pleiotropy = TRUE,
                    pi_exact = FALSE,
-                   h2_exact = FALSE){
+                   h2_exact = FALSE,
+                   restrict_dag = TRUE){
 
-  G <- check_G(G, h2)
+  G <- check_G(G, h2, restrict_dag)
   h2 <- G$h2
   M <- G$M
 

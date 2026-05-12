@@ -20,7 +20,8 @@ sim_mv(
   snp_info = NULL,
   sporadic_pleiotropy = TRUE,
   pi_exact = FALSE,
-  h2_exact = FALSE
+  h2_exact = FALSE,
+  restrict_dag = TRUE
 )
 }
 \arguments{
@@ -71,6 +72,8 @@ should have \code{J} rows.}
 \item{pi_exact}{If TRUE, the number of direct effect SNPs for each trait will be exactly equal to \code{round(pi*J)}.}
 
 \item{h2_exact}{If TRUE, the heritability of each trait will be exactly `h2`.}
+
+\item{restrict_dag}{If TRUE, the function will check that G corresponds to a valid DAG. If FALSE, the function will allow cyclic graphs that satisfy the spectral radius condition: |max(eigen(G)$values)| < 1. Default is TRUE.}
 
 \item{return_dat}{Useful development option, not recommend for general users.}
 }

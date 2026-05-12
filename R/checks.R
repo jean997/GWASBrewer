@@ -191,7 +191,7 @@ check_psd <- function(M, string, tol = 1e-8){
 }
 
 
-check_G <- function(G, h2){
+check_G <- function(G, h2, restrict_dag = TRUE){
   if(! "matrix" %in% class(G)){
     if(!(class(G) == "numeric" | class(G) == "integer" )){
       stop(paste0("G should have class matrix, numeric, or integer, found ", class(G), "\n"))
@@ -216,10 +216,14 @@ check_G <- function(G, h2){
   if(!all(diag(G) ==0)){
     stop("G must have 0s on the diagonal.")
   }
-  G_tot <- tryCatch(direct_to_total(G), error = function(e){
-    stop("Failed to compute total effects from direct. Check that supplied G corresponds to a valid DAG.\n")
+  G_tot <- tryCatch(direct_to_total(G, restrict_dag = restrict_dag), error = function(e){
+    if (restrict_dag){
+      stop("Failed to compute total effects from direct. Check that supplied G corresponds to a valid DAG.\n")
+    } else {
+      stop("Failed to compute total effects from direct. Check that supplied G satisfies the spectral radius condition: max(abs(eigenvalues(G))) < 1.\n")
+    }
   })
-  if(!all(diag(G_tot) == 0)){
+  if(!all(diag(G_tot) == 0) && restrict_dag){
     stop("Supplied G does not correspond to a valid DAG.\n")
   }
   direct_h2_1 <- solve(diag(n) + t(G_tot)^2) %*% rep(1, n)
@@ -241,26 +245,57 @@ check_01 <- function(x, name){
   return(x)
 }
 
-direct_to_total <- function(G_dir){
+#' Solves for total/ effects from direct effects
+#'
+#'
+#' @param G_dir Direct effect adjacency matrix
+#' @param restrict_dag Should the function fail if G_dir is not a DAG? Otherwise, will check that spectral radius max(abs(eigenvalues(G_dir))) < 1
+#'
+#' @return Total effect adjacency matrix
+#' @export
+#'
+#' @examples
+#' X <- structure(c(0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0), dim = c(4L,4L))
+#' print(all(total_to_direct(direct_to_total(X)) == X))
+#' @rdname direct_to_total
+direct_to_total <- function(G_dir, restrict_dag = TRUE) {
   n <- nrow(G_dir)
-  G_total <- G_dir %*% solve(diag(n) - G_dir)
-  if(!all(diag(G_total) == 0)){
-    stop("Failed to compute total effects from direct. Check that supplied G corresponds to a valid DAG.\n")
+  if (!restrict_dag && spectral_radius(G_dir) >= 1) {
+    stop("G_dir does not satisfy the spectral radius condition for cyclic graphs: max(abs(eigenvalues(G_dir))) < 1.\n")
+  }
+  G_total <- solve(diag(n) - G_dir) - diag(n)
+  if(!all(diag(G_total) == 0) && restrict_dag){
+    stop("Failed to compute total effects from direct. Check that supplied G_dir corresponds to a valid DAG.\n")
   }
   return(G_total)
 }
 
-check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"), 
+#' @param G_tot Total effect adjacency matrix
+#' @param restrict_dag Should the function fail if G_tot is not a DAG?
+#'
+#' @return Direct effect adjacency matrix
+#' @export
+#' @rdname direct_to_total
+total_to_direct <- function(G_tot, restrict_dag = TRUE){
+  n <- nrow(G_tot)
+  G_dir <- diag(n) - solve(diag(n) + G_tot)
+  if(!all(diag(G_tot) == 0) && restrict_dag){
+    stop("Failed to compute total effects from direct. Check that supplied G_tot corresponds to a valid DAG.\n")
+  }
+  return(G_dir)
+}
+
+check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
                        checkPD = (any(return == "eigen") | any(return == "sqrt")),
                        posd_tol = 1e-10){
   return <- match.arg(return, return)
-  
+
   if(checkPD & !(return == "eigen" | return == "sqrt")){
     warning("I can't checkPD unless return type is eigen or sqrt.")
     checkPD <- FALSE
   }
-  
-  
+
+
   if(class(R_LD) != "list"){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
   }
@@ -273,7 +308,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
   if(any(cl == "not_allowed")){
     stop("R_LD should be a list with elements of class matrix, dsCMatrix, or eigen.")
   }
-  
+
   if(any(cl == "spmatrix")){
     if(all(cl == "spmatrix")){
       R_LD <- lapply(R_LD, as.matrix)
@@ -284,8 +319,8 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
       cl[ii] <- "matrix"
     }
   }
-  
-  
+
+
   if(return=="eigen"){
     if(all(cl == "matrix")){
       R_LD <- lapply(R_LD, function(x){fast_eigen(x)})
@@ -296,7 +331,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
     if(checkPD){
       check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
       if(any(check_pos)){
-        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
       }
     }
@@ -310,7 +345,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
       ii <- which(cl == "eigen")
       check_pos <- sapply(R_LD[ii], function(x){any(x$values < posd_tol)})
       if(any(check_pos)){
-        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+        stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
       }
       R_LD[ii] <- lapply(R_LD[ii], function(x)function(x){
@@ -325,7 +360,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
       if(checkPD){
         check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
         if(any(check_pos)){
-          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
         }
       }
@@ -340,7 +375,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
         })
         check_pos <- sapply(R_LD, function(x){any(x$values < posd_tol)})
         if(any(check_pos)){
-          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
         }
         R_LD <- lapply(R_LD, function(x){
@@ -359,7 +394,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
       if(checkPD){
         check_pos <- sapply(R_LD[ie], function(x){any(x$values < posd_tol)})
         if(any(check_pos)){
-          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
         }
       }
@@ -374,7 +409,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
         })
         check_pos <- sapply(R_LD[im], function(x){any(x$values < posd_tol)})
         if(any(check_pos)){
-          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices 
+          stop(paste0("Some LD blocks are not positive definite at toleranch ", posd_tol, ". Try using Matrix::nearPD to project your matrices
                   to positive definite."))
         }
         R_LD[im] <- lapply(R_LD[im], function(x){
@@ -386,7 +421,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
           x <- fast_eigen(m)
           x$vectors*rep(sqrt(x$values), each = nrow(x$vectors))
           #tcrossprod(x$vectors, diag(sqrt(x$values)))
-        }) 
+        })
       }
     }
   }else if(return == "l"){
@@ -507,4 +542,8 @@ called_intern <- function() {
     return(1) # called internally
   }
   return(0)
+}
+
+spectral_radius <- function(M){
+  max(abs(eigen(M)$values))
 }
