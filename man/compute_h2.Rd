@@ -18,6 +18,8 @@ compute_h2(
 
 \item{geno_scale}{One of allele or sd, depending on scale of b_joint}
 
+\item{pheno_sd}{Phenotype standard deviation, a scalar or vector of length number of traits. Defaults to 1.}
+
 \item{R_LD}{LD pattern (optional). See \code{?sim_mv} for more details.}
 
 \item{af}{Allele frequencies (optional, allowed only if \code{R_LD} is missing). See \code{?sim_mv} for more details.}
