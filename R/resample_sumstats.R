@@ -88,7 +88,7 @@ resample_sumstats <- function(dat,
     new_R_obs <- check_psd(new_R_obs, "new_R_obs")
     if(!all.equal(diag(new_R_obs), rep(1, M))) stop("new_R_obs should be a correlation matrix. Found diagonal entries not equal to 1.")
     new_dat$trait_corr <- new_R_obs
-    Sigma_tot <-sRx(pheno_sd, new_R_obs, pheno_sd)
+    Sigma_tot <-sRx(new_dat$pheno_sd, new_R_obs, new_dat$pheno_sd)
       #diag(new_dat$pheno_sd, nrow  = M) %*% new_R_obs %*% diag(new_dat$pheno_sd, nrow = M)
     new_dat$Sigma_E <- Sigma_tot - new_dat$Sigma_G
     new_dat$Sigma_E <- tryCatch(check_psd(new_dat$Sigma_E, "Sigma_E"), error = function(e){

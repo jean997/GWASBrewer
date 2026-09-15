@@ -6,6 +6,7 @@
 #' @param seed An optional seed for reproducibility.
 #' @return A matrix of haplotype data, where rows correspond to haplotypes and columns to loci.
 #' @details The function generates haplotype data based on the allele frequencies and covariance matrix provided in the `hap` object. It uses a multivariate normal distribution to generate the haplotypes.
+#' @export
 #' @examples
 #' # Example usage:
 #' hap <- list(freqs = c(0.1, 0.2), cov = matrix(c(1, 0.5, 0.5, 1), nrow = 2))

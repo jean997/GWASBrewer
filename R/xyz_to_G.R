@@ -1,5 +1,5 @@
 #'@title Generate G from XYZ Specification
-#'@param taux_xz,tau_yz Effect size between Z and X or Y as signed percent variance explained (see details)
+#'@param tau_xz,tau_yz Effect size between Z and X or Y as signed percent variance explained (see details)
 #'@param dir_xz,dir_yz Effect direction between Z and X or Y (see details)
 #'@param gamma Signed variance of Y explained by X, see details
 #'@details

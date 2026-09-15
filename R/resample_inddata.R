@@ -8,6 +8,8 @@
 #'@param J Optional number of variants. \code{J} is only required if \code{dat} is missing.
 #'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
 #'@param af Allele frequencies. \code{af} is required unless unless \code{genos} is supplied.
+#'@param sim_func Function used to simulate genotypes. Defaults to \code{gen_genos_mvn}.
+#'It should accept arguments \code{n}, \code{J}, \code{R_LD}, and \code{af} and return a list with elements \code{X} (the genotype matrix) and \code{af}.
 #'@param new_env_var Optional. The environmental variance in the new population.
 #'If missing the function will assume the environmental variance is the same as in the old population.
 #'@param new_h2 Optional. The heritability in the new population. Provide at most one of \code{new_env_var} and \code{new_h2}.
@@ -270,6 +272,12 @@ resample_inddata <- function(N,
 
 }
 
+#'@title Fast per-variant marginal linear regression
+#'@param X Genotype matrix (individuals by variants).
+#'@param Y Phenotype matrix (individuals by traits). NAs are allowed.
+#'@param check If TRUE, validate \code{X} and \code{Y}.
+#'@return A data frame with columns \code{bhat_m} and \code{s_m} for each trait \code{m}.
+#'@keywords internal
 #'@export
 fast_lm <- function(X, Y, check = TRUE){
   if(check){
@@ -301,6 +309,13 @@ fast_lm <- function(X, Y, check = TRUE){
 }
 
 
+#'@title Simulate genotypes via a multivariate normal approximation to LD
+#'@param n Number of individuals.
+#'@param J Number of variants.
+#'@param R_LD LD pattern (optional). See \code{?sim_mv} for more details.
+#'@param af Allele frequencies.
+#'@return A list with elements \code{X} (a genotype matrix) and \code{af}.
+#'@keywords internal
 #'@export
 gen_genos_mvn <- function(n, J, R_LD, af){
 

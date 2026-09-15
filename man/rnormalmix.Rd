@@ -9,13 +9,13 @@ rnormalmix(n, sd, pi, mu = 0, return.Z = FALSE)
 \arguments{
 \item{n}{Number of points to simulate}
 
+\item{sd}{Standard deviations}
+
 \item{pi}{Mixture proportions}
 
 \item{mu}{Means}
 
 \item{return.Z}{if TRUE, also return a vector of indicators indicating which of the K classes each sample belongs to}
-
-\item{sigma}{Standard deviations}
 }
 \value{
 If return.Z=TRUE, returns a list with elements beta (samples) and Z (indicators). Otherwise returns a length n vector of samples.

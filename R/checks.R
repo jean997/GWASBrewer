@@ -121,7 +121,7 @@ check_Ndf <- function(N, M){
     stop(paste0("Did not find all of trait_1 ...trait_", M, " in data frame N\n"))
   }
   if(!all(names(N) %in% c(paste0("trait_", 1:M), "N"))){
-    unused_cols <- setdiff(names(Ndf), c(paste0("trait_", 1:M), "N"))
+    unused_cols <- setdiff(names(N), c(paste0("trait_", 1:M), "N"))
     warning(paste0("Sample size dataframe contains unused columns: ", paste0(unused_cols, collapse = ","), "\n"))
   }
   N <- dplyr::select(N, all_of(c(paste0("trait_", 1:M), "N"))) %>%
@@ -193,7 +193,7 @@ check_psd <- function(M, string, tol = 1e-8){
 
 check_G <- function(G, h2){
   if(! "matrix" %in% class(G)){
-    if(!(class(G) == "numeric" | class(G) == "integer" )){
+    if(!(is.numeric(G) | is.integer(G))){
       stop(paste0("G should have class matrix, numeric, or integer, found ", class(G), "\n"))
     }
     if(!(G >= 0 & G == round(G))){
@@ -232,6 +232,10 @@ check_G <- function(G, h2){
     stop(paste0("Supplied G is incompatible with supplied h2. You could try increasing the heritability of traits ",
                 paste0(which(direct_h2 < 0), collapse = ","), ".\n"))
   }
+  if(any(direct_e2 < 0)){
+    stop(paste0("Supplied G is incompatible with supplied h2. You could try decreasing the heritability of traits ",
+                paste0(which(direct_e2 < 0), collapse = ","), ".\n"))
+  }
   return(list(G_dir = G, G_tot = G_tot, dir_h2 = as.vector(direct_h2), h2 = h2, M = n, dir_e2 = as.vector(direct_e2)))
 }
 
@@ -261,7 +265,7 @@ check_R_LD <- function(R_LD, return = c("eigen", "matrix", "sqrt", "l"),
   }
   
   
-  if(class(R_LD) != "list"){
+  if(!is.list(R_LD)){
     stop(paste0("R_LD should be of class list, found ", class(R_LD), "\n"))
   }
   cl <- sapply(R_LD, function(x){
@@ -424,7 +428,7 @@ check_snpinfo <- function(snp_info, J){
 check_af <- function(af, n, function_ok = TRUE){
   if(is.null(af)){
     return(NULL)
-  }else if(class(af) == "function"){
+  }else if(is.function(af)){
     if(!function_ok) stop("af cannot be a function.\n")
     myaf <- af(n)
     af <- myaf
@@ -435,7 +439,7 @@ check_af <- function(af, n, function_ok = TRUE){
 }
 
 check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
-  if(!class(snp_effect_function) == "list"){
+  if(!is.list(snp_effect_function)){
     f <- check_snp_effect_function(snp_effect_function, snp_info)
     fl <- list()
     for(i in 1:M) fl[[i]] <- f
@@ -452,10 +456,10 @@ check_effect_function_list <- function(snp_effect_function, M, snp_info = NULL){
 
 check_snp_effect_function <- function(snp_effect_function, snp_info = NULL){
 
-  if(!(class(snp_effect_function) == "character" | class(snp_effect_function) == "function") ){
+  if(!(is.character(snp_effect_function) | is.function(snp_effect_function))){
     stop("snp_effect_function should either be 'normal', or a function.")
   }
-  if(class(snp_effect_function) == "function"){
+  if(is.function(snp_effect_function)){
     if(!is.null(snp_info)){
       if(nrow(snp_info) < 1000 ){
         nr <- ceiling(1000/nrow(snp_info))
