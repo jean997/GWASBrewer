@@ -223,6 +223,9 @@ sim_mv <- function(N,
   #   R$F_mat <- dat$F_mat
   # }
   R <- structure(R, class = c("sim_mv", "list"))
+  if(!is.null(R_LD)){
+    R <- calc_ld_scores(R, R_LD)
+  }
   return(R)
 }
 
