@@ -116,8 +116,13 @@ sim_lf <- function(F_mat,
   pi_L <- check_pi(pi_L, J, K)
   pi_theta <- check_pi(pi_theta, J, M)
 
-  if(any(omega < 1 & pi_theta == 0)){
-    i <- which(omega < 1 & pi_theta == 0)
+  if(inherits(pi_theta, "matrix")){
+    pi_theta_total <- colSums(pi_theta)
+  }else{
+    pi_theta_total <- pi_theta
+  }
+  if(any(omega < 1 & pi_theta_total == 0)){
+    i <- which(omega < 1 & pi_theta_total == 0)
     stop(paste0("Any traits with omega < 1 (not all heritability explained by factors) must have pi_theta > 0. Check traits ",
                 paste0(i, collapse = ",")))
   }
